@@ -6,4 +6,5 @@ public record RoleTemplateDetailDto(
         String name,
         String description,
         String recommendedFor
-) {}
+) {
+}
