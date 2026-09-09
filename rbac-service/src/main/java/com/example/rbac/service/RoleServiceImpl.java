@@ -6,59 +6,50 @@ import com.example.common.exception.ResourceNotFoundException;
 import com.example.rbac.dto.RoleRequestDto;
 import com.example.rbac.dto.RoleResponseDto;
 import com.example.rbac.entity.Role;
+import com.example.rbac.enums.RoleType;
 import com.example.rbac.repository.RoleRepository;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import java.util.Map;
 import java.util.List;
 
 @Service
-public class RoleServiceImpl
-        extends AbstractService<Role, Long, RoleRequestDto, RoleResponseDto>
-        implements RoleService {
+public class RoleServiceImpl extends AbstractService<Role, Long, RoleRequestDto, RoleResponseDto> implements RoleService {
 
-    private final RoleRepository roleRepository;
+private final RoleRepository roleRepository;
 
-    public RoleServiceImpl(RoleRepository roleRepository) {
-        super(roleRepository, "Role");
-        this.roleRepository = roleRepository;
+public RoleServiceImpl(RoleRepository roleRepository) {
+super(roleRepository, "Role");
+this.roleRepository = roleRepository;
     }
 
-    // Convert request DTO to Role entity
-    @Override
-    protected Role toEntity(RoleRequestDto dto) {
+// Convert request DTO to Role entity
+@Override
+protected Role toEntity(RoleRequestDto dto) {
+Role role = new Role();
+role.setRoleName(dto.getRoleName());
+String roleCode = dto.getRoleCode();
 
-        Role role = new Role();
+if (roleCode == null || roleCode.isBlank()) {
+roleCode = dto.getRoleName() .trim().toUpperCase() .replaceAll("[^A-Z0-9]+", "_");
+ }
 
-        role.setRoleName(dto.getRoleName());
+role.setRoleCode(roleCode);
+role.setRoleType(dto.getRoleType());
+role.setDescription(dto.getDescription());
+role.setStatus(dto.getStatus() != null ? dto.getStatus() : "ACTIVE");
+role.setIsDeleted(false);
 
-        String roleCode = dto.getRoleCode();
+return role;
+}
 
-        if (roleCode == null || roleCode.isBlank()) {
-            roleCode = dto.getRoleName()
-                    .trim()
-                    .toUpperCase()
-                    .replaceAll("[^A-Z0-9]+", "_");
-        }
-
-        role.setRoleCode(roleCode);
-        role.setRoleType(dto.getRoleType());
-        role.setDescription(dto.getDescription());
-        role.setStatus(dto.getStatus() != null ? dto.getStatus() : "ACTIVE");
-        role.setIsDeleted(false);
-
-        return role;
-    }
-
-    // Convert Role entity to response DTO
-    @Override
-    protected RoleResponseDto toDto(Role role) {
-
-        return new RoleResponseDto(
-                role.getId(),
+// Convert Role entity to response DTO
+@Override
+protected RoleResponseDto toDto(Role role) {
+return new RoleResponseDto(role.getId(),
                 role.getRoleName(),
                 role.getRoleCode(),
                 role.getRoleType(),
@@ -68,20 +59,19 @@ public class RoleServiceImpl
                 role.getCreatedAt(),
                 role.getCreatedBy(),
                 role.getUpdatedAt(),
-                role.getUpdatedBy()
-        );
+                role.getUpdatedBy() );
     }
 
-    // Update editable Role fields
-    @Override
-    protected void updateEntityFromDto(Role role, RoleRequestDto dto) {
-        role.setRoleName(dto.getRoleName());
-        role.setDescription(dto.getDescription());
-    }
+// Update editable Role fields
+@Override
+protected void updateEntityFromDto(Role role, RoleRequestDto dto) {
+role.setRoleName(dto.getRoleName());
+ role.setDescription(dto.getDescription());
+}
 
-    // Check duplicate role details within current tenant
-    @Override
-    protected void beforeCreate(Role role, RoleRequestDto dto) {
+// Check duplicate role details within current tenant
+@Override
+protected void beforeCreate(Role role, RoleRequestDto dto) {
 
         String tenantId = getCurrentTenantId();
 
@@ -100,149 +90,107 @@ public class RoleServiceImpl
         }
     }
 
-    // Search roles for current tenant
-    @Override
-    public List<RoleResponseDto> searchRoles(String query) {
+// Search roles for current tenant
+@Override
+public List<RoleResponseDto> searchRoles(String query, RoleType roleType, String status) {
 
-        return roleRepository
-                .searchRoles(getCurrentTenantId(), query)
-                .stream()
-                .map(this::toDto)
-                .toList();
+return roleRepository.searchRoles(getCurrentTenantId(), query, roleType, status).stream().map(this::toDto).toList();
+}
+// Update role within current tenant
+ @Override
+  @Transactional
+public RoleResponseDto update(Long id, RoleRequestDto dto) {
+validateId(id);
+Role role = roleRepository .findByIdAndTenantIdAndIsDeletedFalse( id, getCurrentTenantId()).orElseThrow(() ->new ResourceNotFoundException("Role", "id", id));
+
+if (!role.getRoleName().equalsIgnoreCase(dto.getRoleName()) && roleRepository.existsByRoleNameIgnoreCaseAndTenantIdAndIsDeletedFalse( dto.getRoleName(),getCurrentTenantId())) {
+throw new BadRequestException("Role name already exists");
+ }
+
+  updateEntityFromDto(role, dto);
+ return toDto(roleRepository.save(role));
+ }
+
+// Soft delete role for current tenant
+@Override
+@Transactional
+public void deleteById(Long id) {
+validateId(id);
+Role role = roleRepository.findByIdAndTenantIdAndIsDeletedFalse(id, getCurrentTenantId()).orElseThrow(() ->new ResourceNotFoundException("Role", "id", id));
+
+if (isProtectedSystemRole(role)) {
+throw new BadRequestException("System role cannot be deleted");
+}
+
+role.setIsDeleted(true);
+roleRepository.save(role);
+}
+
+// Activate or deactivate role
+@Override
+@Transactional
+public RoleResponseDto updateStatus(Long id, String status) {
+
+ if (status == null
+|| (!status.equalsIgnoreCase("ACTIVE")
+&& !status.equalsIgnoreCase("INACTIVE"))) {
+throw new BadRequestException("Status must be ACTIVE or INACTIVE");
+}
+
+ Role role = roleRepository.findByIdAndTenantIdAndIsDeletedFalse( id, getCurrentTenantId()).orElseThrow(() -> new ResourceNotFoundException("Role", "id", id));
+
+if (isProtectedSystemRole(role) && status.equalsIgnoreCase("INACTIVE")) {
+throw new BadRequestException("System role cannot be deactivated");
+}
+
+role.setStatus(status.toUpperCase());
+
+return toDto(roleRepository.save(role));}
+
+// Get role by tenant
+@Override
+@Transactional(readOnly = true)
+public RoleResponseDto getById(Long id) {
+validateId(id);
+
+Role role = roleRepository.findByIdAndTenantIdAndIsDeletedFalse(id, getCurrentTenantId()).orElseThrow(() -> new ResourceNotFoundException("Role", "id", id));
+                                return toDto(role);
     }
 
-    // Update role within current tenant
-    @Override
-    @Transactional
-    public RoleResponseDto update(Long id, RoleRequestDto dto) {
-
-        validateId(id);
-
-        Role role = roleRepository
-                .findByIdAndTenantIdAndIsDeletedFalse(
-                        id, getCurrentTenantId())
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Role", "id", id));
-
-        if (!role.getRoleName().equalsIgnoreCase(dto.getRoleName())
-                && roleRepository
-                .existsByRoleNameIgnoreCaseAndTenantIdAndIsDeletedFalse(
-                        dto.getRoleName(),
-                        getCurrentTenantId())) {
-
-            throw new BadRequestException(
-                    "Role name already exists");
-        }
-
-        updateEntityFromDto(role, dto);
-
-        return toDto(roleRepository.save(role));
+// Get all roles for current tenant
+@Override
+@Transactional(readOnly = true)
+public List<RoleResponseDto> getAll() {
+return roleRepository .findByTenantIdAndIsDeletedFalse(getCurrentTenantId()).stream().map(this::toDto).toList();
     }
 
-    // Soft delete role for current tenant
-    @Override
-    @Transactional
-    public void deleteById(Long id) {
+// Get paginated roles for current tenant
+@Override
+ @Transactional(readOnly = true)
+public Page<RoleResponseDto> getAll(Pageable pageable) {
+return roleRepository.findByTenantIdAndIsDeletedFalse(getCurrentTenantId(), pageable).map(this::toDto);
+}
 
-        validateId(id);
+// Check protected system roles
+private boolean isProtectedSystemRole(Role role) {
 
-        Role role = roleRepository
-                .findByIdAndTenantIdAndIsDeletedFalse(
-                        id, getCurrentTenantId())
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Role", "id", id));
+ String code = role.getRoleCode();
 
-        if (isProtectedSystemRole(role)) {
-            throw new BadRequestException(
-                    "System role cannot be deleted");
-        }
+return "SUPER_ADMIN".equalsIgnoreCase(code)|| "ADMIN".equalsIgnoreCase(code)|| "EMPLOYEE".equalsIgnoreCase(code);
+}
+ // Get role count badges for current tenant
+@Override
+public Map<String, Long> getRoleCounts() {
 
-        role.setIsDeleted(true);
-        roleRepository.save(role);
-    }
+String tenantId = getCurrentTenantId();
 
-    // Activate or deactivate role
-    @Override
-    @Transactional
-    public RoleResponseDto updateStatus(Long id, String status) {
+long totalRoles =roleRepository.countByTenantIdAndIsDeletedFalse(tenantId);
+long systemRoles =roleRepository.countByTenantIdAndRoleTypeAndIsDeletedFalse(
+                    tenantId, RoleType.SYSTEM);
 
-        if (status == null
-                || (!status.equalsIgnoreCase("ACTIVE")
-                && !status.equalsIgnoreCase("INACTIVE"))) {
+long customRoles = roleRepository.countByTenantIdAndRoleTypeAndIsDeletedFalse(
+                    tenantId, RoleType.CUSTOM);
 
-            throw new BadRequestException(
-                    "Status must be ACTIVE or INACTIVE");
-        }
-
-        Role role = roleRepository
-                .findByIdAndTenantIdAndIsDeletedFalse(
-                        id, getCurrentTenantId())
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Role", "id", id));
-
-        if (isProtectedSystemRole(role)
-                && status.equalsIgnoreCase("INACTIVE")) {
-
-            throw new BadRequestException(
-                    "System role cannot be deactivated");
-        }
-
-        role.setStatus(status.toUpperCase());
-
-        return toDto(roleRepository.save(role));
-    }
-
-    // Get role by tenant
-    @Override
-    @Transactional(readOnly = true)
-    public RoleResponseDto getById(Long id) {
-
-        validateId(id);
-
-        Role role = roleRepository
-                .findByIdAndTenantIdAndIsDeletedFalse(
-                        id, getCurrentTenantId())
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Role", "id", id));
-
-        return toDto(role);
-    }
-
-    // Get all roles for current tenant
-    @Override
-    @Transactional(readOnly = true)
-    public List<RoleResponseDto> getAll() {
-
-        return roleRepository
-                .findByTenantIdAndIsDeletedFalse(
-                        getCurrentTenantId())
-                .stream()
-                .map(this::toDto)
-                .toList();
-    }
-
-    // Get paginated roles for current tenant
-    @Override
-    @Transactional(readOnly = true)
-    public Page<RoleResponseDto> getAll(Pageable pageable) {
-
-        return roleRepository
-                .findByTenantIdAndIsDeletedFalse(
-                        getCurrentTenantId(), pageable)
-                .map(this::toDto);
-    }
-
-    // Check protected system roles
-    private boolean isProtectedSystemRole(Role role) {
-
-        String code = role.getRoleCode();
-
-        return "SUPER_ADMIN".equalsIgnoreCase(code)
-                || "ADMIN".equalsIgnoreCase(code)
-                || "EMPLOYEE".equalsIgnoreCase(code);
-    }
+return Map.of("totalRoles", totalRoles, "systemRoles", systemRoles, "customRoles", customRoles);
+}
 }

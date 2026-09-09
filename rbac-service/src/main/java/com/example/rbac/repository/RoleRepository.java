@@ -1,6 +1,7 @@
 package com.example.rbac.repository;
 
 import com.example.rbac.entity.Role;
+import com.example.rbac.enums.RoleType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -25,9 +26,18 @@ Page<Role> findByTenantIdAndIsDeletedFalse(String tenantId, Pageable pageable);
 @Query("SELECT r FROM Role r " +
        "WHERE r.tenantId = :tenantId " +
        "AND r.isDeleted = false " +
-       "AND (LOWER(r.roleName) LIKE LOWER(CONCAT('%', :query, '%')) " +
-       "OR LOWER(r.roleCode) LIKE LOWER(CONCAT('%', :query, '%')))")
+       "AND (:query IS NULL OR :query = '' " +
+       "OR LOWER(r.roleName) LIKE LOWER(CONCAT('%', :query, '%')) " +
+       "OR LOWER(r.roleCode) LIKE LOWER(CONCAT('%', :query, '%'))) " +
+       "AND (:roleType IS NULL OR r.roleType = :roleType) " +
+       "AND (:status IS NULL OR :status = '' " +
+       "OR LOWER(r.status) = LOWER(:status))")
 List<Role> searchRoles(
         @Param("tenantId") String tenantId,
-        @Param("query") String query);
+        @Param("query") String query,
+        @Param("roleType") RoleType roleType,
+        @Param("status") String status);
+
+long countByTenantIdAndIsDeletedFalse(String tenantId);
+long countByTenantIdAndRoleTypeAndIsDeletedFalse(String tenantId, RoleType roleType);
 }
