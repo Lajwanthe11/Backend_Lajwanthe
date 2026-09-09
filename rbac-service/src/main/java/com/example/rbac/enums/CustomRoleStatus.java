@@ -1,4 +1,6 @@
 package com.example.rbac.enums;
 
-public class CustomRoleStatus {
+public enum CustomRoleStatus {
+
+    DRAFT, PUBLISHED, ARCHIVED
 }

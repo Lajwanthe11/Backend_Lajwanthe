@@ -1,4 +1,12 @@
 package com.example.rbac;
 
-public class rbacApplication {
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication(scanBasePackages = "com.example")
+public class RbacApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(RbacApplication.class, args);
+    }
 }
