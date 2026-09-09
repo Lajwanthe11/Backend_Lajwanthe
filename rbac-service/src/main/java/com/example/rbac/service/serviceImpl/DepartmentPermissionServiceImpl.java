@@ -1,8 +1,10 @@
-package com.example.rbac.service;
+package com.example.rbac.service.serviceImpl;
 
 import com.example.common.exception.BadRequestException;
 import com.example.rbac.entity.RoleDepartmentMap;
 import com.example.rbac.repository.RoleDepartmentMapRepository;
+import com.example.rbac.service.DepartmentPermissionService;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

@@ -1,4 +1,4 @@
-package com.example.rbac.service;
+package com.example.rbac.service.serviceImpl;
 
 import com.example.rbac.dto.PermissionGroupResponseDto;
 import com.example.rbac.dto.PermissionResponseDto;
@@ -6,6 +6,9 @@ import com.example.rbac.entity.Permission;
 import com.example.rbac.entity.PermissionGroup;
 import com.example.rbac.repository.PermissionGroupRepository;
 import com.example.rbac.repository.PermissionRepository;
+import com.example.rbac.service.PermissionGroupNotFoundException;
+import com.example.rbac.service.PermissionGroupService;
+
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -18,7 +21,7 @@ public class PermissionGroupServiceImpl implements PermissionGroupService {
     private final PermissionRepository permissionRepository;
 
     public PermissionGroupServiceImpl(PermissionGroupRepository groupRepository,
-                                       PermissionRepository permissionRepository) {
+            PermissionRepository permissionRepository) {
         this.groupRepository = groupRepository;
         this.permissionRepository = permissionRepository;
     }
