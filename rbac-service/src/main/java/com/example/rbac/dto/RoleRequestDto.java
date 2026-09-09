@@ -3,10 +3,12 @@ package com.example.rbac.dto;
 import com.example.rbac.enums.RoleType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 public class RoleRequestDto {
   
 @NotBlank(message = "Role name is required")
+@Size(min = 3, max = 100, message = "Role name must be between 3 and 100 characters")
 private String roleName;
 
 private String roleCode;
@@ -18,10 +20,12 @@ private String description;
 
 private String status = "ACTIVE";
 
+public RoleRequestDto() {
+    
+}
 public String getRoleName() {
     return roleName;
 }
-
 public RoleRequestDto(String roleName, String roleCode,RoleType roleType, String description,String status) {
     this.roleName = roleName;
     this.roleCode = roleCode;
