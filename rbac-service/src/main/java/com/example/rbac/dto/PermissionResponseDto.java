@@ -4,7 +4,7 @@ import java.util.UUID;
 
 public class PermissionResponseDto {
 
-    private Long permissionId;
+    private UUID permissionId;
     private String permissionCode;
     private String resource;
     private String action;
@@ -19,9 +19,9 @@ public class PermissionResponseDto {
     public PermissionResponseDto() {
     }
 
-    public PermissionResponseDto(Long permissionId, String permissionCode, String resource, String action,
-                                 UUID groupId, String groupName, String displayName, String description,
-                                 boolean active, boolean system, String module) {
+    public PermissionResponseDto(UUID permissionId, String permissionCode, String resource, String action,
+                                  UUID groupId, String groupName, String displayName, String description,
+                                  boolean active, boolean system, String module) {
         this.permissionId = permissionId;
         this.permissionCode = permissionCode;
         this.resource = resource;
@@ -35,11 +35,11 @@ public class PermissionResponseDto {
         this.module = module;
     }
 
-    public Long getPermissionId() {
+    public UUID getPermissionId() {
         return permissionId;
     }
 
-    public void setPermissionId(Long permissionId) {
+    public void setPermissionId(UUID permissionId) {
         this.permissionId = permissionId;
     }
 

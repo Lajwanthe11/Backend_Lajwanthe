@@ -40,16 +40,4 @@ List<Role> searchRoles(
 
 long countByTenantIdAndIsDeletedFalse(String tenantId);
 long countByTenantIdAndRoleTypeAndIsDeletedFalse(String tenantId, RoleType roleType);
-
-    // Every tenant-facing query goes through tenantId — never fetch by id alone
-    // for anything the caller could see, to keep cross-tenant leaks impossible.
-    Optional<Role> findByIdAndTenantId(String id, String tenantId);
-
-    List<Role> findAllByTenantId(String tenantId);
-
-    List<Role> findAllByTenantIdAndType(String tenantId, RoleType type);
-
-    Optional<Role> findByTenantIdAndRoleCode(String tenantId, String roleCode);
-
-    boolean existsByTenantIdAndRoleCode(String tenantId, String roleCode);
 }

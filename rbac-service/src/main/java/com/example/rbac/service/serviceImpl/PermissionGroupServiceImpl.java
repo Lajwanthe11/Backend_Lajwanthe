@@ -55,7 +55,7 @@ public class PermissionGroupServiceImpl implements PermissionGroupService {
 
     private PermissionResponseDto toPermissionDto(Permission p) {
         return new PermissionResponseDto(
-                p.getId(), p.getPermissionCode(), p.getResource(), p.getAction(),
+                p.getPermissionId(), p.getPermissionCode(), p.getResource(), p.getAction(),
                 p.getGroup() != null ? p.getGroup().getGroupId() : null,
                 p.getGroup() != null ? p.getGroup().getGroupName() : null,
                 p.getDisplayName(), p.getDescription(), p.isActive(), p.isSystem(), p.getModule());
