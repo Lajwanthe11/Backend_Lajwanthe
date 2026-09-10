@@ -1,5 +1,6 @@
 package com.example.rbac.entity;
 
+import com.example.common.abstracts.BaseEntity;
 import jakarta.persistence.*;
 import java.util.UUID;
 
@@ -12,11 +13,7 @@ import java.util.UUID;
 @Table(name = "permissions", uniqueConstraints = {
         @UniqueConstraint(name = "uk_permission_code", columnNames = "permission_code")
 })
-public class Permission {
-
-    @Id
-    @Column(name = "permission_id", updatable = false, nullable = false)
-    private UUID permissionId;
+public class Permission extends BaseEntity {
 
     @Column(name = "permission_code", nullable = false, length = 100, updatable = false)
     private String permissionCode;
@@ -47,22 +44,6 @@ public class Permission {
     private String module;
 
     public Permission() {
-    }
-
-    @PrePersist
-    protected void onCreate() {
-        // App-side UUID generation, per team decision.
-        if (permissionId == null) {
-            permissionId = UUID.randomUUID();
-        }
-    }
-
-    public UUID getPermissionId() {
-        return permissionId;
-    }
-
-    public void setPermissionId(UUID permissionId) {
-        this.permissionId = permissionId;
     }
 
     public String getPermissionCode() {

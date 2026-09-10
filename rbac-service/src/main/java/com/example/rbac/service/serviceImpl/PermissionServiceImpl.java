@@ -51,7 +51,7 @@ public class PermissionServiceImpl implements PermissionService {
 
     private PermissionResponseDto toDto(Permission p) {
         return new PermissionResponseDto(
-                p.getPermissionId(),
+                p.getId(),
                 p.getPermissionCode(),
                 p.getResource(),
                 p.getAction(),

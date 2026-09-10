@@ -1,17 +1,15 @@
 package com.example.rbac.entity;
 
+import com.example.common.abstracts.BaseEntity;
 import jakarta.persistence.*;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Table(name = "role_templates")
-public class RoleTemplate {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private String id;
+public class RoleTemplate extends BaseEntity {
 
     @Column(nullable = false, length = 150)
     private String name;
@@ -26,33 +24,13 @@ public class RoleTemplate {
     @Column(nullable = false)
     private boolean hidden = false;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
-
-    @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt;
-
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "role_template_permissions", joinColumns = @JoinColumn(name = "template_id"), inverseJoinColumns = @JoinColumn(name = "permission_id"))
     private List<Permission> permissions = new ArrayList<>();
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = Instant.now();
-        updatedAt = Instant.now();
-    }
-
     @PreUpdate
     protected void onUpdate() {
-        updatedAt = Instant.now();
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
+        setUpdatedAt(LocalDateTime.from(Instant.now())) ;
     }
 
     public String getName() {
@@ -85,14 +63,6 @@ public class RoleTemplate {
 
     public void setHidden(boolean hidden) {
         this.hidden = hidden;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public Instant getUpdatedAt() {
-        return updatedAt;
     }
 
     public List<Permission> getPermissions() { return permissions; }

@@ -18,8 +18,7 @@ public class RoleResponseDto {
     private LocalDateTime updatedAt;
     private String updatedBy;
 
-    public RoleResponseDto() {
-    }
+
 
     public RoleResponseDto(Long id,
                            String roleName,

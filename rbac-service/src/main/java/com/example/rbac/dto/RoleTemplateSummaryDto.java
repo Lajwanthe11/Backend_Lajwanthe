@@ -1,7 +1,7 @@
 package com.example.rbac.dto;
 
 public record RoleTemplateSummaryDto(
-        String id,
+        Long id,
         String name,
         String description,
         int permissionCount,
