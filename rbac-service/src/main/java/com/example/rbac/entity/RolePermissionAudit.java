@@ -1,18 +1,12 @@
 package com.example.rbac.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
 @Table(name = "role_permission_audit")
-@Getter
-@Setter
-@NoArgsConstructor
 public class RolePermissionAudit {
 
     @Id
@@ -40,10 +34,77 @@ public class RolePermissionAudit {
     @Column(name = "changed_at", nullable = false)
     private LocalDateTime changedAt;
 
+    public RolePermissionAudit() {
+    }
+
     @PrePersist
     protected void onCreate() {
         if (id == null) {
             id = UUID.randomUUID();
         }
+    }
+
+    public UUID getId() {
+        return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
+    }
+
+    public Long getRoleId() {
+        return roleId;
+    }
+
+    public void setRoleId(Long roleId) {
+        this.roleId = roleId;
+    }
+
+    public UUID getPermissionId() {
+        return permissionId;
+    }
+
+    public void setPermissionId(UUID permissionId) {
+        this.permissionId = permissionId;
+    }
+
+    public String getChangedBy() {
+        return changedBy;
+    }
+
+    public void setChangedBy(String changedBy) {
+        this.changedBy = changedBy;
+    }
+
+    public boolean isFromGranted() {
+        return fromGranted;
+    }
+
+    public void setFromGranted(boolean fromGranted) {
+        this.fromGranted = fromGranted;
+    }
+
+    public boolean isToGranted() {
+        return toGranted;
+    }
+
+    public void setToGranted(boolean toGranted) {
+        this.toGranted = toGranted;
+    }
+
+    public LocalDateTime getChangedAt() {
+        return changedAt;
+    }
+
+    public void setChangedAt(LocalDateTime changedAt) {
+        this.changedAt = changedAt;
     }
 }

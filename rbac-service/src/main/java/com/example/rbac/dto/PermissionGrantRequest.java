@@ -1,15 +1,9 @@
 package com.example.rbac.dto;
 
 import jakarta.validation.constraints.NotNull;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.util.UUID;
 
-@Getter
-@Setter
-@NoArgsConstructor
 public class PermissionGrantRequest {
 
     @NotNull
@@ -17,4 +11,24 @@ public class PermissionGrantRequest {
 
     @NotNull
     private Boolean granted;
+
+    public PermissionGrantRequest() {
+    }
+
+    public UUID getPermissionId() {
+        return permissionId;
+    }
+
+    public void setPermissionId(UUID permissionId) {
+        this.permissionId = permissionId;
+    }
+
+    public Boolean getGranted() {
+        return granted;
+    }
+
+    public void setGranted(Boolean granted) {
+        this.granted = granted;
+    }
 }
+

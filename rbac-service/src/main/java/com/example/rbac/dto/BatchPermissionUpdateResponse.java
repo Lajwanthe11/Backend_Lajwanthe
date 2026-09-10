@@ -1,23 +1,41 @@
 package com.example.rbac.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
-@Getter
-@Setter
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
 public class BatchPermissionUpdateResponse {
 
     private Long roleId;
-
     private int updatedCount;
-
-    private Long version;
-
     private String message;
+
+    public BatchPermissionUpdateResponse() {
+    }
+
+    public BatchPermissionUpdateResponse(Long roleId, int updatedCount, String message) {
+        this.roleId = roleId;
+        this.updatedCount = updatedCount;
+        this.message = message;
+    }
+
+    public Long getRoleId() {
+        return roleId;
+    }
+
+    public void setRoleId(Long roleId) {
+        this.roleId = roleId;
+    }
+
+    public int getUpdatedCount() {
+        return updatedCount;
+    }
+
+    public void setUpdatedCount(int updatedCount) {
+        this.updatedCount = updatedCount;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
 }

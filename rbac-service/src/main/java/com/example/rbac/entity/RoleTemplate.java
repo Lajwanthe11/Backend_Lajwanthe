@@ -2,6 +2,8 @@ package com.example.rbac.entity;
 
 import jakarta.persistence.*;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "role_templates")
@@ -31,11 +33,8 @@ public class RoleTemplate {
     private Instant updatedAt;
 
     @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "role_template_permissions",
-            joinColumns = @JoinColumn(name = "template_id"),
-            inverseJoinColumns = @JoinColumn(name = "permission_id")
-    )
+    @JoinTable(name = "role_template_permissions", joinColumns = @JoinColumn(name = "template_id"), inverseJoinColumns = @JoinColumn(name = "permission_id"))
+    private List<Permission> permissions = new ArrayList<>();
 
     @PrePersist
     protected void onCreate() {
@@ -48,22 +47,55 @@ public class RoleTemplate {
         updatedAt = Instant.now();
     }
 
-    public String getId() { return id; }
-    public void setId(String id) { this.id = id; }
+    public String getId() {
+        return id;
+    }
 
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    public void setId(String id) {
+        this.id = id;
+    }
 
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
+    public String getName() {
+        return name;
+    }
 
-    public String getRecommendedFor() { return recommendedFor; }
-    public void setRecommendedFor(String recommendedFor) { this.recommendedFor = recommendedFor; }
+    public void setName(String name) {
+        this.name = name;
+    }
 
-    public boolean isHidden() { return hidden; }
-    public void setHidden(boolean hidden) { this.hidden = hidden; }
+    public String getDescription() {
+        return description;
+    }
 
-    public Instant getCreatedAt() { return createdAt; }
-    public Instant getUpdatedAt() { return updatedAt; }
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getRecommendedFor() {
+        return recommendedFor;
+    }
+
+    public void setRecommendedFor(String recommendedFor) {
+        this.recommendedFor = recommendedFor;
+    }
+
+    public boolean isHidden() {
+        return hidden;
+    }
+
+    public void setHidden(boolean hidden) {
+        this.hidden = hidden;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public List<Permission> getPermissions() { return permissions; }
+    public void setPermissions(List<Permission> permissions) { this.permissions = permissions; }
 
 }

@@ -1,11 +1,6 @@
 package com.example.rbac.entity;
-
 import com.example.common.abstracts.BaseEntity;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
 import java.time.LocalDateTime;
 
 @Entity
@@ -22,9 +17,6 @@ import java.time.LocalDateTime;
                 )
         }
 )
-@Getter
-@Setter
-@NoArgsConstructor
 public class RolePermission extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -49,4 +41,63 @@ public class RolePermission extends BaseEntity {
 
     @Column(name = "is_active", nullable = false)
     private boolean active = true;
+
+    public RolePermission() {
+    }
+
+    public Role getRole() {
+        return role;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
+    }
+
+    public Permission getPermission() {
+        return permission;
+    }
+
+    public void setPermission(Permission permission) {
+        this.permission = permission;
+    }
+
+    public String getGrantedBy() {
+        return grantedBy;
+    }
+
+    public void setGrantedBy(String grantedBy) {
+        this.grantedBy = grantedBy;
+    }
+
+    public LocalDateTime getGrantedAt() {
+        return grantedAt;
+    }
+
+    public void setGrantedAt(LocalDateTime grantedAt) {
+        this.grantedAt = grantedAt;
+    }
+
+    public String getRevokedBy() {
+        return revokedBy;
+    }
+
+    public void setRevokedBy(String revokedBy) {
+        this.revokedBy = revokedBy;
+    }
+
+    public LocalDateTime getRevokedAt() {
+        return revokedAt;
+    }
+
+    public void setRevokedAt(LocalDateTime revokedAt) {
+        this.revokedAt = revokedAt;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
 }

@@ -1,10 +1,13 @@
 package com.example.rbac.dto;
 
 
+import java.util.Set;
+
 public record RoleTemplateDetailDto(
         String id,
         String name,
         String description,
+        Set<String> permissionCodes,
         String recommendedFor
 ) {
 }

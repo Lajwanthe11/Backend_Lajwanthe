@@ -9,7 +9,6 @@ import com.example.rbac.repository.PermissionRepository;
 import com.example.rbac.repository.RolePermissionAuditRepository;
 import com.example.rbac.repository.RolePermissionRepository;
 import com.example.rbac.repository.RoleRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,7 +17,6 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
 @Transactional
 public class RolePermissionService {
 
@@ -27,15 +25,24 @@ public class RolePermissionService {
     private final RoleRepository roleRepository;
     private final PermissionRepository permissionRepository;
 
+    public RolePermissionService(
+            RolePermissionRepository rolePermissionRepository,
+            RolePermissionAuditRepository auditRepository,
+            RoleRepository roleRepository,
+            PermissionRepository permissionRepository
+    ) {
+        this.rolePermissionRepository = rolePermissionRepository;
+        this.auditRepository = auditRepository;
+        this.roleRepository = roleRepository;
+        this.permissionRepository = permissionRepository;
+    }
+
     @Transactional(readOnly = true)
     public List<RolePermission> getPermissionsByRole(Long roleId) {
-
         roleRepository.findById(roleId)
-                .orElseThrow(() ->
-                        new IllegalArgumentException("Role not found"));
+                .orElseThrow(() -> new IllegalArgumentException("Role not found"));
 
-        return rolePermissionRepository
-                .findByRole_IdAndActiveTrue(roleId);
+        return rolePermissionRepository.findByRole_IdAndActiveTrue(roleId);
     }
 
     @Transactional(readOnly = true)
@@ -44,10 +51,7 @@ public class RolePermissionService {
             UUID permissionId
     ) {
         return rolePermissionRepository
-                .findByRole_IdAndPermission_PermissionId(
-                        roleId,
-                        permissionId
-                )
+                .findByRole_IdAndPermission_PermissionId(roleId, permissionId)
                 .orElse(null);
     }
 
@@ -56,36 +60,22 @@ public class RolePermissionService {
             UUID permissionId,
             String grantedBy
     ) {
-
         Role role = roleRepository.findById(roleId)
-                .orElseThrow(() ->
-                        new IllegalArgumentException("Role not found"));
+                .orElseThrow(() -> new IllegalArgumentException("Role not found"));
 
-        Permission permission =
-                permissionRepository.findById(permissionId)
-                        .orElseThrow(() ->
-                                new IllegalArgumentException(
-                                        "Permission not found"));
+        Permission permission = permissionRepository.findById(permissionId)
+                .orElseThrow(() -> new IllegalArgumentException("Permission not found"));
 
         if (!permission.isActive()) {
-            throw new IllegalArgumentException(
-                    "Inactive permission cannot be granted"
-            );
+            throw new IllegalArgumentException("Inactive permission cannot be granted");
         }
 
         RolePermission rolePermission =
                 rolePermissionRepository
-                        .findByRole_IdAndPermission_PermissionId(
-                                roleId,
-                                permissionId
-                        )
+                        .findByRole_IdAndPermission_PermissionId(roleId, permissionId)
                         .orElse(null);
 
-        boolean alreadyGranted =
-                rolePermission != null
-                        && rolePermission.isActive();
-
-        if (alreadyGranted) {
+        if (rolePermission != null && rolePermission.isActive()) {
             return rolePermission;
         }
 
@@ -101,8 +91,7 @@ public class RolePermissionService {
         rolePermission.setRevokedAt(null);
         rolePermission.setActive(true);
 
-        RolePermission saved =
-                rolePermissionRepository.save(rolePermission);
+        RolePermission saved = rolePermissionRepository.save(rolePermission);
 
         saveAudit(
                 roleId,
@@ -120,21 +109,12 @@ public class RolePermissionService {
             UUID permissionId,
             String revokedBy
     ) {
-
         Role role = roleRepository.findById(roleId)
-                .orElseThrow(() ->
-                        new IllegalArgumentException("Role not found"));
+                .orElseThrow(() -> new IllegalArgumentException("Role not found"));
 
-        Permission permission =
-                permissionRepository.findById(permissionId)
-                        .orElseThrow(() ->
-                                new IllegalArgumentException(
-                                        "Permission not found"));
+        Permission permission = permissionRepository.findById(permissionId)
+                .orElseThrow(() -> new IllegalArgumentException("Permission not found"));
 
-        /*
-         * System permissions assigned to Super Admin
-         * must always remain granted.
-         */
         if (isSuperAdmin(role) && permission.isSystem()) {
             throw new IllegalArgumentException(
                     "System permissions cannot be revoked from Super Admin"
@@ -143,14 +123,10 @@ public class RolePermissionService {
 
         RolePermission rolePermission =
                 rolePermissionRepository
-                        .findByRole_IdAndPermission_PermissionId(
-                                roleId,
-                                permissionId
-                        )
+                        .findByRole_IdAndPermission_PermissionId(roleId, permissionId)
                         .orElse(null);
 
-        if (rolePermission == null
-                || !rolePermission.isActive()) {
+        if (rolePermission == null || !rolePermission.isActive()) {
             return;
         }
 
@@ -170,7 +146,6 @@ public class RolePermissionService {
     }
 
     private boolean isSuperAdmin(Role role) {
-
         if (role.getRoleCode() != null
                 && role.getRoleCode().equalsIgnoreCase("SUPER_ADMIN")) {
             return true;
@@ -187,14 +162,9 @@ public class RolePermissionService {
             boolean fromGranted,
             boolean toGranted
     ) {
+        RolePermissionAudit audit = new RolePermissionAudit();
 
-        RolePermissionAudit audit =
-                new RolePermissionAudit();
-
-        audit.setTenantId(
-                TenantContext.getTenantId()
-        );
-
+        audit.setTenantId(TenantContext.getTenantId());
         audit.setRoleId(roleId);
         audit.setPermissionId(permissionId);
         audit.setChangedBy(changedBy);

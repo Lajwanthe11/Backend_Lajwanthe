@@ -1,20 +1,16 @@
 package com.example.rbac.controller;
 
-import com.example.auth.security.user.UserPrincipal;
 import com.example.rbac.dto.BatchPermissionUpdateRequest;
 import com.example.rbac.dto.BatchPermissionUpdateResponse;
-import com.example.rbac.dto.GrantPermissionRequest;
+import com.example.rbac.dto.PermissionGrantRequest;
 import com.example.rbac.dto.PermissionMatrixResponse;
 import com.example.rbac.entity.RolePermission;
 import com.example.rbac.service.PermissionMatrixService;
 import com.example.rbac.service.RolePermissionBatchService;
 import com.example.rbac.service.RolePermissionService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,37 +18,49 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/roles/{roleId}/permissions")
-@RequiredArgsConstructor
 public class RolePermissionController {
 
     private final RolePermissionService rolePermissionService;
+    private final RolePermissionBatchService rolePermissionBatchService;
+    private final PermissionMatrixService permissionMatrixService;
 
-    private final RolePermissionBatchService
-            rolePermissionBatchService;
-
-    private final PermissionMatrixService
-            permissionMatrixService;
+    public RolePermissionController(
+            RolePermissionService rolePermissionService,
+            RolePermissionBatchService rolePermissionBatchService,
+            PermissionMatrixService permissionMatrixService
+    ) {
+        this.rolePermissionService = rolePermissionService;
+        this.rolePermissionBatchService = rolePermissionBatchService;
+        this.permissionMatrixService = permissionMatrixService;
+    }
 
     @GetMapping
     public ResponseEntity<List<RolePermission>> getPermissions(
             @PathVariable Long roleId
     ) {
-
         return ResponseEntity.ok(
-                rolePermissionService
-                        .getPermissionsByRole(roleId)
+                rolePermissionService.getPermissionsByRole(roleId)
         );
     }
 
     @PostMapping
     public ResponseEntity<RolePermission> grantPermission(
             @PathVariable Long roleId,
-            @Valid @RequestBody GrantPermissionRequest request
+            @Valid @RequestBody PermissionGrantRequest request
     ) {
+        String userId = "SYSTEM";
 
-        String userId = getCurrentUserId();
+        if (!Boolean.TRUE.equals(request.getGranted())) {
+            rolePermissionService.revokePermission(
+                    roleId,
+                    request.getPermissionId(),
+                    userId
+            );
 
-        return ResponseEntity.ok(
+            return ResponseEntity.noContent().build();
+        }
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(
                 rolePermissionService.grantPermission(
                         roleId,
                         request.getPermissionId(),
@@ -66,8 +74,7 @@ public class RolePermissionController {
             @PathVariable Long roleId,
             @PathVariable UUID permissionId
     ) {
-
-        String userId = getCurrentUserId();
+        String userId = "SYSTEM";
 
         rolePermissionService.revokePermission(
                 roleId,
@@ -79,13 +86,11 @@ public class RolePermissionController {
     }
 
     @PutMapping("/batch")
-    public ResponseEntity<BatchPermissionUpdateResponse>
-    updateBatch(
+    public ResponseEntity<BatchPermissionUpdateResponse> updateBatch(
             @PathVariable Long roleId,
             @Valid @RequestBody BatchPermissionUpdateRequest request
     ) {
-
-        String userId = getCurrentUserId();
+        String userId = "SYSTEM";
 
         return ResponseEntity.ok(
                 rolePermissionBatchService.updatePermissions(
@@ -102,10 +107,8 @@ public class RolePermissionController {
     getGroupedPermissions(
             @PathVariable Long roleId
     ) {
-
         return ResponseEntity.ok(
-                permissionMatrixService
-                        .getGroupedPermissions(roleId)
+                permissionMatrixService.getGroupedPermissions(roleId)
         );
     }
 
@@ -113,7 +116,6 @@ public class RolePermissionController {
     public ResponseEntity<String> handleBadRequest(
             IllegalArgumentException ex
     ) {
-
         return ResponseEntity
                 .badRequest()
                 .body(ex.getMessage());
@@ -122,38 +124,12 @@ public class RolePermissionController {
     @ExceptionHandler(
             org.springframework.orm.ObjectOptimisticLockingFailureException.class
     )
-    public ResponseEntity<String> handleConflict(
-            Exception ex
-    ) {
-
+    public ResponseEntity<String> handleConflict(Exception ex) {
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
                 .body(
                         "Permission matrix was modified by another user. " +
                         "Refresh the matrix and try again."
                 );
-    }
-
-    private String getCurrentUserId() {
-
-        Authentication authentication =
-                SecurityContextHolder
-                        .getContext()
-                        .getAuthentication();
-
-        if (authentication == null
-                || !authentication.isAuthenticated()
-                || !(authentication.getPrincipal()
-                instanceof UserPrincipal)) {
-
-            throw new IllegalStateException(
-                    "Authenticated user not found"
-            );
-        }
-
-        UserPrincipal principal =
-                (UserPrincipal) authentication.getPrincipal();
-
-        return principal.getId();
     }
 }

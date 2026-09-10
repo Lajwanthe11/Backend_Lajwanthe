@@ -1,21 +1,37 @@
 package com.example.rbac.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 
-@Getter
-@Setter
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class BatchPermissionUpdateResponse {
+import java.util.List;
 
-    private Long roleId;
+public class BatchPermissionUpdateRequest {
 
-    private int updatedCount;
+    @NotEmpty
+    @Valid
+    private List<PermissionGrantRequest> permissions;
 
-    private String message;
+    @NotNull
+    private Long expectedVersion;
+
+    public BatchPermissionUpdateRequest() {
+    }
+
+    public List<PermissionGrantRequest> getPermissions() {
+        return permissions;
+    }
+
+    public void setPermissions(List<PermissionGrantRequest> permissions) {
+        this.permissions = permissions;
+    }
+
+    public Long getExpectedVersion() {
+        return expectedVersion;
+    }
+
+    public void setExpectedVersion(Long expectedVersion) {
+        this.expectedVersion = expectedVersion;
+    }
 }
+
