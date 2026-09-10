@@ -42,14 +42,17 @@ public class PasswordResetService {
 
     private final CustomUserDetailsService customUserDetailsService;
     private final PasswordEncoder passwordEncoder;
+    private final PasswordValidator passwordValidator;
 
     /** In-memory store: resetToken → ResetEntry. */
     private final Map<String, ResetEntry> tokenStore = new ConcurrentHashMap<>();
 
     public PasswordResetService(CustomUserDetailsService customUserDetailsService,
-                                PasswordEncoder passwordEncoder) {
+                                PasswordEncoder passwordEncoder,
+                                PasswordValidator passwordValidator) {
         this.customUserDetailsService = customUserDetailsService;
         this.passwordEncoder = passwordEncoder;
+        this.passwordValidator = passwordValidator;
     }
 
     // ---------------------------------------------------------------
@@ -100,7 +103,8 @@ public class PasswordResetService {
      * Validate the reset token and update the user's password.
      *
      * @param request contains resetToken and newPassword.
-     * @throws BadRequestException if the token is missing, expired, or not found.
+     * @throws BadRequestException if the token is missing, expired, or not found,
+         *                             or if the new password violates the password policy.
      */
     public void resetPassword(PasswordResetConfirmDTO request) {
         ResetEntry entry = tokenStore.get(request.getResetToken());
@@ -112,6 +116,11 @@ public class PasswordResetService {
             tokenStore.remove(request.getResetToken());
             throw new BadRequestException("Password reset token has expired. Please request a new one.");
         }
+
+        // Apply the same policy that registration enforces. Checked after the
+        // token checks so a rejected password does not consume the token —
+        // the caller can retry with the same one.
+        passwordValidator.validate(request.getNewPassword());
 
         TenantContext.setTenantId(entry.tenantId);
         String encodedPassword = passwordEncoder.encode(request.getNewPassword());
