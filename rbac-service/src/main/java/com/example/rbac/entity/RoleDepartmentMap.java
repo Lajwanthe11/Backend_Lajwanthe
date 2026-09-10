@@ -5,29 +5,31 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 
+import java.util.UUID;
+
 @Entity
 @Table(name = "role_department_map")
 public class RoleDepartmentMap extends BaseEntity {
 
     @Column(name = "user_role_id", nullable = false)
-    private Long userRoleId;
+    private UUID userRoleId;
 
     @Column(name = "department_id", nullable = false)
-    private Long departmentId;
+    private UUID departmentId;
 
-    public Long getUserRoleId() {
+    public UUID getUserRoleId() {
         return userRoleId;
     }
 
-    public void setUserRoleId(Long userRoleId) {
+    public void setUserRoleId(UUID userRoleId) {
         this.userRoleId = userRoleId;
     }
 
-    public Long getDepartmentId() {
+    public UUID getDepartmentId() {
         return departmentId;
     }
 
-    public void setDepartmentId(Long departmentId) {
+    public void setDepartmentId(UUID departmentId) {
         this.departmentId = departmentId;
     }
 }
