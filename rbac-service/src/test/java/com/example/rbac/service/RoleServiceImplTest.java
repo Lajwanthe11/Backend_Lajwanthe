@@ -5,6 +5,7 @@ import com.example.rbac.dto.RoleResponseDto;
 import com.example.rbac.entity.Role;
 import com.example.rbac.enums.RoleType;
 import com.example.rbac.repository.RoleRepository;
+import com.example.rbac.repository.RoleTemplateRepository;
 import com.example.rbac.service.serviceImpl.RoleServiceImpl;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -24,12 +25,13 @@ class RoleServiceImplTest {
 
         @Mock
         private RoleRepository roleRepository;
-
+        private RoleTemplateRepository roleTemplateRepository;
         private RoleServiceImpl roleService;
+        private CurrentUserContext currentUserContext;
 
         @BeforeEach
         void setUp() {
-                roleService = new RoleServiceImpl(roleRepository);
+                roleService = new RoleServiceImpl(roleRepository,roleTemplateRepository,currentUserContext);
         }
 
         @Test

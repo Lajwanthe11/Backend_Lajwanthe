@@ -95,4 +95,7 @@ public class RoleTemplate {
         return updatedAt;
     }
 
+    public List<Permission> getPermissions() { return permissions; }
+    public void setPermissions(List<Permission> permissions) { this.permissions = permissions; }
+
 }

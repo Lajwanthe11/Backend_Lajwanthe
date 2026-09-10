@@ -5,27 +5,40 @@ import com.example.common.exception.BadRequestException;
 import com.example.common.exception.ResourceNotFoundException;
 import com.example.rbac.dto.RoleRequestDto;
 import com.example.rbac.dto.RoleResponseDto;
+import com.example.rbac.dto.RoleTemplateDetailDto;
+import com.example.rbac.dto.RoleTemplateSummaryDto;
+import com.example.rbac.entity.Permission;
 import com.example.rbac.entity.Role;
+import com.example.rbac.entity.RoleTemplate;
 import com.example.rbac.enums.RoleType;
 import com.example.rbac.repository.RoleRepository;
+import com.example.rbac.repository.RoleTemplateRepository;
 import com.example.rbac.service.RoleService;
+import com.example.rbac.service.CurrentUserContext;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.util.Map;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class RoleServiceImpl extends AbstractService<Role, Long, RoleRequestDto, RoleResponseDto>
         implements RoleService {
 
     private final RoleRepository roleRepository;
+    private final RoleTemplateRepository roleTemplateRepository;
+    private final CurrentUserContext currentUser;
 
-    public RoleServiceImpl(RoleRepository roleRepository) {
+    public RoleServiceImpl(RoleRepository roleRepository,RoleTemplateRepository roleTemplateRepository,CurrentUserContext currentUser) {
         super(roleRepository, "Role");
         this.roleRepository = roleRepository;
+        this.roleTemplateRepository = roleTemplateRepository;
+        this.currentUser = currentUser;
     }
 
     // Convert request DTO to Role entity
@@ -204,5 +217,42 @@ public class RoleServiceImpl extends AbstractService<Role, Long, RoleRequestDto,
                 tenantId, RoleType.CUSTOM);
 
         return Map.of("totalRoles", totalRoles, "systemRoles", systemRoles, "customRoles", customRoles);
+    }
+
+    @Override
+    public List<RoleTemplateSummaryDto> listTemplates() {
+        // Super Admin sees hidden templates too (management view); everyone
+        // else only sees the visible library.
+        List<RoleTemplate> templates = currentUser.hasRole("SUPER_ADMIN")
+                ? roleTemplateRepository.findAll()
+                : roleTemplateRepository.findAllByHiddenFalse();
+
+        return templates.stream()
+                .map(t -> new RoleTemplateSummaryDto(
+                        t.getId(),
+                        t.getName(),
+                        t.getDescription(),
+                        t.getPermissions().size(),
+                        t.getRecommendedFor()
+                ))
+                .toList();
+    }
+
+    @Override
+    public RoleTemplateDetailDto getTemplateDetail(String templateId) {
+        RoleTemplate template = roleTemplateRepository.findById(templateId)
+                .orElseThrow(() -> new ResourceNotFoundException("RoleTemplate", "id", templateId));
+
+        Set<String> permissionCodes = template.getPermissions().stream()
+                .map(Permission::getPermissionCode)
+                .collect(Collectors.toSet());
+
+        return new RoleTemplateDetailDto(
+                template.getId(),
+                template.getName(),
+                template.getDescription(),
+                permissionCodes,
+                template.getRecommendedFor()
+        );
     }
 }
