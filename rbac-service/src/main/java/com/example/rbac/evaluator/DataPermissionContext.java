@@ -1,4 +1,4 @@
-package com.example.rbac.context;
+package com.example.rbac.evaluator;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

@@ -1,6 +1,5 @@
 package com.example.rbac.evaluator;
 
-import com.example.rbac.context.DataPermissionContext;
 import com.example.rbac.entity.DataAccessRule;
 import com.example.rbac.enums.RuleType;
 import org.springframework.stereotype.Component;

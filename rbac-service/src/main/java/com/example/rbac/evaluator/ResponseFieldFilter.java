@@ -1,8 +1,6 @@
-package com.example.rbac.filter;
+package com.example.rbac.evaluator;
 
-import com.example.rbac.context.DataPermissionContext;
 import com.example.rbac.entity.DataAccessRule;
-import com.example.rbac.evaluator.FieldLevelRuleEvaluator;
 import com.example.rbac.evaluator.FieldLevelRuleEvaluator.FieldEvaluationResult;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;

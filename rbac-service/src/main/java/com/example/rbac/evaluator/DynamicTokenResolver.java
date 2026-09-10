@@ -1,6 +1,5 @@
-package com.example.rbac.resolver;
+package com.example.rbac.evaluator;
 
-import com.example.rbac.context.DataPermissionContext;
 import org.springframework.stereotype.Component;
 
 import java.util.regex.Matcher;

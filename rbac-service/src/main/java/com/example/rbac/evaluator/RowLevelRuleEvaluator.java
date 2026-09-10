@@ -1,10 +1,8 @@
 package com.example.rbac.evaluator;
 
-import com.example.rbac.context.DataPermissionContext;
 import com.example.rbac.entity.DataAccessRule;
 import com.example.rbac.enums.ConditionOperator;
 import com.example.rbac.enums.RuleType;
-import com.example.rbac.resolver.DynamicTokenResolver;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
