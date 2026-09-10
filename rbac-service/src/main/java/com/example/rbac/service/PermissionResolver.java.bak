@@ -1,0 +1,10 @@
+package com.example.rbac.service;
+
+import java.util.Set;
+
+public interface PermissionResolver {
+
+    boolean hasPermission(String userId, String permissionCode);
+
+    Set<String> getPermissionsForUser(String userId, String tenantId);
+}
