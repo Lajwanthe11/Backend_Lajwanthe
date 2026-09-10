@@ -1,0 +1,343 @@
+{
+  "info": {
+    "_postman_id": "f4e2a4f8-7a50-4f73-8e5f-8f6d3b7c1a21",
+    "name": "Platform Branding - Complete API Collection",
+    "description": "Postman collection for the Platform Branding capability in the Super Admin service. Includes branding configuration lifecycle APIs and branding asset management APIs.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "username",
+      "value": "superadmin",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "superadmin123",
+      "type": "string"
+    },
+    {
+      "key": "existingReference",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "basic",
+    "basic": [
+      {
+        "key": "username",
+        "value": "{{username}}",
+        "type": "string"
+      },
+      {
+        "key": "password",
+        "value": "{{password}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Platform Branding",
+      "item": [
+        {
+          "name": "Get Current Branding",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/branding"
+          }
+        },
+        {
+          "name": "Create Branding",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"platformName\": \"Enterprise Cloud\",\n  \"companyName\": \"Acme Technologies\",\n  \"tagline\": \"Powering Enterprise Solutions\",\n  \"logoUrl\": \"https://example.com/logo.png\",\n  \"loginBackgroundUrl\": \"https://example.com/background.png\",\n  \"welcomeMessage\": \"Welcome to Enterprise Cloud\",\n  \"primaryColor\": \"#0052CC\",\n  \"secondaryColor\": \"#172B4D\",\n  \"accentColor\": \"#36B37E\",\n  \"theme\": \"LIGHT\",\n  \"faviconUrl\": \"https://example.com/favicon.ico\",\n  \"emailHeaderLogoUrl\": \"https://example.com/email-logo.png\",\n  \"footerText\": \"Acme Technologies\",\n  \"copyrightText\": \"\\u00a9 2026 Acme Technologies\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/v1/branding"
+          }
+        },
+        {
+          "name": "Update Branding",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"platformName\": \"Enterprise Cloud Pro\",\n  \"companyName\": \"Acme Technologies\",\n  \"tagline\": \"Powering Enterprise Solutions\",\n  \"welcomeMessage\": \"Welcome to Enterprise Cloud Pro\",\n  \"primaryColor\": \"#1976D2\",\n  \"secondaryColor\": \"#FFFFFF\",\n  \"accentColor\": \"#4CAF50\",\n  \"theme\": \"DARK\",\n  \"footerText\": \"Acme Technologies - Enterprise Cloud\",\n  \"copyrightText\": \"\\u00a9 2026 Acme Technologies\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/v1/branding"
+          }
+        },
+        {
+          "name": "Preview Branding",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"platformName\": \"Preview Enterprise Cloud\",\n  \"companyName\": \"Preview Technologies\",\n  \"tagline\": \"This is only a preview\",\n  \"welcomeMessage\": \"Welcome to the preview\",\n  \"primaryColor\": \"#FF5733\",\n  \"secondaryColor\": \"#FFFFFF\",\n  \"accentColor\": \"#33FF57\",\n  \"theme\": \"DARK\",\n  \"footerText\": \"Preview Footer\",\n  \"copyrightText\": \"\\u00a9 2026 Preview\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/v1/branding/preview"
+          }
+        },
+        {
+          "name": "Reset Branding",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/branding/reset"
+          }
+        },
+        {
+          "name": "Publish Branding",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/branding/publish"
+          }
+        },
+        {
+          "name": "Verify Published Branding",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/branding"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Branding Assets",
+      "item": [
+        {
+          "name": "Upload Logo",
+          "request": {
+            "method": "POST",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/v1/branding/assets/logo"
+          }
+        },
+        {
+          "name": "Replace Logo",
+          "request": {
+            "method": "PUT",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                },
+                {
+                  "key": "existingReference",
+                  "value": "{{existingReference}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/v1/branding/assets/logo"
+          }
+        },
+        {
+          "name": "Delete Logo",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/branding/assets/logo?reference={{existingReference}}"
+          }
+        },
+        {
+          "name": "Upload Login Background",
+          "request": {
+            "method": "POST",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/v1/branding/assets/login-background"
+          }
+        },
+        {
+          "name": "Replace Login Background",
+          "request": {
+            "method": "PUT",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                },
+                {
+                  "key": "existingReference",
+                  "value": "{{existingReference}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/v1/branding/assets/login-background"
+          }
+        },
+        {
+          "name": "Delete Login Background",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/branding/assets/login-background?reference={{existingReference}}"
+          }
+        },
+        {
+          "name": "Upload Favicon",
+          "request": {
+            "method": "POST",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/v1/branding/assets/favicon"
+          }
+        },
+        {
+          "name": "Replace Favicon",
+          "request": {
+            "method": "PUT",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                },
+                {
+                  "key": "existingReference",
+                  "value": "{{existingReference}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/v1/branding/assets/favicon"
+          }
+        },
+        {
+          "name": "Delete Favicon",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/branding/assets/favicon?reference={{existingReference}}"
+          }
+        },
+        {
+          "name": "Upload Email Header Logo",
+          "request": {
+            "method": "POST",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/v1/branding/assets/email-header-logo"
+          }
+        },
+        {
+          "name": "Replace Email Header Logo",
+          "request": {
+            "method": "PUT",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                },
+                {
+                  "key": "existingReference",
+                  "value": "{{existingReference}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/v1/branding/assets/email-header-logo"
+          }
+        },
+        {
+          "name": "Delete Email Header Logo",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/branding/assets/email-header-logo?reference={{existingReference}}"
+          }
+        }
+      ]
+    }
+  ]
+}

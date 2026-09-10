@@ -1,0 +1,287 @@
+{
+    "info": {
+        "_postman_id": "92f3e13e-8e09-48ce-9091-7ed75caf00e9",
+        "name": "Super Admin Feature Management Service Copy 2",
+        "description": "Postman collection configured with Basic Auth (admin / admin123)",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+        "_exporter_id": "40533553"
+    },
+    "item": [
+        {
+            "name": "Features",
+            "item": [
+                {
+                    "name": "Create Feature",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"featureName\": \"ANALYTICS_DASHBOARD\",\n  \"module\": \"REPORTING\",\n  \"licensePlan\": \"PREMIUM\",\n  \"status\": \"ENABLED\",\n  \"configuration\": \"{\\\"enableExport\\\": true, \\\"refreshInterval\\\": 30}\",\n  \"createdBy\": \"00000000-0000-0000-0000-000000000001\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/features",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "features"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get All Features",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/features",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "features"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update Feature",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"featureName\": \"ANALYTICS_DASHBOARD_V2\",\n  \"module\": \"REPORTING\",\n  \"licensePlan\": \"ENTERPRISE\",\n  \"status\": \"ENABLED\",\n  \"configuration\": \"{\\\"enableExport\\\": true, \\\"refreshInterval\\\": 15}\",\n  \"updatedBy\": \"00000000-0000-0000-0000-000000000001\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/features/:id",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "features",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "123e4567-e89b-12d3-a456-426614174000",
+                                    "description": "Feature ID (UUID)"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Activate Feature",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/features/:id/activate",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "features",
+                                ":id",
+                                "activate"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "123e4567-e89b-12d3-a456-426614174000",
+                                    "description": "Feature ID (UUID)"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Deactivate Feature",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/features/:id/deactivate",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "features",
+                                ":id",
+                                "deactivate"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "123e4567-e89b-12d3-a456-426614174000",
+                                    "description": "Feature ID (UUID)"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Feature Assignments",
+            "item": [
+                {
+                    "name": "Assign Feature to Tenant",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"featureId\": \"123e4567-e89b-12d3-a456-426614174000\",\n  \"tenantId\": \"98765432-e89b-12d3-a456-426614174000\",\n  \"organizationId\": \"55555555-e89b-12d3-a456-426614174000\",\n  \"licensePlan\": \"ENTERPRISE\",\n  \"status\": \"ENABLED\",\n  \"configuration\": \"{\\\"maxUsers\\\": 100}\",\n  \"createdBy\": \"00000000-0000-0000-0000-000000000001\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/features/assign",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "features",
+                                "assign"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Features by Tenant",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/features/tenant/:tenantId",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "features",
+                                "tenant",
+                                ":tenantId"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "tenantId",
+                                    "value": "98765432-e89b-12d3-a456-426614174000",
+                                    "description": "Tenant ID (UUID)"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Monitoring & Docs",
+            "item": [
+                {
+                    "name": "Actuator Health Check",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/actuator/health",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "actuator",
+                                "health"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "OpenAPI Spec JSON",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/v3/api-docs",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "v3",
+                                "api-docs"
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        }
+    ],
+    "auth": {
+        "type": "basic",
+        "basic": [
+            {
+                "key": "username",
+                "value": "{{username}}",
+                "type": "string"
+            },
+            {
+                "key": "password",
+                "value": "{{password}}",
+                "type": "string"
+            }
+        ]
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:8083"
+        },
+        {
+            "key": "username",
+            "value": "admin"
+        },
+        {
+            "key": "password",
+            "value": "admin123"
+        }
+    ]
+}
