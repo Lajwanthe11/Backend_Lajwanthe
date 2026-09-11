@@ -1,8 +1,8 @@
-package com.example.platformadmin.organizations.user.service;
+package com.example.platformadmin.user.service;
 
-import com.example.platformadmin.organizations.user.dto.BulkUploadResponseDto;
-import com.example.platformadmin.organizations.user.dto.BulkUserRequestDto;
-import com.example.platformadmin.organizations.user.dto.ImportSummaryDto;
+import com.example.platformadmin.user.dto.BulkUploadResponseDto;
+import com.example.platformadmin.user.dto.BulkUserRequestDto;
+import com.example.platformadmin.user.dto.ImportSummaryDto;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;

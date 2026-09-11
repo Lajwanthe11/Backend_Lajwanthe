@@ -1,4 +1,4 @@
-package com.example.platformadmin.organizations.user.exception;
+package com.example.platformadmin.user.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

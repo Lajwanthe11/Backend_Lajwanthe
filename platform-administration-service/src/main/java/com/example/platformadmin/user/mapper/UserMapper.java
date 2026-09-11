@@ -1,8 +1,8 @@
-package com.example.platformadmin.organizations.user.mapper;
+package com.example.platformadmin.user.mapper;
 
-import com.example.platformadmin.organizations.user.dto.UserRegistrationRequestDto;
-import com.example.platformadmin.organizations.user.dto.UserRegistrationResponseDto;
-import com.example.platformadmin.organizations.user.entity.User;
+import com.example.platformadmin.user.dto.UserRegistrationRequestDto;
+import com.example.platformadmin.user.dto.UserRegistrationResponseDto;
+import com.example.platformadmin.user.entity.User;
 
 public final class UserMapper {
 

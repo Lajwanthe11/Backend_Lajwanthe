@@ -1,32 +1,26 @@
-package com.example.platformadmin.organizations.user.dto;
+package com.example.platformadmin.user.dto;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import com.example.platformadmin.user.enums.UserStatus;
 
-public class BulkUserRequestDto {
+public class UserRegistrationResponseDto {
 
-    @NotBlank(message = "First name is required")
-    @Size(max = 100, message = "First name must not exceed 100 characters")
+    private Long id;
     private String firstName;
-
-    @NotBlank(message = "Last name is required")
-    @Size(max = 100, message = "Last name must not exceed 100 characters")
     private String lastName;
-
-    @NotBlank(message = "Email is required")
-    @Email(message = "Invalid email format")
-    @Size(max = 255, message = "Email must not exceed 255 characters")
     private String email;
-
-    @NotNull(message = "Company ID is required")
     private Long companyId;
-
-    @NotNull(message = "Department ID is required")
     private Long departmentId;
+    private UserStatus status;
 
-    public BulkUserRequestDto() {
+    public UserRegistrationResponseDto() {
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getFirstName() {
@@ -67,5 +61,13 @@ public class BulkUserRequestDto {
 
     public void setDepartmentId(Long departmentId) {
         this.departmentId = departmentId;
+    }
+
+    public UserStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(UserStatus status) {
+        this.status = status;
     }
 }

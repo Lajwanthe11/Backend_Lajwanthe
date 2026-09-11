@@ -1,9 +1,9 @@
-package com.example.platformadmin.organizations.user.controller;
+package com.example.platformadmin.user.controller;
 
-import com.example.platformadmin.organizations.user.dto.UserProfileUpdateDto;
-import com.example.platformadmin.organizations.user.dto.UserRegistrationRequestDto;
-import com.example.platformadmin.organizations.user.dto.UserRegistrationResponseDto;
-import com.example.platformadmin.organizations.user.service.UserService;
+import com.example.platformadmin.user.dto.UserProfileUpdateDto;
+import com.example.platformadmin.user.dto.UserRegistrationRequestDto;
+import com.example.platformadmin.user.dto.UserRegistrationResponseDto;
+import com.example.platformadmin.user.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

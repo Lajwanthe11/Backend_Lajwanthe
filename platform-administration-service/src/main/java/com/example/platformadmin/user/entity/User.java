@@ -1,7 +1,7 @@
-package com.example.platformadmin.organizations.user.entity;
+package com.example.platformadmin.user.entity;
 
 import com.example.common.abstracts.BaseEntity;
-import com.example.platformadmin.organizations.user.enums.UserStatus;
+import com.example.platformadmin.user.enums.UserStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

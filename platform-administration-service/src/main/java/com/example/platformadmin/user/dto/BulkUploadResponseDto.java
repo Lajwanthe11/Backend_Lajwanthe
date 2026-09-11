@@ -1,16 +1,21 @@
-package com.example.platformadmin.organizations.user.dto;
+package com.example.platformadmin.user.dto;
 
-import java.util.ArrayList;
-import java.util.List;
-
-public class ImportSummaryDto {
+public class BulkUploadResponseDto {
 
     private int totalRecords;
     private int successfulRecords;
     private int failedRecords;
-    private List<ImportErrorDto> errors = new ArrayList<>();
 
-    public ImportSummaryDto() {
+    public BulkUploadResponseDto() {
+    }
+
+    public BulkUploadResponseDto(
+            int totalRecords,
+            int successfulRecords,
+            int failedRecords) {
+        this.totalRecords = totalRecords;
+        this.successfulRecords = successfulRecords;
+        this.failedRecords = failedRecords;
     }
 
     public int getTotalRecords() {
@@ -35,13 +40,5 @@ public class ImportSummaryDto {
 
     public void setFailedRecords(int failedRecords) {
         this.failedRecords = failedRecords;
-    }
-
-    public List<ImportErrorDto> getErrors() {
-        return errors;
-    }
-
-    public void setErrors(List<ImportErrorDto> errors) {
-        this.errors = errors;
     }
 }
