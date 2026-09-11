@@ -86,4 +86,70 @@ public interface UserRoleRepository
             @Param("roleId") UUID roleId,
             @Param("tenantId") UUID tenantId
     );
+
+    boolean existsByTenantIdAndUserIdAndRoleIdAndActiveTrue(
+            UUID tenantId, UUID userId, UUID roleId);
+
+    Optional<UserRole> findFirstByTenantIdAndUserIdAndRoleIdAndActiveTrue(
+            UUID tenantId, UUID userId, UUID roleId);
+
+    List<UserRole> findAllByTenantId(UUID tenantId);
+
+    @Query("""
+            select ur from UserRole ur
+            where ur.tenantId = :tenantId
+              and ur.active = true
+              and ur.effectiveDate <= :today
+              and (ur.expiryDate is null or ur.expiryDate >= :today)
+            """)
+    List<UserRole> findCurrentActiveAssignments(
+            @Param("tenantId") UUID tenantId,
+            @Param("today") LocalDate today);
+
+    @Query("""
+            select count(ur) from UserRole ur
+            where ur.tenantId = :tenantId
+              and ur.userId = :userId
+              and ur.active = true
+              and ur.effectiveDate <= :today
+              and (ur.expiryDate is null or ur.expiryDate >= :today)
+            """)
+    long countCurrentActiveAssignmentsForUser(
+            @Param("tenantId") UUID tenantId,
+            @Param("userId") UUID userId,
+            @Param("today") LocalDate today);
+
+    @Query("""
+            select ur from UserRole ur
+            where ur.tenantId = :tenantId
+              and ur.active = true
+              and ur.effectiveDate <= :today
+              and ur.expiryDate between :today and :endDate
+            """)
+    List<UserRole> findExpiringAssignments(
+            @Param("tenantId") UUID tenantId,
+            @Param("today") LocalDate today,
+            @Param("endDate") LocalDate endDate);
+
+    @Query("""
+            select ur from UserRole ur
+            where ur.tenantId = :tenantId
+              and ur.active = true
+              and ur.effectiveDate <= :today
+              and ur.expiryDate = :targetDate
+            """)
+    List<UserRole> findTenantAssignmentsExpiringOn(
+            @Param("tenantId") UUID tenantId,
+            @Param("today") LocalDate today,
+            @Param("targetDate") LocalDate targetDate);
+
+    @Query("""
+            select ur from UserRole ur
+            where ur.active = true
+              and ur.effectiveDate <= :today
+              and ur.expiryDate = :targetDate
+            """)
+    List<UserRole> findAllAssignmentsExpiringOn(
+            @Param("today") LocalDate today,
+            @Param("targetDate") LocalDate targetDate);
 }
