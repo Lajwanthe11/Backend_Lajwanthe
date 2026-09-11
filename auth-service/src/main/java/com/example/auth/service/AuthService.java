@@ -35,6 +35,7 @@ public class AuthService {
     private final CustomUserDetailsService customUserDetailsService;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider tokenProvider;
+    // NEW: password strength validation added for registration flow
     private final PasswordValidator passwordValidator;
 
     public AuthService(AuthenticationManager authenticationManager,
@@ -54,7 +55,7 @@ public class AuthService {
             TenantContext.setTenantId(loginRequest.getTenantId());
         }
         String tenantId = TenantContext.getTenantId();
-
+        // Declared here (not inside try) since it's only assigned on success but needed below
         Authentication authentication;
         try {
             authentication = authenticationManager.authenticate(
@@ -64,6 +65,8 @@ public class AuthService {
                     )
             );
         } catch (LockedException ex) {
+            // NEW: account-lockout handling — fetch lock expiry to build a
+            // user-friendly "try again after X min Y sec" message
             LocalDateTime lockedUntil = customUserDetailsService.getLockedUntil(loginRequest.getUsername(), tenantId);
 
             String message = "Account is locked due to multiple failed login attempts. Please try again later.";
@@ -77,15 +80,17 @@ public class AuthService {
                             customUserDetailsService.getMaxAttempts(), minutes, seconds);
                 }
             }
+            // NEW: custom exception so controller/advice can return a distinct
+            // "locked" response instead of a generic auth failure
             throw new AccountLockedException(message);
         } catch (BadCredentialsException ex) {
-            // Wrong password -> track the failed attempt, then rethrow so the
+            // NEW: Wrong password -> track the failed attempt, then rethrow so the
             // existing "invalid credentials" behavior is unchanged for the caller.
             customUserDetailsService.incrementFailedAttempts(loginRequest.getUsername(), tenantId);
             throw ex;
         }
 
-        // Successful login -> clear any prior failed-attempt count / lock state
+        // NEW: Successful login -> clear any prior failed-attempt count / lock state
         customUserDetailsService.resetFailedAttempts(loginRequest.getUsername(), tenantId);
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -109,6 +114,7 @@ public class AuthService {
 
     public AuthResponseDTO register(RegisterRequestDTO registerRequest) {
 
+        // NEW: enforce password strength rules before creating the account
         passwordValidator.validate(registerRequest.getPassword());
 
         if (StringUtils.hasText(registerRequest.getTenantId())) {
