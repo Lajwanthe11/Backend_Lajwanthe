@@ -37,4 +37,6 @@ public interface PermissionRepository extends JpaRepository<Permission, UUID> {
                OR LOWER(p.module) LIKE LOWER(CONCAT('%', :term, '%'))
             """)
     List<Permission> search(@Param("term") String term);
+
+    List<Permission> findByCodeIn(List<String> codes);
 }
