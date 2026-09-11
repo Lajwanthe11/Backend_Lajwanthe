@@ -1,15 +1,22 @@
 package com.example.qa.sprint2.department;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.InjectMocks;
@@ -31,75 +38,106 @@ class DepartmentPermissionServiceTest {
     private DepartmentPermissionServiceImpl service;
 
     // =========================================================
-    // GET DEPARTMENT SCOPE
+    // GET
     // =========================================================
 
     @Test
     void getDepartmentScope_shouldReturnDepartmentIds() {
 
-        RoleDepartmentMap map1 = createMap(100L, 10L);
-        RoleDepartmentMap map2 = createMap(100L, 20L);
-        RoleDepartmentMap map3 = createMap(100L, 30L);
+        UUID roleId = UUID.randomUUID();
 
-        when(repository.findByUserRoleId(100L))
+        UUID department1 = UUID.randomUUID();
+        UUID department2 = UUID.randomUUID();
+        UUID department3 = UUID.randomUUID();
+
+        RoleDepartmentMap map1 =
+                createMap(roleId, department1);
+
+        RoleDepartmentMap map2 =
+                createMap(roleId, department2);
+
+        RoleDepartmentMap map3 =
+                createMap(roleId, department3);
+
+        when(repository.findByUserRoleId(roleId))
                 .thenReturn(List.of(map1, map2, map3));
 
-        List<Long> result =
-                service.getDepartmentScope(100L);
+        List<UUID> result =
+                service.getDepartmentScope(roleId);
 
         assertNotNull(result);
+
         assertEquals(
-                List.of(10L, 20L, 30L),
+                List.of(
+                        department1,
+                        department2,
+                        department3
+                ),
                 result
         );
 
         verify(repository)
-                .findByUserRoleId(100L);
+                .findByUserRoleId(roleId);
     }
 
     @Test
     void getDepartmentScope_shouldReturnEmptyListWhenNoScopeExists() {
 
-        when(repository.findByUserRoleId(100L))
+        UUID roleId = UUID.randomUUID();
+
+        when(repository.findByUserRoleId(roleId))
                 .thenReturn(List.of());
 
-        List<Long> result =
-                service.getDepartmentScope(100L);
+        List<UUID> result =
+                service.getDepartmentScope(roleId);
 
         assertNotNull(result);
         assertTrue(result.isEmpty());
 
         verify(repository)
-                .findByUserRoleId(100L);
+                .findByUserRoleId(roleId);
     }
 
     @Test
-    void getDepartmentScope_shouldUseCorrectUserRoleId() {
+    void getDepartmentScope_shouldUseCorrectRoleId() {
 
-        when(repository.findByUserRoleId(200L))
+        UUID roleId = UUID.randomUUID();
+        UUID otherRoleId = UUID.randomUUID();
+
+        when(repository.findByUserRoleId(roleId))
                 .thenReturn(List.of());
 
-        service.getDepartmentScope(200L);
+        service.getDepartmentScope(roleId);
 
         verify(repository)
-                .findByUserRoleId(200L);
+                .findByUserRoleId(roleId);
 
         verify(repository, never())
-                .findByUserRoleId(100L);
+                .findByUserRoleId(otherRoleId);
     }
 
     // =========================================================
-    // UPDATE DEPARTMENT SCOPE
+    // UPDATE
     // =========================================================
 
     @Test
     void updateDepartmentScope_shouldDeleteOldScopeBeforeSavingNewScope() {
 
-        List<Long> departmentIds =
-                List.of(10L, 20L, 30L);
+        UUID roleId = UUID.randomUUID();
+
+        UUID department1 = UUID.randomUUID();
+        UUID department2 = UUID.randomUUID();
+        UUID department3 = UUID.randomUUID();
+
+        List<UUID> departmentIds =
+                List.of(
+                        department1,
+                        department2,
+                        department3
+                );
 
         service.updateDepartmentScope(
-                100L,
+                roleId,
                 departmentIds
         );
 
@@ -107,10 +145,13 @@ class DepartmentPermissionServiceTest {
                 inOrder(repository);
 
         inOrder.verify(repository)
-                .deleteByUserRoleId(100L);
+                .deleteByUserRoleId(roleId);
 
-        inOrder.verify(repository, times(3))
-                .save(any(RoleDepartmentMap.class));
+        inOrder.verify(
+                repository,
+                times(3)
+        )
+        .save(any(RoleDepartmentMap.class));
 
         inOrder.verifyNoMoreInteractions();
     }
@@ -118,12 +159,19 @@ class DepartmentPermissionServiceTest {
     @Test
     void updateDepartmentScope_shouldSaveAllDepartmentIds() {
 
-        List<Long> departmentIds =
-                List.of(10L, 20L, 30L);
+        UUID roleId = UUID.randomUUID();
+
+        UUID department1 = UUID.randomUUID();
+        UUID department2 = UUID.randomUUID();
+        UUID department3 = UUID.randomUUID();
 
         service.updateDepartmentScope(
-                100L,
-                departmentIds
+                roleId,
+                List.of(
+                        department1,
+                        department2,
+                        department3
+                )
         );
 
         ArgumentCaptor<RoleDepartmentMap> captor =
@@ -140,55 +188,49 @@ class DepartmentPermissionServiceTest {
         assertEquals(3, savedMaps.size());
 
         assertEquals(
-                100L,
+                roleId,
                 savedMaps.get(0).getUserRoleId()
         );
 
         assertEquals(
-                10L,
+                department1,
                 savedMaps.get(0).getDepartmentId()
         );
 
         assertEquals(
-                100L,
+                roleId,
                 savedMaps.get(1).getUserRoleId()
         );
 
         assertEquals(
-                20L,
+                department2,
                 savedMaps.get(1).getDepartmentId()
         );
 
         assertEquals(
-                100L,
+                roleId,
                 savedMaps.get(2).getUserRoleId()
         );
 
         assertEquals(
-                30L,
+                department3,
                 savedMaps.get(2).getDepartmentId()
         );
     }
 
     @Test
-    void updateDepartmentScope_shouldDeleteOldScope() {
+    void updateDepartmentScope_shouldSaveOneDepartment() {
+
+        UUID roleId = UUID.randomUUID();
+        UUID departmentId = UUID.randomUUID();
 
         service.updateDepartmentScope(
-                100L,
-                List.of(50L)
+                roleId,
+                List.of(departmentId)
         );
 
         verify(repository)
-                .deleteByUserRoleId(100L);
-    }
-
-    @Test
-    void updateDepartmentScope_shouldSaveOneDepartment() {
-
-        service.updateDepartmentScope(
-                100L,
-                List.of(50L)
-        );
+                .deleteByUserRoleId(roleId);
 
         ArgumentCaptor<RoleDepartmentMap> captor =
                 ArgumentCaptor.forClass(
@@ -202,73 +244,34 @@ class DepartmentPermissionServiceTest {
                 captor.getValue();
 
         assertEquals(
-                100L,
+                roleId,
                 saved.getUserRoleId()
         );
 
         assertEquals(
-                50L,
+                departmentId,
                 saved.getDepartmentId()
         );
     }
 
     @Test
-    void updateDepartmentScope_shouldRejectNullDepartmentList() {
-
-        assertThrows(
-                BadRequestException.class,
-                () -> service.updateDepartmentScope(
-                        100L,
-                        null
-                )
-        );
-
-        verify(repository, never())
-                .deleteByUserRoleId(any());
-
-        verify(repository, never())
-                .save(any(RoleDepartmentMap.class));
-    }
-
-    @Test
-    void updateDepartmentScope_shouldRejectEmptyDepartmentList() {
-
-        assertThrows(
-                BadRequestException.class,
-                () -> service.updateDepartmentScope(
-                        100L,
-                        List.of()
-                )
-        );
-
-        verify(repository, never())
-                .deleteByUserRoleId(any());
-
-        verify(repository, never())
-                .save(any(RoleDepartmentMap.class));
-    }
-
-    @Test
-    void updateDepartmentScope_shouldUseCorrectUserRoleIdForDelete() {
-
-        service.updateDepartmentScope(
-                999L,
-                List.of(10L, 20L)
-        );
-
-        verify(repository)
-                .deleteByUserRoleId(999L);
-
-        verify(repository, never())
-                .deleteByUserRoleId(100L);
-    }
-
-    @Test
     void updateDepartmentScope_shouldCreateSeparateMapForEachDepartment() {
 
+        UUID roleId = UUID.randomUUID();
+
+        UUID department1 = UUID.randomUUID();
+        UUID department2 = UUID.randomUUID();
+        UUID department3 = UUID.randomUUID();
+        UUID department4 = UUID.randomUUID();
+
         service.updateDepartmentScope(
-                100L,
-                List.of(10L, 20L, 30L, 40L)
+                roleId,
+                List.of(
+                        department1,
+                        department2,
+                        department3,
+                        department4
+                )
         );
 
         ArgumentCaptor<RoleDepartmentMap> captor =
@@ -283,7 +286,12 @@ class DepartmentPermissionServiceTest {
                 captor.getAllValues();
 
         assertEquals(
-                List.of(10L, 20L, 30L, 40L),
+                List.of(
+                        department1,
+                        department2,
+                        department3,
+                        department4
+                ),
                 maps.stream()
                         .map(RoleDepartmentMap::getDepartmentId)
                         .toList()
@@ -292,40 +300,104 @@ class DepartmentPermissionServiceTest {
         assertTrue(
                 maps.stream()
                         .allMatch(map ->
-                                Long.valueOf(100L)
-                                        .equals(map.getUserRoleId()))
+                                roleId.equals(
+                                        map.getUserRoleId()
+                                ))
         );
     }
 
     // =========================================================
-    // REMOVE ALL DEPARTMENT SCOPE
+    // VALIDATION
+    // =========================================================
+
+    @Test
+    void updateDepartmentScope_shouldRejectNullDepartmentList() {
+
+        UUID roleId = UUID.randomUUID();
+
+        BadRequestException exception =
+                assertThrows(
+                        BadRequestException.class,
+                        () -> service.updateDepartmentScope(
+                                roleId,
+                                null
+                        )
+                );
+
+        assertEquals(
+                "Department list cannot be empty",
+                exception.getMessage()
+        );
+
+        verify(repository, never())
+                .deleteByUserRoleId(roleId);
+
+        verify(repository, never())
+                .save(any(RoleDepartmentMap.class));
+    }
+
+    @Test
+    void updateDepartmentScope_shouldRejectEmptyDepartmentList() {
+
+        UUID roleId = UUID.randomUUID();
+
+        BadRequestException exception =
+                assertThrows(
+                        BadRequestException.class,
+                        () -> service.updateDepartmentScope(
+                                roleId,
+                                List.of()
+                        )
+                );
+
+        assertEquals(
+                "Department list cannot be empty",
+                exception.getMessage()
+        );
+
+        verify(repository, never())
+                .deleteByUserRoleId(roleId);
+
+        verify(repository, never())
+                .save(any(RoleDepartmentMap.class));
+    }
+
+    // =========================================================
+    // DELETE
     // =========================================================
 
     @Test
     void removeAllDepartmentScope_shouldDeleteScope() {
 
-        service.removeAllDepartmentScope(100L);
+        UUID roleId = UUID.randomUUID();
+
+        service.removeAllDepartmentScope(roleId);
 
         verify(repository)
-                .deleteByUserRoleId(100L);
+                .deleteByUserRoleId(roleId);
     }
 
     @Test
-    void removeAllDepartmentScope_shouldUseCorrectUserRoleId() {
+    void removeAllDepartmentScope_shouldUseCorrectRoleId() {
 
-        service.removeAllDepartmentScope(999L);
+        UUID roleId = UUID.randomUUID();
+        UUID otherRoleId = UUID.randomUUID();
+
+        service.removeAllDepartmentScope(roleId);
 
         verify(repository)
-                .deleteByUserRoleId(999L);
+                .deleteByUserRoleId(roleId);
 
         verify(repository, never())
-                .deleteByUserRoleId(100L);
+                .deleteByUserRoleId(otherRoleId);
     }
 
     @Test
     void removeAllDepartmentScope_shouldNotSaveAnything() {
 
-        service.removeAllDepartmentScope(100L);
+        UUID roleId = UUID.randomUUID();
+
+        service.removeAllDepartmentScope(roleId);
 
         verify(repository, never())
                 .save(any(RoleDepartmentMap.class));
@@ -336,8 +408,8 @@ class DepartmentPermissionServiceTest {
     // =========================================================
 
     private RoleDepartmentMap createMap(
-            Long userRoleId,
-            Long departmentId) {
+            UUID userRoleId,
+            UUID departmentId) {
 
         RoleDepartmentMap map =
                 new RoleDepartmentMap();

@@ -1,27 +1,30 @@
 package com.example.qa.sprint2.department;
 
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.List;
-import java.util.Map;
+import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
-
-import com.example.rbac.RbacApplication;
-import org.springframework.test.context.ContextConfiguration;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.example.rbac.controller.DepartmentPermissionController;
 import com.example.rbac.service.DepartmentPermissionService;
-
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(DepartmentPermissionController.class)
 class DepartmentAccessTest {
@@ -39,68 +42,82 @@ class DepartmentAccessTest {
     @Test
     void shouldGetDepartmentScope() throws Exception {
 
-        when(departmentPermissionService
-                .getDepartmentScope(10L))
-                .thenReturn(
-                        List.of(101L, 102L, 103L)
-                );
+        UUID userId = UUID.randomUUID();
+        UUID roleId = UUID.randomUUID();
+
+        UUID department1 = UUID.randomUUID();
+        UUID department2 = UUID.randomUUID();
+        UUID department3 = UUID.randomUUID();
+
+        when(departmentPermissionService.getDepartmentScope(roleId))
+                .thenReturn(List.of(
+                        department1,
+                        department2,
+                        department3
+                ));
 
         mockMvc.perform(
-                get(
-                        "/api/v1/users/1/roles/10/departments"
-                )
+                get("/api/v1/users/{userId}/roles/{roleId}/departments",
+                        userId,
+                        roleId)
         )
         .andExpect(status().isOk())
         .andExpect(jsonPath("$").isArray())
         .andExpect(jsonPath("$.length()").value(3))
-        .andExpect(jsonPath("$[0]").value(101))
-        .andExpect(jsonPath("$[1]").value(102))
-        .andExpect(jsonPath("$[2]").value(103));
+        .andExpect(jsonPath("$[0]").value(department1.toString()))
+        .andExpect(jsonPath("$[1]").value(department2.toString()))
+        .andExpect(jsonPath("$[2]").value(department3.toString()));
 
         verify(departmentPermissionService)
-                .getDepartmentScope(10L);
+                .getDepartmentScope(roleId);
     }
 
     @Test
     void shouldReturnEmptyDepartmentScope() throws Exception {
 
-        when(departmentPermissionService
-                .getDepartmentScope(10L))
+        UUID userId = UUID.randomUUID();
+        UUID roleId = UUID.randomUUID();
+
+        when(departmentPermissionService.getDepartmentScope(roleId))
                 .thenReturn(List.of());
 
         mockMvc.perform(
-                get(
-                        "/api/v1/users/1/roles/10/departments"
-                )
+                get("/api/v1/users/{userId}/roles/{roleId}/departments",
+                        userId,
+                        roleId)
         )
         .andExpect(status().isOk())
         .andExpect(jsonPath("$").isArray())
         .andExpect(jsonPath("$.length()").value(0));
 
         verify(departmentPermissionService)
-                .getDepartmentScope(10L);
+                .getDepartmentScope(roleId);
     }
 
     @Test
     void shouldUseRoleIdFromPathForGet() throws Exception {
 
-        when(departmentPermissionService
-                .getDepartmentScope(99L))
-                .thenReturn(List.of(500L));
+        UUID userId = UUID.randomUUID();
+        UUID roleId = UUID.randomUUID();
+
+        UUID departmentId = UUID.randomUUID();
+
+        when(departmentPermissionService.getDepartmentScope(roleId))
+                .thenReturn(List.of(departmentId));
 
         mockMvc.perform(
-                get(
-                        "/api/v1/users/123/roles/99/departments"
-                )
+                get("/api/v1/users/{userId}/roles/{roleId}/departments",
+                        userId,
+                        roleId)
         )
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$[0]").value(500));
+        .andExpect(jsonPath("$[0]").value(departmentId.toString()));
 
         verify(departmentPermissionService)
-                .getDepartmentScope(99L);
+                .getDepartmentScope(roleId);
 
         verify(departmentPermissionService, never())
-                .getDepartmentScope(123L);
+                .getDepartmentScope(eq(userId));
     }
 
     // =========================================================
@@ -110,30 +127,39 @@ class DepartmentAccessTest {
     @Test
     void shouldUpdateDepartmentScope() throws Exception {
 
+        UUID userId = UUID.randomUUID();
+        UUID roleId = UUID.randomUUID();
+
+        UUID department1 = UUID.randomUUID();
+        UUID department2 = UUID.randomUUID();
+
         doNothing()
                 .when(departmentPermissionService)
                 .updateDepartmentScope(
-                        eq(10L),
-                        eq(List.of(101L, 102L))
+                        eq(roleId),
+                        eq(List.of(department1, department2))
                 );
 
         mockMvc.perform(
-                put(
-                        "/api/v1/users/1/roles/10/departments"
-                )
+                put("/api/v1/users/{userId}/roles/{roleId}/departments",
+                        userId,
+                        roleId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
-                      "departmentIds": [101, 102]
+                      "departmentIds": ["%s", "%s"]
                     }
-                    """)
+                    """.formatted(
+                        department1,
+                        department2
+                ))
         )
         .andExpect(status().isOk());
 
         verify(departmentPermissionService)
                 .updateDepartmentScope(
-                        10L,
-                        List.of(101L, 102L)
+                        roleId,
+                        List.of(department1, department2)
                 );
     }
 
@@ -141,23 +167,27 @@ class DepartmentAccessTest {
     void shouldUpdateDepartmentScopeWithSingleDepartment()
             throws Exception {
 
+        UUID userId = UUID.randomUUID();
+        UUID roleId = UUID.randomUUID();
+        UUID departmentId = UUID.randomUUID();
+
         mockMvc.perform(
-                put(
-                        "/api/v1/users/1/roles/10/departments"
-                )
+                put("/api/v1/users/{userId}/roles/{roleId}/departments",
+                        userId,
+                        roleId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
-                      "departmentIds": [101]
+                      "departmentIds": ["%s"]
                     }
-                    """)
+                    """.formatted(departmentId))
         )
         .andExpect(status().isOk());
 
         verify(departmentPermissionService)
                 .updateDepartmentScope(
-                        10L,
-                        List.of(101L)
+                        roleId,
+                        List.of(departmentId)
                 );
     }
 
@@ -165,10 +195,13 @@ class DepartmentAccessTest {
     void shouldPassEmptyDepartmentListToService()
             throws Exception {
 
+        UUID userId = UUID.randomUUID();
+        UUID roleId = UUID.randomUUID();
+
         mockMvc.perform(
-                put(
-                        "/api/v1/users/1/roles/10/departments"
-                )
+                put("/api/v1/users/{userId}/roles/{roleId}/departments",
+                        userId,
+                        roleId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
@@ -178,13 +211,9 @@ class DepartmentAccessTest {
         )
         .andExpect(status().isOk());
 
-        /*
-         * Controller itself has no validation.
-         * Service is responsible for rejecting empty lists.
-         */
         verify(departmentPermissionService)
                 .updateDepartmentScope(
-                        10L,
+                        roleId,
                         List.of()
                 );
     }
@@ -193,30 +222,138 @@ class DepartmentAccessTest {
     void shouldUseRoleIdFromPathForUpdate()
             throws Exception {
 
+        UUID userId = UUID.randomUUID();
+        UUID roleId = UUID.randomUUID();
+
+        UUID department1 = UUID.randomUUID();
+        UUID department2 = UUID.randomUUID();
+
         mockMvc.perform(
-                put(
-                        "/api/v1/users/5/roles/77/departments"
-                )
+                put("/api/v1/users/{userId}/roles/{roleId}/departments",
+                        userId,
+                        roleId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
-                      "departmentIds": [201, 202]
+                      "departmentIds": ["%s", "%s"]
                     }
+                    """.formatted(
+                        department1,
+                        department2
+                ))
+        )
+        .andExpect(status().isOk());
+
+        verify(departmentPermissionService)
+                .updateDepartmentScope(
+                        roleId,
+                        List.of(department1, department2)
+                );
+
+        verify(departmentPermissionService, never())
+                .updateDepartmentScope(
+                        eq(userId),
+                        anyList()
+                );
+    }
+
+    // =========================================================
+    // MISSING FIELD
+    // =========================================================
+
+    @Test
+    void shouldPassMissingDepartmentIdsAsNullToService()
+            throws Exception {
+
+        UUID userId = UUID.randomUUID();
+        UUID roleId = UUID.randomUUID();
+
+        mockMvc.perform(
+                put("/api/v1/users/{userId}/roles/{roleId}/departments",
+                        userId,
+                        roleId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {}
                     """)
         )
         .andExpect(status().isOk());
 
         verify(departmentPermissionService)
                 .updateDepartmentScope(
-                        77L,
-                        List.of(201L, 202L)
+                        roleId,
+                        null
                 );
+    }
 
-        verify(departmentPermissionService, never())
-                .updateDepartmentScope(
-                        eq(5L),
-                        anyList()
-                );
+    // =========================================================
+    // INVALID JSON
+    // =========================================================
+
+    @Test
+    void shouldRejectMalformedJson() throws Exception {
+
+        UUID userId = UUID.randomUUID();
+        UUID roleId = UUID.randomUUID();
+
+        mockMvc.perform(
+                put("/api/v1/users/{userId}/roles/{roleId}/departments",
+                        userId,
+                        roleId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                      "departmentIds": [
+                    """)
+        )
+        .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(departmentPermissionService);
+    }
+
+    // =========================================================
+    // INVALID UUID
+    // =========================================================
+
+    @Test
+    void shouldRejectInvalidUuidInPath() throws Exception {
+
+        UUID userId = UUID.randomUUID();
+
+        mockMvc.perform(
+                get(
+                        "/api/v1/users/{userId}/roles/{roleId}/departments",
+                        userId,
+                        "not-a-valid-uuid"
+                )
+        )
+        .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(departmentPermissionService);
+    }
+
+    @Test
+    void shouldRejectInvalidDepartmentUuid() throws Exception {
+
+        UUID userId = UUID.randomUUID();
+        UUID roleId = UUID.randomUUID();
+
+        mockMvc.perform(
+                put(
+                        "/api/v1/users/{userId}/roles/{roleId}/departments",
+                        userId,
+                        roleId
+                )
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                      "departmentIds": ["not-a-valid-uuid"]
+                    }
+                    """)
+        )
+        .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(departmentPermissionService);
     }
 
     // =========================================================
@@ -227,78 +364,42 @@ class DepartmentAccessTest {
     void shouldRemoveAllDepartmentScope()
             throws Exception {
 
+        UUID userId = UUID.randomUUID();
+        UUID roleId = UUID.randomUUID();
+
         mockMvc.perform(
                 delete(
-                        "/api/v1/users/1/roles/10/departments/all"
+                        "/api/v1/users/{userId}/roles/{roleId}/departments/all",
+                        userId,
+                        roleId
                 )
         )
         .andExpect(status().isOk());
 
         verify(departmentPermissionService)
-                .removeAllDepartmentScope(10L);
+                .removeAllDepartmentScope(roleId);
     }
 
     @Test
     void shouldUseRoleIdFromPathForDelete()
             throws Exception {
 
+        UUID userId = UUID.randomUUID();
+        UUID roleId = UUID.randomUUID();
+
         mockMvc.perform(
                 delete(
-                        "/api/v1/users/55/roles/99/departments/all"
+                        "/api/v1/users/{userId}/roles/{roleId}/departments/all",
+                        userId,
+                        roleId
                 )
         )
         .andExpect(status().isOk());
 
         verify(departmentPermissionService)
-                .removeAllDepartmentScope(99L);
+                .removeAllDepartmentScope(roleId);
 
         verify(departmentPermissionService, never())
-                .removeAllDepartmentScope(55L);
-    }
-
-    // =========================================================
-    // INVALID JSON / MISSING BODY FIELD
-    // =========================================================
-
-    @Test
-    void shouldPassMissingDepartmentIdsAsNullToService()
-            throws Exception {
-
-        mockMvc.perform(
-                put(
-                        "/api/v1/users/1/roles/10/departments"
-                )
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                    {}
-                    """)
-        )
-        .andExpect(status().isOk());
-
-        verify(departmentPermissionService)
-                .updateDepartmentScope(
-                        10L,
-                        null
-                );
-    }
-
-    @Test
-    void shouldRejectMalformedJson() throws Exception {
-
-        mockMvc.perform(
-                put(
-                        "/api/v1/users/1/roles/10/departments"
-                )
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                    {
-                      "departmentIds": [
-                    """)
-        )
-        .andExpect(status().isBadRequest());
-
-        verifyNoInteractions(
-                departmentPermissionService
-        );
+                .removeAllDepartmentScope(userId);
     }
 }
