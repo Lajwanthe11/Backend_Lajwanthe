@@ -1,9 +1,9 @@
 package com.example.platformadmin.superadmin.platform_branding_service.controller;
 
-import com.enterprise.superadmin.platform_branding_service.dto.request.BrandingCreateRequest;
-import com.enterprise.superadmin.platform_branding_service.dto.request.BrandingUpdateRequest;
-import com.enterprise.superadmin.platform_branding_service.dto.response.BrandingResponse;
-import com.enterprise.superadmin.platform_branding_service.service.BrandingService;
+import com.example.platformadmin.superadmin.platform_branding_service.dto.request.BrandingCreateRequest;
+import com.example.platformadmin.superadmin.platform_branding_service.dto.request.BrandingUpdateRequest;
+import com.example.platformadmin.superadmin.platform_branding_service.dto.response.BrandingResponse;
+import com.example.platformadmin.superadmin.platform_branding_service.service.BrandingService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

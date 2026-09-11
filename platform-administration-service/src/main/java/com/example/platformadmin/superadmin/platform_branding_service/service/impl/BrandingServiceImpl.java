@@ -1,9 +1,9 @@
 package com.example.platformadmin.superadmin.platform_branding_service.service.impl;
 
-import com.enterprise.superadmin.platform_branding_service.dto.request.BrandingCreateRequest;
-import com.enterprise.superadmin.platform_branding_service.dto.request.BrandingUpdateRequest;
-import com.enterprise.superadmin.platform_branding_service.dto.response.BrandingResponse;
-import com.enterprise.superadmin.platform_branding_service.entity.Configuration;
+import com.example.platformadmin.superadmin.platform_branding_service.dto.request.BrandingCreateRequest;
+import com.example.platformadmin.superadmin.platform_branding_service.dto.request.BrandingUpdateRequest;
+import com.example.platformadmin.superadmin.platform_branding_service.dto.response.BrandingResponse;
+import com.example.platformadmin.superadmin.platform_branding_service.entity.Configuration;
 import com.example.platformadmin.superadmin.platform_branding_service.exception.BrandingAlreadyExistsException;
 import com.example.platformadmin.superadmin.platform_branding_service.exception.BrandingInvalidStateException;
 import com.example.platformadmin.superadmin.platform_branding_service.exception.BrandingNotFoundException;

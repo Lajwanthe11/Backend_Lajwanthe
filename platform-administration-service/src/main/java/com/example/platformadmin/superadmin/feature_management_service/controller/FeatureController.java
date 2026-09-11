@@ -1,9 +1,9 @@
 package com.example.platformadmin.superadmin.feature_management_service.controller;
 
-import com.enterprise.superadmin.feature_management_service.dto.request.FeatureCreateRequest;
-import com.enterprise.superadmin.feature_management_service.dto.request.FeatureUpdateRequest;
-import com.enterprise.superadmin.feature_management_service.dto.response.FeatureResponse;
-import com.enterprise.superadmin.feature_management_service.services.FeatureService;
+import com.example.platformadmin.superadmin.feature_management_service.dto.request.FeatureCreateRequest;
+import com.example.platformadmin.superadmin.feature_management_service.dto.request.FeatureUpdateRequest;
+import com.example.platformadmin.superadmin.feature_management_service.dto.response.FeatureResponse;
+import com.example.platformadmin.superadmin.feature_management_service.services.FeatureService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

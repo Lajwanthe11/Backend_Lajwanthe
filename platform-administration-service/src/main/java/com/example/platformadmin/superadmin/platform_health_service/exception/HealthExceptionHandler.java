@@ -1,6 +1,6 @@
 package com.example.platformadmin.superadmin.platform_health_service.exception;
 
-import com.enterprise.superadmin.platform_health_service.dto.response.ErrorResponse;
+import com.example.platformadmin.superadmin.platform_health_service.dto.response.ErrorResponse;
 import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

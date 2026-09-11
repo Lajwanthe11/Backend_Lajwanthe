@@ -1,9 +1,9 @@
 package com.example.platformadmin.superadmin.feature_management_service.services;
 
-import com.enterprise.superadmin.feature_management_service.dto.request.FeatureAssignmentRequest;
-import com.enterprise.superadmin.feature_management_service.dto.response.FeatureAssignmentResponse;
-import com.enterprise.superadmin.feature_management_service.entity.Feature;
-import com.enterprise.superadmin.feature_management_service.entity.FeatureAssignment;
+import com.example.platformadmin.superadmin.feature_management_service.dto.request.FeatureAssignmentRequest;
+import com.example.platformadmin.superadmin.feature_management_service.dto.response.FeatureAssignmentResponse;
+import com.example.platformadmin.superadmin.feature_management_service.entity.Feature;
+import com.example.platformadmin.superadmin.feature_management_service.entity.FeatureAssignment;
 import com.example.platformadmin.superadmin.feature_management_service.exception.FeatureConfigurationException;
 import com.example.platformadmin.superadmin.feature_management_service.exception.FeatureNotFoundException;
 import com.example.platformadmin.superadmin.feature_management_service.exception.InvalidFeatureStateException;
@@ -275,4 +275,4 @@ public class FeatureAssignmentService {
 
         return response;
     }
-}
+}

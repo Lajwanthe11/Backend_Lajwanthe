@@ -1,6 +1,6 @@
 package com.example.platformadmin.superadmin.platform_health_service.service;
 
-import com.enterprise.superadmin.platform_health_service.dto.response.DatabaseHealthResponse;
+import com.example.platformadmin.superadmin.platform_health_service.dto.response.DatabaseHealthResponse;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 

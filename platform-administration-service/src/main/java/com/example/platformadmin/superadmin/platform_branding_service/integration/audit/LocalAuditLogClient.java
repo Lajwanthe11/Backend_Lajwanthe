@@ -1,14 +1,12 @@
 package com.example.platformadmin.superadmin.platform_branding_service.integration.audit;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.context.annotation.Profile;
-import org.springframework.stereotype.Component;
-
 import java.time.LocalDateTime;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
 @Component
-@Profile("dev")
 public class LocalAuditLogClient implements AuditLogClient {
 
     private static final Logger log =
@@ -25,7 +23,7 @@ public class LocalAuditLogClient implements AuditLogClient {
             LocalDateTime auditTimestamp) {
 
         log.info(
-                "LOCAL AUDIT | actor={} action={} module={} entity={} entityId={} status={} timestamp={}",
+                "AUDIT | actorId={} | action={} | module={} | entity={} | entityId={} | status={} | timestamp={}",
                 actorId,
                 action,
                 module,

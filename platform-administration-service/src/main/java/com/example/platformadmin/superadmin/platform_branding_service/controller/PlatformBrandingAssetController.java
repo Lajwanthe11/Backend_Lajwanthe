@@ -1,6 +1,6 @@
 package com.example.platformadmin.superadmin.platform_branding_service.controller;
 
-import com.enterprise.superadmin.platform_branding_service.service.BrandingAssetService;
+import com.example.platformadmin.superadmin.platform_branding_service.service.BrandingAssetService;
 import jakarta.validation.constraints.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

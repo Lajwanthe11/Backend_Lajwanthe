@@ -1,7 +1,7 @@
 package com.example.platformadmin.superadmin.feature_management_service.repository;
 
 
-import com.enterprise.superadmin.feature_management_service.entity.FeatureAssignment;
+import com.example.platformadmin.superadmin.feature_management_service.entity.FeatureAssignment;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

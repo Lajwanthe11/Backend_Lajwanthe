@@ -1,10 +1,10 @@
 package com.example.platformadmin.superadmin.platform_health_service.controller;
 
-import com.enterprise.superadmin.platform_health_service.dto.response.DatabaseHealthResponse;
-import com.enterprise.superadmin.platform_health_service.dto.response.PlatformHealthResponse;
-import com.enterprise.superadmin.platform_health_service.dto.response.ServiceHealthResponse;
-import com.enterprise.superadmin.platform_health_service.service.DatabaseHealthService;
-import com.enterprise.superadmin.platform_health_service.service.PlatformHealthService;
+import com.example.platformadmin.superadmin.platform_health_service.dto.response.DatabaseHealthResponse;
+import com.example.platformadmin.superadmin.platform_health_service.dto.response.PlatformHealthResponse;
+import com.example.platformadmin.superadmin.platform_health_service.dto.response.ServiceHealthResponse;
+import com.example.platformadmin.superadmin.platform_health_service.service.DatabaseHealthService;
+import com.example.platformadmin.superadmin.platform_health_service.service.PlatformHealthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

@@ -2,8 +2,8 @@ package com.example.platformadmin.superadmin.license_management_service.service;
 
 
 
-import com.enterprise.superadmin.license_management_service.entity.License;
-import com.enterprise.superadmin.license_management_service.enums.LicenseStatus;
+import com.example.platformadmin.superadmin.license_management_service.entity.License;
+import com.example.platformadmin.superadmin.license_management_service.enums.LicenseStatus;
 import com.example.platformadmin.superadmin.license_management_service.exception.InvalidLicenseStateException;
 import org.springframework.stereotype.Service;
 

@@ -14,9 +14,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestControllerAdvice
-public class GlobalExceptionHandler {
+public class FeatureGlobalExceptionHandler {
 
-    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    private static final Logger log = LoggerFactory.getLogger(FeatureGlobalExceptionHandler.class);
 
     @ExceptionHandler(FeatureNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleNotFound(
@@ -121,5 +121,6 @@ public class GlobalExceptionHandler {
                 .body(response);
     }
 }
+
 
 

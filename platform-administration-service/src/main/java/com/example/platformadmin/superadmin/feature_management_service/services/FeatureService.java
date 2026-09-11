@@ -1,9 +1,9 @@
 package com.example.platformadmin.superadmin.feature_management_service.services;
 
-import com.enterprise.superadmin.feature_management_service.dto.request.FeatureCreateRequest;
-import com.enterprise.superadmin.feature_management_service.dto.request.FeatureUpdateRequest;
-import com.enterprise.superadmin.feature_management_service.dto.response.FeatureResponse;
-import com.enterprise.superadmin.feature_management_service.entity.Feature;
+import com.example.platformadmin.superadmin.feature_management_service.dto.request.FeatureCreateRequest;
+import com.example.platformadmin.superadmin.feature_management_service.dto.request.FeatureUpdateRequest;
+import com.example.platformadmin.superadmin.feature_management_service.dto.response.FeatureResponse;
+import com.example.platformadmin.superadmin.feature_management_service.entity.Feature;
 import com.example.platformadmin.superadmin.feature_management_service.exception.FeatureConfigurationException;
 import com.example.platformadmin.superadmin.feature_management_service.exception.FeatureNotFoundException;
 import com.example.platformadmin.superadmin.feature_management_service.exception.InvalidFeatureStateException;
@@ -258,4 +258,4 @@ public class FeatureService {
 
         return response;
     }
-}
+}

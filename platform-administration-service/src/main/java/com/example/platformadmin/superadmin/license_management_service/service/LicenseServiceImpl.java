@@ -2,13 +2,13 @@ package com.example.platformadmin.superadmin.license_management_service.service;
 
 
 
-import com.enterprise.superadmin.license_management_service.dto.request.LicenseCreateRequest;
-import com.enterprise.superadmin.license_management_service.dto.request.LicenseRenewRequest;
-import com.enterprise.superadmin.license_management_service.dto.request.LicenseUpdateRequest;
-import com.enterprise.superadmin.license_management_service.dto.response.LicenseResponse;
-import com.enterprise.superadmin.license_management_service.dto.response.LicenseStatusResponse;
-import com.enterprise.superadmin.license_management_service.entity.License;
-import com.enterprise.superadmin.license_management_service.enums.LicenseStatus;
+import com.example.platformadmin.superadmin.license_management_service.dto.request.LicenseCreateRequest;
+import com.example.platformadmin.superadmin.license_management_service.dto.request.LicenseRenewRequest;
+import com.example.platformadmin.superadmin.license_management_service.dto.request.LicenseUpdateRequest;
+import com.example.platformadmin.superadmin.license_management_service.dto.response.LicenseResponse;
+import com.example.platformadmin.superadmin.license_management_service.dto.response.LicenseStatusResponse;
+import com.example.platformadmin.superadmin.license_management_service.entity.License;
+import com.example.platformadmin.superadmin.license_management_service.enums.LicenseStatus;
 import com.example.platformadmin.superadmin.license_management_service.exception.InvalidLicenseStateException;
 import com.example.platformadmin.superadmin.license_management_service.exception.LicenseExpiredException;
 import com.example.platformadmin.superadmin.license_management_service.exception.LicenseNotFoundException;

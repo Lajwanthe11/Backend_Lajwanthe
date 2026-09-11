@@ -1,6 +1,6 @@
 package com.example.platformadmin.superadmin.license_management_service.integration;
 
-import com.enterprise.superadmin.license_management_service.integration.dto.OrganizationResponse;
+import com.example.platformadmin.superadmin.license_management_service.integration.dto.OrganizationResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;

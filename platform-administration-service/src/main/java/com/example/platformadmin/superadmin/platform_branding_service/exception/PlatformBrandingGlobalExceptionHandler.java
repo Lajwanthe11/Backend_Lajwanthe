@@ -1,7 +1,7 @@
 package com.example.platformadmin.superadmin.platform_branding_service.exception;
 
-import com.enterprise.superadmin.platform_branding_service.dto.response.ApiErrorResponse;
-import com.enterprise.superadmin.platform_branding_service.dto.response.FieldErrorResponse;
+import com.example.platformadmin.superadmin.platform_branding_service.dto.response.ApiErrorResponse;
+import com.example.platformadmin.superadmin.platform_branding_service.dto.response.FieldErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,9 +25,9 @@ import java.util.UUID;
  * - Provide a correlation identifier for troubleshooting.
  */
 @RestControllerAdvice
-public class GlobalExceptionHandler {
+public class PlatformBrandingGlobalExceptionHandler {
 
-    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    private static final Logger log = LoggerFactory.getLogger(PlatformBrandingGlobalExceptionHandler.class);
 
     // ---------------------------------------------------------------------
     // Branding not found

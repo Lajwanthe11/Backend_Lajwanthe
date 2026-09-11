@@ -2,8 +2,8 @@ package com.example.platformadmin.superadmin.license_management_service.service;
 
 
 
-import com.enterprise.superadmin.license_management_service.dto.request.LicenseAssignmentRequest;
-import com.enterprise.superadmin.license_management_service.dto.response.LicenseResponse;
+import com.example.platformadmin.superadmin.license_management_service.dto.request.LicenseAssignmentRequest;
+import com.example.platformadmin.superadmin.license_management_service.dto.response.LicenseResponse;
 
 import java.util.UUID;
 

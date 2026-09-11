@@ -1,8 +1,8 @@
 package com.example.platformadmin.superadmin.license_management_service.repository;
 
 
-import com.enterprise.superadmin.license_management_service.entity.License;
-import com.enterprise.superadmin.license_management_service.enums.LicenseStatus;
+import com.example.platformadmin.superadmin.license_management_service.entity.License;
+import com.example.platformadmin.superadmin.license_management_service.enums.LicenseStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 

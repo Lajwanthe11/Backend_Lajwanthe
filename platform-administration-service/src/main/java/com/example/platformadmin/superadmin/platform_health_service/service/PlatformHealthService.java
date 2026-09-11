@@ -3,8 +3,8 @@ package com.example.platformadmin.superadmin.platform_health_service.service;
 
 
 import com.example.platformadmin.superadmin.platform_health_service.HealthStatus;
-import com.enterprise.superadmin.platform_health_service.dto.response.PlatformHealthResponse;
-import com.enterprise.superadmin.platform_health_service.dto.response.ServiceHealthResponse;
+import com.example.platformadmin.superadmin.platform_health_service.dto.response.PlatformHealthResponse;
+import com.example.platformadmin.superadmin.platform_health_service.dto.response.ServiceHealthResponse;
 import com.example.platformadmin.superadmin.platform_health_service.integration.ServiceHealthClient;
 import com.example.platformadmin.superadmin.platform_health_service.integration.ServiceHealthResult;
 import org.springframework.cloud.client.discovery.DiscoveryClient;

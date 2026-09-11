@@ -2,8 +2,8 @@ package com.example.platformadmin.superadmin.license_management_service.entity;
 
 
 
-import com.enterprise.superadmin.license_management_service.enums.LicenseStatus;
-import com.enterprise.superadmin.license_management_service.enums.LicenseType;
+import com.example.platformadmin.superadmin.license_management_service.enums.LicenseStatus;
+import com.example.platformadmin.superadmin.license_management_service.enums.LicenseType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

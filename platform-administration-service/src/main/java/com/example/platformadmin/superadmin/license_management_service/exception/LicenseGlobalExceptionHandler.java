@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 
 @RestControllerAdvice
-public class GlobalExceptionHandler {
+public class LicenseGlobalExceptionHandler {
 
     @ExceptionHandler(LicenseNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleNotFound(

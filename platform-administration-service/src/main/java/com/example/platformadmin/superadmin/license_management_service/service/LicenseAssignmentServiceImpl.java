@@ -1,11 +1,11 @@
 package com.example.platformadmin.superadmin.license_management_service.service;
 
 
-import com.enterprise.superadmin.license_management_service.dto.request.LicenseAssignmentRequest;
-import com.enterprise.superadmin.license_management_service.dto.response.LicenseResponse;
-import com.enterprise.superadmin.license_management_service.entity.License;
-import com.enterprise.superadmin.license_management_service.entity.LicenseAssignment;
-import com.enterprise.superadmin.license_management_service.enums.LicenseStatus;
+import com.example.platformadmin.superadmin.license_management_service.dto.request.LicenseAssignmentRequest;
+import com.example.platformadmin.superadmin.license_management_service.dto.response.LicenseResponse;
+import com.example.platformadmin.superadmin.license_management_service.entity.License;
+import com.example.platformadmin.superadmin.license_management_service.entity.LicenseAssignment;
+import com.example.platformadmin.superadmin.license_management_service.enums.LicenseStatus;
 import com.example.platformadmin.superadmin.license_management_service.exception.LicenseAlreadyAssignedException;
 import com.example.platformadmin.superadmin.license_management_service.exception.LicenseNotFoundException;
 import com.example.platformadmin.superadmin.license_management_service.repository.LicenseAssignmentRepository;

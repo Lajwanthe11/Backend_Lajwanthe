@@ -2,7 +2,7 @@ package com.example.platformadmin.superadmin.license_management_service.reposito
 
 
 
-import com.enterprise.superadmin.license_management_service.entity.LicenseAssignment;
+import com.example.platformadmin.superadmin.license_management_service.entity.LicenseAssignment;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

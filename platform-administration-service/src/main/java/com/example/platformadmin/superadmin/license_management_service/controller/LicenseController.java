@@ -2,13 +2,13 @@ package com.example.platformadmin.superadmin.license_management_service.controll
 
 
 
-import com.enterprise.superadmin.license_management_service.dto.request.LicenseCreateRequest;
-import com.enterprise.superadmin.license_management_service.dto.request.LicenseRenewRequest;
-import com.enterprise.superadmin.license_management_service.dto.request.LicenseUpdateRequest;
-import com.enterprise.superadmin.license_management_service.dto.response.LicenseResponse;
-import com.enterprise.superadmin.license_management_service.dto.response.LicenseStatusResponse;
-import com.enterprise.superadmin.license_management_service.enums.LicenseStatus;
-import com.enterprise.superadmin.license_management_service.service.LicenseService;
+import com.example.platformadmin.superadmin.license_management_service.dto.request.LicenseCreateRequest;
+import com.example.platformadmin.superadmin.license_management_service.dto.request.LicenseRenewRequest;
+import com.example.platformadmin.superadmin.license_management_service.dto.request.LicenseUpdateRequest;
+import com.example.platformadmin.superadmin.license_management_service.dto.response.LicenseResponse;
+import com.example.platformadmin.superadmin.license_management_service.dto.response.LicenseStatusResponse;
+import com.example.platformadmin.superadmin.license_management_service.enums.LicenseStatus;
+import com.example.platformadmin.superadmin.license_management_service.service.LicenseService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;

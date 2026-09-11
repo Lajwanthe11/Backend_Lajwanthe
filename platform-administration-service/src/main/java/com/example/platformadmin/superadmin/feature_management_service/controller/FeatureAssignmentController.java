@@ -1,8 +1,8 @@
 package com.example.platformadmin.superadmin.feature_management_service.controller;
 
-import com.enterprise.superadmin.feature_management_service.dto.request.FeatureAssignmentRequest;
-import com.enterprise.superadmin.feature_management_service.dto.response.FeatureAssignmentResponse;
-import com.enterprise.superadmin.feature_management_service.services.FeatureAssignmentService;
+import com.example.platformadmin.superadmin.feature_management_service.dto.request.FeatureAssignmentRequest;
+import com.example.platformadmin.superadmin.feature_management_service.dto.response.FeatureAssignmentResponse;
+import com.example.platformadmin.superadmin.feature_management_service.services.FeatureAssignmentService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
