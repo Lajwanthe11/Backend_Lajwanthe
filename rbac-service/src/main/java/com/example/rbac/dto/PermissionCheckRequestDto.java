@@ -1,14 +1,13 @@
 package com.example.rbac.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 
 public class PermissionCheckRequestDto {
 
-    @NotNull
+    @NotBlank
     private String userId;
 
-    @NotNull
+    @NotBlank
     private String tenantId;
 
     @NotBlank

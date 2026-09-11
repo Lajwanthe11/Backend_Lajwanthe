@@ -1,8 +1,9 @@
 package com.example.rbac.service;
 
+import com.example.common.tenant.TenantContext;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.http.HttpStatus;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -12,7 +13,9 @@ import java.util.Set;
 
 @Service
 public class PermissionResolverImpl implements PermissionResolver {
+
     private static final Duration CACHE_TTL = Duration.ofMinutes(15);
+    private static final String NO_PERMISSIONS = "__NO_PERMISSIONS__";
 
     private final JdbcTemplate jdbcTemplate;
     private final RedisTemplate<String, String> redisTemplate;
@@ -34,13 +37,20 @@ public class PermissionResolverImpl implements PermissionResolver {
 
         // Try Redis first
         try {
-            Set<String> cachedPermissions = redisTemplate.opsForSet().members(cacheKey);
+            Set<String> cachedPermissions =
+                    redisTemplate.opsForSet().members(cacheKey);
 
             if (cachedPermissions != null
                     && !cachedPermissions.isEmpty()) {
 
-                return cachedPermissions;
+                Set<String> permissions =
+                        new HashSet<>(cachedPermissions);
+
+                permissions.remove(NO_PERMISSIONS);
+
+                return permissions;
             }
+
         } catch (Exception ignored) {
             // Redis unavailable - continue with database fallback
         }
@@ -60,16 +70,25 @@ public class PermissionResolverImpl implements PermissionResolver {
 
         // Store permissions in Redis
         try {
+            redisTemplate.delete(cacheKey);
+
             if (!permissions.isEmpty()) {
 
                 redisTemplate.opsForSet().add(
                         cacheKey,
                         permissions.toArray(new String[0]));
 
-                redisTemplate.expire(
+            } else {
+
+                redisTemplate.opsForSet().add(
                         cacheKey,
-                        CACHE_TTL);
+                        NO_PERMISSIONS);
             }
+
+            redisTemplate.expire(
+                    cacheKey,
+                    CACHE_TTL);
+
         } catch (Exception ignored) {
             // Redis unavailable - DB result is still valid
         }
@@ -77,8 +96,6 @@ public class PermissionResolverImpl implements PermissionResolver {
         return permissions;
     }
 
-    // TODO: Verify user_roles and role_permissions column names
-    // once the related team modules are available.
     private Set<String> resolveFromDatabase(
             String userId,
             String tenantId) {
@@ -135,8 +152,23 @@ public class PermissionResolverImpl implements PermissionResolver {
         return new HashSet<>(
                 jdbcTemplate.query(
                         sql,
-                        (resultSet, rowNum) -> resultSet.getString("permission_code"),
+                        (resultSet, rowNum) ->
+                                resultSet.getString("permission_code"),
                         userId,
                         tenantId));
+    }
+
+    @Override
+    public boolean hasPermission(
+            String userId,
+            String permissionCode) {
+
+        String tenantId = TenantContext.getTenantId();
+
+        Set<String> permissions =
+                resolvePermissions(userId, tenantId);
+
+        return permissions.contains("*")
+                || permissions.contains(permissionCode);
     }
 }
