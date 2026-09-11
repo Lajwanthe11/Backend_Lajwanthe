@@ -1,6 +1,6 @@
-package com.example.platformadmin.organizations.user.repository;
+package com.example.platformadmin.user.repository;
 
-import com.example.platformadmin.organizations.user.entity.User;
+import com.example.platformadmin.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface UserRepository extends JpaRepository<User, Long> {

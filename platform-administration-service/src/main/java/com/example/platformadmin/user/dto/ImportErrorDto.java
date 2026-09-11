@@ -1,4 +1,4 @@
-package com.example.platformadmin.organizations.user.dto;
+package com.example.platformadmin.user.dto;
 
 public class ImportErrorDto {
 
