@@ -1,34 +1,20 @@
 package com.example.rbac.service;
 
 import com.example.common.abstracts.BaseService;
-import com.example.rbac.dto.*;
+import com.example.rbac.dto.RoleRequestDto;
+import com.example.rbac.dto.RoleResponseDto;
 import com.example.rbac.entity.Role;
 import com.example.rbac.enums.RoleType;
+
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
-//Service contract for Role operations
-public interface RoleService extends BaseService<Role, Long, RoleRequestDto, RoleResponseDto> {
+public interface RoleService extends BaseService<Role, UUID, RoleRequestDto, RoleResponseDto> {
 
-//Service roles by name or code
-List<RoleResponseDto> searchRoles(String query, RoleType roleType, String status);
- // Activate or deactivate role
-RoleResponseDto updateStatus(Long id, String status);
+    List<RoleResponseDto> searchRoles( String query, RoleType roleType, String status);
 
-Map<String, Long> getRoleCounts();
+    RoleResponseDto updateStatus(UUID id, String status);
 
- List<RoleTemplateSummaryDto> listTemplates();
-
- RoleTemplateDetailDto getTemplateDetail(String templateId);
-
- RoleCompareResponse compareRoles(String role1Id, String role2Id);
-
- List<RoleResponseDto> listSystemRoles();
-
- RoleResponseDto cloneRole(String sourceRoleId, RoleCloneRequest request);
-
- List<RoleHistoryDto> getHistory(String roleId);
-
- byte[] exportRoles(String format);
-
+    Map<String, Long> getRoleCounts();
 }

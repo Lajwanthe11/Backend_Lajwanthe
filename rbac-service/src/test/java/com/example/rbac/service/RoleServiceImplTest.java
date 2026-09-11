@@ -15,254 +15,308 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.UUID;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class RoleServiceImplTest {
 
-        @Mock
-        private RoleRepository roleRepository;
-        private RoleTemplateRepository roleTemplateRepository;
-        private RoleServiceImpl roleService;
-        private CurrentUserContext currentUserContext;
-        private RoleHistoryRepository roleHistoryRepository;
-        private RoleExportService roleExportService;
+    @Mock
+    private RoleRepository roleRepository;
 
-        @BeforeEach
-        void setUp() {
-                roleService = new RoleServiceImpl(roleRepository,roleTemplateRepository,currentUserContext, roleHistoryRepository,roleExportService);
-        }
+    @Mock
+    private RoleTemplateRepository roleTemplateRepository;
 
-        @Test
-        void createRole_success() {
+    @Mock
+    private CurrentUserContext currentUserContext;
 
-                RoleRequestDto request = new RoleRequestDto();
-                request.setRoleName("HR Manager");
-                request.setRoleType(RoleType.CUSTOM);
-                request.setDescription("HR role");
-                request.setStatus("ACTIVE");
+    @Mock
+    private RoleHistoryRepository roleHistoryRepository;
 
-                // Duplicate role name does not exist
-                when(roleRepository
-                                .existsByRoleNameIgnoreCaseAndTenantIdAndIsDeletedFalse(
-                                                anyString(), any()))
-                                .thenReturn(false);
+    @Mock
+    private RoleExportService roleExportService;
 
-                // Duplicate role code does not exist
-                when(roleRepository
-                                .existsByRoleCodeIgnoreCaseAndTenantIdAndIsDeletedFalse(
-                                                anyString(), any()))
-                                .thenReturn(false);
+    private RoleServiceImpl roleService;
 
-                Role savedRole = new Role();
-                savedRole.setId(1L);
-                savedRole.setRoleName("HR Manager");
-                savedRole.setRoleCode("HR_MANAGER");
-                savedRole.setRoleType(RoleType.CUSTOM);
-                savedRole.setDescription("HR role");
-                savedRole.setStatus("ACTIVE");
-                savedRole.setIsDeleted(false);
+    private UUID roleId;
+    private UUID tenantId;
 
-                when(roleRepository.save(any(Role.class)))
-                                .thenReturn(savedRole);
+    @BeforeEach
+    void setUp() {
 
-                RoleResponseDto response = roleService.create(request);
+        roleId = UUID.randomUUID();
+        tenantId = UUID.randomUUID();
 
-                assertNotNull(response);
-                assertEquals("HR Manager", response.getRoleName());
-                assertEquals("HR_MANAGER", response.getRoleCode());
-                assertEquals(RoleType.CUSTOM, response.getRoleType());
-                assertEquals("ACTIVE", response.getStatus());
-        }
+        lenient().when(currentUserContext.getTenantId())
+                .thenReturn(tenantId.toString());
 
-        @Test
-        void updateStatus_success() {
+        roleService = new RoleServiceImpl(
+                roleRepository,
+                roleTemplateRepository,
+                currentUserContext,
+                roleHistoryRepository,
+                roleExportService
+        );
+    }
 
-                Role role = new Role();
-                role.setId(1L);
-                role.setRoleName("HR Manager");
-                role.setRoleCode("HR_MANAGER");
-                role.setRoleType(RoleType.CUSTOM);
-                role.setStatus("ACTIVE");
-                role.setIsDeleted(false);
+    // Test successful role creation
+    @Test
+    void createRole_success() {
 
-                when(roleRepository.findByIdAndTenantIdAndIsDeletedFalse(
-                                any(), any()))
-                                .thenReturn(java.util.Optional.of(role));
+        RoleRequestDto request = new RoleRequestDto();
+        request.setRoleName("HR Manager");
+        request.setRoleType(RoleType.CUSTOM);
+        request.setDescription("HR role");
+        request.setStatus("ACTIVE");
 
-                when(roleRepository.save(any(Role.class)))
-                                .thenReturn(role);
+        // Duplicate role name does not exist
+        when(roleRepository
+                .existsByRoleNameIgnoreCaseAndTenantIdAndIsDeletedFalse(
+                        anyString(), any()))
+                .thenReturn(false);
 
-                RoleResponseDto response = roleService.updateStatus(1L, "INACTIVE");
+        // Duplicate role code does not exist
+        when(roleRepository
+                .existsByRoleCodeIgnoreCaseAndTenantIdAndIsDeletedFalse(
+                        anyString(), any()))
+                .thenReturn(false);
 
-                assertEquals("INACTIVE", response.getStatus());
-        }
+        Role savedRole = new Role();
+        savedRole.setId(roleId);
+        savedRole.setTenantId(tenantId);
+        savedRole.setRoleName("HR Manager");
+        savedRole.setRoleCode("HR_MANAGER");
+        savedRole.setRoleType(RoleType.CUSTOM);
+        savedRole.setDescription("HR role");
+        savedRole.setStatus("ACTIVE");
+        savedRole.setIsDeleted(false);
 
-        @Test
-        void deleteRole_softDelete_success() {
+        when(roleRepository.save(any(Role.class)))
+                .thenReturn(savedRole);
 
-                Role role = new Role();
-                role.setId(1L);
-                role.setRoleName("HR Manager");
-                role.setRoleCode("HR_MANAGER");
-                role.setRoleType(RoleType.CUSTOM);
-                role.setStatus("ACTIVE");
-                role.setIsDeleted(false);
+        RoleResponseDto response = roleService.create(request);
 
-                when(roleRepository.findByIdAndTenantIdAndIsDeletedFalse(
-                                any(), any()))
-                                .thenReturn(java.util.Optional.of(role));
+        assertNotNull(response);
+        assertEquals(roleId, response.getId());
+        assertEquals("HR Manager", response.getRoleName());
+        assertEquals("HR_MANAGER", response.getRoleCode());
+        assertEquals(RoleType.CUSTOM, response.getRoleType());
+        assertEquals("ACTIVE", response.getStatus());
+    }
 
-                when(roleRepository.save(any(Role.class)))
-                                .thenReturn(role);
+    // Test successful role status update
+    @Test
+    void updateStatus_success() {
 
-                roleService.deleteById(1L);
+        Role role = new Role();
+        role.setId(roleId);
+        role.setTenantId(tenantId);
+        role.setRoleName("HR Manager");
+        role.setRoleCode("HR_MANAGER");
+        role.setRoleType(RoleType.CUSTOM);
+        role.setStatus("ACTIVE");
+        role.setIsDeleted(false);
 
-                assertEquals(true, role.getIsDeleted());
-        }
+        when(roleRepository.findByIdAndTenantIdAndIsDeletedFalse(
+                any(), any()))
+                .thenReturn(java.util.Optional.of(role));
 
-        @Test
-        void getRoleById_success() {
+        when(roleRepository.save(any(Role.class)))
+                .thenReturn(role);
 
-                Role role = new Role();
-                role.setId(1L);
-                role.setRoleName("HR Manager");
-                role.setRoleCode("HR_MANAGER");
-                role.setRoleType(RoleType.CUSTOM);
-                role.setStatus("ACTIVE");
-                role.setIsDeleted(false);
+        RoleResponseDto response =
+                roleService.updateStatus(roleId, "INACTIVE");
 
-                when(roleRepository.findByIdAndTenantIdAndIsDeletedFalse(
-                                any(), any()))
-                                .thenReturn(java.util.Optional.of(role));
+        assertEquals("INACTIVE", response.getStatus());
+    }
 
-                RoleResponseDto response = roleService.getById(1L);
+    // Test soft delete of a role
+    @Test
+    void deleteRole_softDelete_success() {
 
-                assertNotNull(response);
-                assertEquals(1L, response.getId());
-                assertEquals("HR Manager", response.getRoleName());
-        }
+        Role role = new Role();
+        role.setId(roleId);
+        role.setTenantId(tenantId);
+        role.setRoleName("HR Manager");
+        role.setRoleCode("HR_MANAGER");
+        role.setRoleType(RoleType.CUSTOM);
+        role.setStatus("ACTIVE");
+        role.setIsDeleted(false);
 
-        @Test
-        void searchRoles_success() {
+        when(roleRepository.findByIdAndTenantIdAndIsDeletedFalse(
+                any(), any()))
+                .thenReturn(java.util.Optional.of(role));
 
-                Role role = new Role();
-                role.setId(1L);
-                role.setRoleName("HR Manager");
-                role.setRoleCode("HR_MANAGER");
-                role.setRoleType(RoleType.CUSTOM);
-                role.setStatus("ACTIVE");
-                role.setIsDeleted(false);
+        when(roleRepository.save(any(Role.class)))
+                .thenReturn(role);
 
-                when(roleRepository.searchRoles(
-                                any(), any(), any(), any()))
-                                .thenReturn(java.util.List.of(role));
+        roleService.deleteById(roleId);
 
-                java.util.List<RoleResponseDto> result = roleService.searchRoles(
-                                "HR",
-                                RoleType.CUSTOM,
-                                "ACTIVE");
+        assertEquals(true, role.getIsDeleted());
+    }
 
-                assertEquals(1, result.size());
-                assertEquals("HR Manager", result.get(0).getRoleName());
-        }
+    // Test fetching role by ID
+    @Test
+    void getRoleById_success() {
 
-        @Test
-        void getRoleCounts_success() {
+        Role role = new Role();
+        role.setId(roleId);
+        role.setTenantId(tenantId);
+        role.setRoleName("HR Manager");
+        role.setRoleCode("HR_MANAGER");
+        role.setRoleType(RoleType.CUSTOM);
+        role.setStatus("ACTIVE");
+        role.setIsDeleted(false);
 
-                when(roleRepository.countByTenantIdAndIsDeletedFalse(any()))
-                                .thenReturn(5L);
+        when(roleRepository.findByIdAndTenantIdAndIsDeletedFalse(
+                any(), any()))
+                .thenReturn(java.util.Optional.of(role));
 
-                when(roleRepository.countByTenantIdAndRoleTypeAndIsDeletedFalse(
-                                any(), any()))
-                                .thenReturn(2L, 3L);
+        RoleResponseDto response = roleService.getById(roleId);
 
-                java.util.Map<String, Long> counts = roleService.getRoleCounts();
+        assertNotNull(response);
+        assertEquals(roleId, response.getId());
+        assertEquals("HR Manager", response.getRoleName());
+    }
 
-                assertEquals(5L, counts.get("totalRoles"));
-                assertEquals(2L, counts.get("systemRoles"));
-                assertEquals(3L, counts.get("customRoles"));
-        }
+    // Test role search and filter
+    @Test
+    void searchRoles_success() {
 
-        @Test
-        void updateRole_success() {
+        Role role = new Role();
+        role.setId(roleId);
+        role.setTenantId(tenantId);
+        role.setRoleName("HR Manager");
+        role.setRoleCode("HR_MANAGER");
+        role.setRoleType(RoleType.CUSTOM);
+        role.setStatus("ACTIVE");
+        role.setIsDeleted(false);
 
-                Role existingRole = new Role();
-                existingRole.setId(1L);
-                existingRole.setRoleName("HR Manager");
-                existingRole.setRoleCode("HR_MANAGER");
-                existingRole.setRoleType(RoleType.CUSTOM);
-                existingRole.setDescription("Old description");
-                existingRole.setStatus("ACTIVE");
-                existingRole.setIsDeleted(false);
+        when(roleRepository.searchRoles(
+                any(), any(), any(), any()))
+                .thenReturn(java.util.List.of(role));
 
-                RoleRequestDto request = new RoleRequestDto();
-                request.setRoleName("HR Lead");
-                request.setDescription("Updated description");
+        java.util.List<RoleResponseDto> result =
+                roleService.searchRoles(
+                        "HR",
+                        RoleType.CUSTOM,
+                        "ACTIVE"
+                );
 
-                when(roleRepository.findByIdAndTenantIdAndIsDeletedFalse(
-                                any(), any()))
-                                .thenReturn(java.util.Optional.of(existingRole));
+        assertEquals(1, result.size());
+        assertEquals("HR Manager", result.get(0).getRoleName());
+    }
 
-                when(roleRepository
-                                .existsByRoleNameIgnoreCaseAndTenantIdAndIsDeletedFalse(
-                                                anyString(), any()))
-                                .thenReturn(false);
+    // Test role dashboard counts
+    @Test
+    void getRoleCounts_success() {
 
-                when(roleRepository.save(any(Role.class)))
-                                .thenReturn(existingRole);
+        when(roleRepository.countByTenantIdAndIsDeletedFalse(any()))
+                .thenReturn(5L);
 
-                RoleResponseDto response = roleService.update(1L, request);
+        when(roleRepository
+                .countByTenantIdAndRoleTypeAndIsDeletedFalse(
+                        any(), any()))
+                .thenReturn(2L, 3L);
 
-                assertEquals("HR Lead", response.getRoleName());
-                assertEquals("Updated description", response.getDescription());
+        java.util.Map<String, Long> counts =
+                roleService.getRoleCounts();
 
-                // Code and type should not change during update
-                assertEquals("HR_MANAGER", response.getRoleCode());
-                assertEquals(RoleType.CUSTOM, response.getRoleType());
-        }
+        assertEquals(5L, counts.get("totalRoles"));
+        assertEquals(2L, counts.get("systemRoles"));
+        assertEquals(3L, counts.get("customRoles"));
+    }
 
-        @Test
-        void updateStatus_invalidStatus() {
+    // Test successful role update
+    @Test
+    void updateRole_success() {
 
-                org.junit.jupiter.api.Assertions.assertThrows(
-                                Exception.class,
-                                () -> roleService.updateStatus(1L, "PENDING"));
-        }
+        Role existingRole = new Role();
+        existingRole.setId(roleId);
+        existingRole.setTenantId(tenantId);
+        existingRole.setRoleName("HR Manager");
+        existingRole.setRoleCode("HR_MANAGER");
+        existingRole.setRoleType(RoleType.CUSTOM);
+        existingRole.setDescription("Old description");
+        existingRole.setStatus("ACTIVE");
+        existingRole.setIsDeleted(false);
 
-        @Test
-        void getRoleById_notFound() {
+        RoleRequestDto request = new RoleRequestDto();
+        request.setRoleName("HR Lead");
+        request.setDescription("Updated description");
 
-                when(roleRepository.findByIdAndTenantIdAndIsDeletedFalse(
-                                any(), any()))
-                                .thenReturn(java.util.Optional.empty());
+        when(roleRepository.findByIdAndTenantIdAndIsDeletedFalse(
+                any(), any()))
+                .thenReturn(java.util.Optional.of(existingRole));
 
-                org.junit.jupiter.api.Assertions.assertThrows(
-                                Exception.class,
-                                () -> roleService.getById(1L));
-        }
+        when(roleRepository
+                .existsByRoleNameIgnoreCaseAndTenantIdAndIsDeletedFalse(
+                        anyString(), any()))
+                .thenReturn(false);
 
-        @Test
-        void deleteProtectedSystemRole_shouldThrowException() {
+        when(roleRepository.save(any(Role.class)))
+                .thenReturn(existingRole);
 
-                Role role = new Role();
-                role.setId(1L);
-                role.setRoleName("Admin");
-                role.setRoleCode("ADMIN");
-                role.setRoleType(RoleType.SYSTEM);
-                role.setStatus("ACTIVE");
-                role.setIsDeleted(false);
+        RoleResponseDto response =
+                roleService.update(roleId, request);
 
-                when(roleRepository.findByIdAndTenantIdAndIsDeletedFalse(
-                                any(), any()))
-                                .thenReturn(java.util.Optional.of(role));
+        assertEquals("HR Lead", response.getRoleName());
+        assertEquals("Updated description", response.getDescription());
 
-                org.junit.jupiter.api.Assertions.assertThrows(
-                                Exception.class,
-                                () -> roleService.deleteById(1L));
-        }
+        // Code and type should not change during update
+        assertEquals("HR_MANAGER", response.getRoleCode());
+        assertEquals(RoleType.CUSTOM, response.getRoleType());
+    }
+
+    // Test invalid role status
+    @Test
+    void updateStatus_invalidStatus() {
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                Exception.class,
+                () -> roleService.updateStatus(roleId, "PENDING")
+        );
+    }
+
+    // Test role not found scenario
+    @Test
+    void getRoleById_notFound() {
+
+        when(roleRepository.findByIdAndTenantIdAndIsDeletedFalse(
+                any(), any()))
+                .thenReturn(java.util.Optional.empty());
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                Exception.class,
+                () -> roleService.getById(roleId)
+        );
+    }
+
+    // Test protected system role deletion
+    @Test
+    void deleteProtectedSystemRole_shouldThrowException() {
+
+        Role role = new Role();
+        role.setId(roleId);
+        role.setTenantId(tenantId);
+        role.setRoleName("Admin");
+        role.setRoleCode("ADMIN");
+        role.setRoleType(RoleType.SYSTEM);
+        role.setStatus("ACTIVE");
+        role.setIsDeleted(false);
+
+        when(roleRepository.findByIdAndTenantIdAndIsDeletedFalse(
+                any(), any()))
+                .thenReturn(java.util.Optional.of(role));
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                Exception.class,
+                () -> roleService.deleteById(roleId));
+    }
 }
