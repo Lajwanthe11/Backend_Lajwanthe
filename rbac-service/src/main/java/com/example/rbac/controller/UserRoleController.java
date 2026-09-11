@@ -1,9 +1,9 @@
-package com.stackly.roleassiagn.controller;
+package com.example.rbac.controller;
 
-import com.stackly.roleassiagn.dto.request.AssignRoleRequest;
-import com.stackly.roleassiagn.dto.request.RevokeRoleRequest;
-import com.stackly.roleassiagn.dto.response.UserRoleResponse;
-import com.stackly.roleassiagn.service.UserRoleService;
+import com.example.rbac.dto.request.AssignRoleRequest;
+import com.example.rbac.dto.request.RevokeRoleRequest;
+import com.example.rbac.dto.response.UserRoleResponse;
+import com.example.rbac.service.UserRoleService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
