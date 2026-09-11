@@ -1,15 +1,14 @@
 package com.example.qa.sprint2.department;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import com.example.rbac.RbacApplication;
-import org.springframework.test.context.ContextConfiguration;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
@@ -22,25 +21,41 @@ class DepartmentRepositoryTest {
     @Autowired
     private RoleDepartmentMapRepository repository;
 
+    private UUID roleOne;
+    private UUID roleTwo;
+
+    private UUID department101;
+    private UUID department102;
+    private UUID department103;
+    private UUID department201;
+
     @BeforeEach
     void setUp() {
 
         repository.deleteAll();
 
+        roleOne = UUID.randomUUID();
+        roleTwo = UUID.randomUUID();
+
+        department101 = UUID.randomUUID();
+        department102 = UUID.randomUUID();
+        department103 = UUID.randomUUID();
+        department201 = UUID.randomUUID();
+
         repository.save(
-                createMap(1L, 101L)
+                createMap(roleOne, department101)
         );
 
         repository.save(
-                createMap(1L, 102L)
+                createMap(roleOne, department102)
         );
 
         repository.save(
-                createMap(1L, 103L)
+                createMap(roleOne, department103)
         );
 
         repository.save(
-                createMap(2L, 201L)
+                createMap(roleTwo, department201)
         );
     }
 
@@ -52,15 +67,16 @@ class DepartmentRepositoryTest {
     void findByUserRoleId_shouldReturnMappingsForRole() {
 
         List<RoleDepartmentMap> result =
-                repository.findByUserRoleId(1L);
+                repository.findByUserRoleId(roleOne);
 
         assertEquals(3, result.size());
 
         assertTrue(
                 result.stream()
                         .allMatch(map ->
-                                map.getUserRoleId()
-                                        .equals(1L))
+                                roleOne.equals(
+                                        map.getUserRoleId()
+                                ))
         );
     }
 
@@ -68,21 +84,24 @@ class DepartmentRepositoryTest {
     void findByUserRoleId_shouldNotReturnOtherRoleMappings() {
 
         List<RoleDepartmentMap> result =
-                repository.findByUserRoleId(1L);
+                repository.findByUserRoleId(roleOne);
 
         assertTrue(
                 result.stream()
                         .noneMatch(map ->
-                                map.getUserRoleId()
-                                        .equals(2L))
+                                roleTwo.equals(
+                                        map.getUserRoleId()
+                                ))
         );
     }
 
     @Test
     void findByUserRoleId_shouldReturnEmptyWhenNoMappingsExist() {
 
+        UUID unknownRole = UUID.randomUUID();
+
         List<RoleDepartmentMap> result =
-                repository.findByUserRoleId(999L);
+                repository.findByUserRoleId(unknownRole);
 
         assertNotNull(result);
         assertTrue(result.isEmpty());
@@ -92,23 +111,30 @@ class DepartmentRepositoryTest {
     void findByUserRoleId_shouldReturnCorrectDepartmentIds() {
 
         List<RoleDepartmentMap> result =
-                repository.findByUserRoleId(1L);
+                repository.findByUserRoleId(roleOne);
 
-        List<Long> departmentIds =
+        List<UUID> departmentIds =
                 result.stream()
                         .map(RoleDepartmentMap::getDepartmentId)
                         .toList();
 
         assertTrue(
-                departmentIds.contains(101L)
+                departmentIds.contains(department101)
         );
 
         assertTrue(
-                departmentIds.contains(102L)
+                departmentIds.contains(department102)
         );
 
         assertTrue(
-                departmentIds.contains(103L)
+                departmentIds.contains(department103)
+        );
+
+        assertTrue(
+                departmentIds.stream()
+                        .noneMatch(
+                                department201::equals
+                        )
         );
     }
 
@@ -119,37 +145,42 @@ class DepartmentRepositoryTest {
     @Test
     void deleteByUserRoleId_shouldDeleteOnlySelectedRoleMappings() {
 
-        repository.deleteByUserRoleId(1L);
+        repository.deleteByUserRoleId(roleOne);
 
-        List<RoleDepartmentMap> roleOne =
-                repository.findByUserRoleId(1L);
+        List<RoleDepartmentMap> roleOneMappings =
+                repository.findByUserRoleId(roleOne);
 
-        List<RoleDepartmentMap> roleTwo =
-                repository.findByUserRoleId(2L);
+        List<RoleDepartmentMap> roleTwoMappings =
+                repository.findByUserRoleId(roleTwo);
 
-        assertTrue(roleOne.isEmpty());
-
-        assertEquals(1, roleTwo.size());
+        assertTrue(roleOneMappings.isEmpty());
 
         assertEquals(
-                201L,
-                roleTwo.get(0).getDepartmentId()
+                1,
+                roleTwoMappings.size()
+        );
+
+        assertEquals(
+                department201,
+                roleTwoMappings.get(0).getDepartmentId()
         );
     }
 
     @Test
     void deleteByUserRoleId_shouldDoNothingForUnknownRole() {
 
-        repository.deleteByUserRoleId(999L);
+        UUID unknownRole = UUID.randomUUID();
+
+        repository.deleteByUserRoleId(unknownRole);
 
         assertEquals(
                 3,
-                repository.findByUserRoleId(1L).size()
+                repository.findByUserRoleId(roleOne).size()
         );
 
         assertEquals(
                 1,
-                repository.findByUserRoleId(2L).size()
+                repository.findByUserRoleId(roleTwo).size()
         );
     }
 
@@ -160,8 +191,14 @@ class DepartmentRepositoryTest {
     @Test
     void save_shouldPersistMapping() {
 
+        UUID roleThree = UUID.randomUUID();
+        UUID department301 = UUID.randomUUID();
+
         RoleDepartmentMap map =
-                createMap(3L, 301L);
+                createMap(
+                        roleThree,
+                        department301
+                );
 
         RoleDepartmentMap saved =
                 repository.save(map);
@@ -169,13 +206,18 @@ class DepartmentRepositoryTest {
         assertNotNull(saved.getId());
 
         List<RoleDepartmentMap> result =
-                repository.findByUserRoleId(3L);
+                repository.findByUserRoleId(roleThree);
 
         assertEquals(1, result.size());
 
         assertEquals(
-                301L,
+                department301,
                 result.get(0).getDepartmentId()
+        );
+
+        assertEquals(
+                roleThree,
+                result.get(0).getUserRoleId()
         );
     }
 
@@ -184,8 +226,8 @@ class DepartmentRepositoryTest {
     // =========================================================
 
     private RoleDepartmentMap createMap(
-            Long userRoleId,
-            Long departmentId) {
+            UUID userRoleId,
+            UUID departmentId) {
 
         RoleDepartmentMap map =
                 new RoleDepartmentMap();

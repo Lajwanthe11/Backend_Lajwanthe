@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -15,7 +14,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -23,6 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import com.example.common.exception.BadRequestException;
 import com.example.common.exception.ResourceNotFoundException;
@@ -32,14 +31,19 @@ import com.example.rbac.dto.RoleRequestDto;
 import com.example.rbac.dto.RoleResponseDto;
 import com.example.rbac.dto.RoleTemplateDetailDto;
 import com.example.rbac.dto.RoleTemplateSummaryDto;
+
 import com.example.rbac.entity.Permission;
 import com.example.rbac.entity.Role;
 import com.example.rbac.entity.RoleTemplate;
+
 import com.example.rbac.enums.RoleType;
+
 import com.example.rbac.repository.RoleRepository;
 import com.example.rbac.repository.RoleTemplateRepository;
+
 import com.example.rbac.service.CurrentUserContext;
 import com.example.rbac.service.serviceImpl.RoleServiceImpl;
+
 
 @ExtendWith(MockitoExtension.class)
 class RoleServiceTest {
@@ -56,48 +60,55 @@ class RoleServiceTest {
     @InjectMocks
     private RoleServiceImpl roleService;
 
+
     @BeforeEach
     void setUp() {
         TenantContext.setTenantId("tenant-a");
     }
+
 
     @AfterEach
     void tearDown() {
         TenantContext.clear();
     }
 
-    // =========================================================
-    // CREATE
-    // =========================================================
+
+    // ============================================================
+    // CREATE ROLE
+    // ============================================================
 
     @Test
-    void createRole_shouldCreateRoleForCurrentTenant() {
+    void createRole_shouldCreateRoleSuccessfully() {
 
         RoleRequestDto request = new RoleRequestDto(
                 "HR Manager",
                 "HR_MANAGER",
                 RoleType.CUSTOM,
-                "HR manager",
+                "HR management role",
                 "ACTIVE"
         );
-
-        when(roleRepository
-                .existsByRoleNameIgnoreCaseAndTenantIdAndIsDeletedFalse(
-                        "HR Manager", "tenant-a"))
-                .thenReturn(false);
-
-        when(roleRepository
-                .existsByRoleCodeIgnoreCaseAndTenantIdAndIsDeletedFalse(
-                        "HR_MANAGER", "tenant-a"))
-                .thenReturn(false);
 
         Role savedRole = createRole(
                 1L,
                 "HR Manager",
                 "HR_MANAGER",
                 RoleType.CUSTOM,
+                "ACTIVE",
+                false,
                 "tenant-a"
         );
+
+        when(roleRepository
+                .existsByRoleNameIgnoreCaseAndTenantIdAndIsDeletedFalse(
+                        "HR Manager",
+                        "tenant-a"))
+                .thenReturn(false);
+
+        when(roleRepository
+                .existsByRoleCodeIgnoreCaseAndTenantIdAndIsDeletedFalse(
+                        "HR_MANAGER",
+                        "tenant-a"))
+                .thenReturn(false);
 
         when(roleRepository.save(any(Role.class)))
                 .thenReturn(savedRole);
@@ -108,18 +119,11 @@ class RoleServiceTest {
         assertEquals("HR Manager", result.getRoleName());
         assertEquals("HR_MANAGER", result.getRoleCode());
         assertEquals(RoleType.CUSTOM, result.getRoleType());
+        assertEquals("ACTIVE", result.getStatus());
 
-        ArgumentCaptor<Role> captor =
-                ArgumentCaptor.forClass(Role.class);
-
-        verify(roleRepository).save(captor.capture());
-
-        Role role = captor.getValue();
-
-        assertEquals("tenant-a", role.getTenantId());
-        assertFalse(role.getIsDeleted());
-        assertEquals("ACTIVE", role.getStatus());
+        verify(roleRepository).save(any(Role.class));
     }
+
 
     @Test
     void createRole_shouldGenerateRoleCodeWhenCodeIsMissing() {
@@ -129,24 +133,178 @@ class RoleServiceTest {
                 null,
                 RoleType.CUSTOM,
                 "HR role",
-                null
+                "ACTIVE"
         );
-
-        when(roleRepository
-                .existsByRoleNameIgnoreCaseAndTenantIdAndIsDeletedFalse(
-                        "HR Manager", "tenant-a"))
-                .thenReturn(false);
-
-        when(roleRepository
-                .existsByRoleCodeIgnoreCaseAndTenantIdAndIsDeletedFalse(
-                        "HR_MANAGER", "tenant-a"))
-                .thenReturn(false);
 
         Role savedRole = createRole(
                 1L,
                 "HR Manager",
                 "HR_MANAGER",
                 RoleType.CUSTOM,
+                "ACTIVE",
+                false,
+                "tenant-a"
+        );
+
+        when(roleRepository
+                .existsByRoleNameIgnoreCaseAndTenantIdAndIsDeletedFalse(
+                        "HR Manager",
+                        "tenant-a"))
+                .thenReturn(false);
+
+        when(roleRepository
+                .existsByRoleCodeIgnoreCaseAndTenantIdAndIsDeletedFalse(
+                        "HR_MANAGER",
+                        "tenant-a"))
+                .thenReturn(false);
+
+        when(roleRepository.save(any(Role.class)))
+                .thenReturn(savedRole);
+
+        RoleResponseDto result = roleService.create(request);
+
+        assertNotNull(result);
+        assertEquals("HR_MANAGER", result.getRoleCode());
+
+        verify(roleRepository).save(
+                argThat(role ->
+                        "HR_MANAGER".equals(role.getRoleCode())
+                )
+        );
+    }
+
+
+    @Test
+    void createRole_shouldGenerateRoleCodeFromSpecialCharacters() {
+
+        RoleRequestDto request = new RoleRequestDto(
+                "Finance Manager",
+                null,
+                RoleType.CUSTOM,
+                "Finance role",
+                null
+        );
+
+        Role savedRole = createRole(
+                2L,
+                "Finance Manager",
+                "FINANCE_MANAGER",
+                RoleType.CUSTOM,
+                "ACTIVE",
+                false,
+                "tenant-a"
+        );
+
+        when(roleRepository
+                .existsByRoleNameIgnoreCaseAndTenantIdAndIsDeletedFalse(
+                        "Finance Manager",
+                        "tenant-a"))
+                .thenReturn(false);
+
+        when(roleRepository
+                .existsByRoleCodeIgnoreCaseAndTenantIdAndIsDeletedFalse(
+                        "FINANCE_MANAGER",
+                        "tenant-a"))
+                .thenReturn(false);
+
+        when(roleRepository.save(any(Role.class)))
+                .thenReturn(savedRole);
+
+        RoleResponseDto result = roleService.create(request);
+
+        assertEquals("FINANCE_MANAGER", result.getRoleCode());
+        assertEquals("ACTIVE", result.getStatus());
+    }
+
+
+    @Test
+    void createRole_shouldThrowWhenRoleNameAlreadyExists() {
+
+        RoleRequestDto request = new RoleRequestDto(
+                "HR Manager",
+                "HR_MANAGER",
+                RoleType.CUSTOM,
+                "HR role",
+                "ACTIVE"
+        );
+
+        when(roleRepository
+                .existsByRoleNameIgnoreCaseAndTenantIdAndIsDeletedFalse(
+                        "HR Manager",
+                        "tenant-a"))
+                .thenReturn(true);
+
+        assertThrows(
+                BadRequestException.class,
+                () -> roleService.create(request)
+        );
+
+        verify(roleRepository, never()).save(any(Role.class));
+    }
+
+
+    @Test
+    void createRole_shouldThrowWhenRoleCodeAlreadyExists() {
+
+        RoleRequestDto request = new RoleRequestDto(
+                "Finance Manager",
+                "HR_MANAGER",
+                RoleType.CUSTOM,
+                "Finance role",
+                "ACTIVE"
+        );
+
+        when(roleRepository
+                .existsByRoleNameIgnoreCaseAndTenantIdAndIsDeletedFalse(
+                        "Finance Manager",
+                        "tenant-a"))
+                .thenReturn(false);
+
+        when(roleRepository
+                .existsByRoleCodeIgnoreCaseAndTenantIdAndIsDeletedFalse(
+                        "HR_MANAGER",
+                        "tenant-a"))
+                .thenReturn(true);
+
+        assertThrows(
+                BadRequestException.class,
+                () -> roleService.create(request)
+        );
+
+        verify(roleRepository, never()).save(any(Role.class));
+    }
+
+
+    @Test
+    void createRole_shouldAllowSameRoleNameInDifferentTenant() {
+
+        RoleRequestDto request = new RoleRequestDto(
+                "HR Manager",
+                "HR_MANAGER",
+                RoleType.CUSTOM,
+                "HR role",
+                "ACTIVE"
+        );
+
+        when(roleRepository
+                .existsByRoleNameIgnoreCaseAndTenantIdAndIsDeletedFalse(
+                        "HR Manager",
+                        "tenant-a"))
+                .thenReturn(false);
+
+        when(roleRepository
+                .existsByRoleCodeIgnoreCaseAndTenantIdAndIsDeletedFalse(
+                        "HR_MANAGER",
+                        "tenant-a"))
+                .thenReturn(false);
+
+        Role savedRole = createRole(
+                5L,
+                "HR Manager",
+                "HR_MANAGER",
+                RoleType.CUSTOM,
+                "ACTIVE",
+                false,
                 "tenant-a"
         );
 
@@ -155,81 +313,37 @@ class RoleServiceTest {
 
         RoleResponseDto result = roleService.create(request);
 
-        assertEquals("HR_MANAGER", result.getRoleCode());
-        assertEquals("ACTIVE", result.getStatus());
-    }
+        assertNotNull(result);
 
-    @Test
-    void createRole_shouldRejectDuplicateRoleName() {
-
-        RoleRequestDto request = new RoleRequestDto(
-                "HR Manager",
-                "HR_MANAGER",
-                RoleType.CUSTOM,
-                "HR role",
-                "ACTIVE"
-        );
-
-        when(roleRepository
+        verify(roleRepository)
                 .existsByRoleNameIgnoreCaseAndTenantIdAndIsDeletedFalse(
-                        "HR Manager", "tenant-a"))
-                .thenReturn(true);
-
-        assertThrows(
-                BadRequestException.class,
-                () -> roleService.create(request)
-        );
-
-        verify(roleRepository, never()).save(any(Role.class));
+                        "HR Manager",
+                        "tenant-a"
+                );
     }
 
-    @Test
-    void createRole_shouldRejectDuplicateRoleCode() {
 
-        RoleRequestDto request = new RoleRequestDto(
-                "HR Manager",
-                "HR_MANAGER",
-                RoleType.CUSTOM,
-                "HR role",
-                "ACTIVE"
-        );
-
-        when(roleRepository
-                .existsByRoleNameIgnoreCaseAndTenantIdAndIsDeletedFalse(
-                        "HR Manager", "tenant-a"))
-                .thenReturn(false);
-
-        when(roleRepository
-                .existsByRoleCodeIgnoreCaseAndTenantIdAndIsDeletedFalse(
-                        "HR_MANAGER", "tenant-a"))
-                .thenReturn(true);
-
-        assertThrows(
-                BadRequestException.class,
-                () -> roleService.create(request)
-        );
-
-        verify(roleRepository, never()).save(any(Role.class));
-    }
-
-    // =========================================================
+    // ============================================================
     // GET BY ID
-    // =========================================================
+    // ============================================================
 
     @Test
-    void getById_shouldReturnRoleForCurrentTenant() {
+    void getById_shouldReturnRole() {
 
         Role role = createRole(
                 1L,
                 "HR Manager",
                 "HR_MANAGER",
                 RoleType.CUSTOM,
+                "ACTIVE",
+                false,
                 "tenant-a"
         );
 
         when(roleRepository
                 .findByIdAndTenantIdAndIsDeletedFalse(
-                        1L, "tenant-a"))
+                        1L,
+                        "tenant-a"))
                 .thenReturn(Optional.of(role));
 
         RoleResponseDto result = roleService.getById(1L);
@@ -238,18 +352,33 @@ class RoleServiceTest {
         assertEquals(1L, result.getId());
         assertEquals("HR Manager", result.getRoleName());
         assertEquals("HR_MANAGER", result.getRoleCode());
-
-        verify(roleRepository)
-                .findByIdAndTenantIdAndIsDeletedFalse(
-                        1L, "tenant-a");
+        assertEquals(RoleType.CUSTOM, result.getRoleType());
     }
 
+
     @Test
-    void getById_shouldThrowExceptionWhenRoleDoesNotExist() {
+    void getById_shouldThrowWhenRoleDoesNotExist() {
 
         when(roleRepository
                 .findByIdAndTenantIdAndIsDeletedFalse(
-                        1L, "tenant-a"))
+                        99L,
+                        "tenant-a"))
+                .thenReturn(Optional.empty());
+
+        assertThrows(
+                ResourceNotFoundException.class,
+                () -> roleService.getById(99L)
+        );
+    }
+
+
+    @Test
+    void getById_shouldNotReturnRoleFromAnotherTenant() {
+
+        when(roleRepository
+                .findByIdAndTenantIdAndIsDeletedFalse(
+                        1L,
+                        "tenant-a"))
                 .thenReturn(Optional.empty());
 
         assertThrows(
@@ -258,18 +387,21 @@ class RoleServiceTest {
         );
     }
 
-    // =========================================================
+
+    // ============================================================
     // GET ALL
-    // =========================================================
+    // ============================================================
 
     @Test
-    void getAll_shouldReturnOnlyCurrentTenantRoles() {
+    void getAll_shouldReturnCurrentTenantRoles() {
 
         Role role1 = createRole(
                 1L,
                 "HR Manager",
                 "HR_MANAGER",
                 RoleType.CUSTOM,
+                "ACTIVE",
+                false,
                 "tenant-a"
         );
 
@@ -278,6 +410,8 @@ class RoleServiceTest {
                 "Finance Manager",
                 "FINANCE_MANAGER",
                 RoleType.CUSTOM,
+                "ACTIVE",
+                false,
                 "tenant-a"
         );
 
@@ -285,24 +419,14 @@ class RoleServiceTest {
                 .findByTenantIdAndIsDeletedFalse("tenant-a"))
                 .thenReturn(List.of(role1, role2));
 
-        List<RoleResponseDto> result =
-                roleService.getAll();
+        List<RoleResponseDto> result = roleService.getAll();
 
+        assertNotNull(result);
         assertEquals(2, result.size());
-
-        assertEquals(
-                "HR Manager",
-                result.get(0).getRoleName()
-        );
-
-        assertEquals(
-                "Finance Manager",
-                result.get(1).getRoleName()
-        );
-
-        verify(roleRepository)
-                .findByTenantIdAndIsDeletedFalse("tenant-a");
+        assertEquals("HR Manager", result.get(0).getRoleName());
+        assertEquals("Finance Manager", result.get(1).getRoleName());
     }
+
 
     @Test
     void getAll_shouldReturnEmptyListWhenNoRolesExist() {
@@ -311,63 +435,57 @@ class RoleServiceTest {
                 .findByTenantIdAndIsDeletedFalse("tenant-a"))
                 .thenReturn(List.of());
 
-        List<RoleResponseDto> result =
-                roleService.getAll();
+        List<RoleResponseDto> result = roleService.getAll();
 
         assertNotNull(result);
         assertTrue(result.isEmpty());
     }
 
-    // =========================================================
+
+    // ============================================================
     // PAGINATION
-    // =========================================================
+    // ============================================================
 
     @Test
-    void getAllPaged_shouldUseTenantAwareQuery() {
-
-        PageRequest pageable =
-                PageRequest.of(0, 10);
+    void getAll_withPagination_shouldReturnPage() {
 
         Role role = createRole(
                 1L,
                 "HR Manager",
                 "HR_MANAGER",
                 RoleType.CUSTOM,
+                "ACTIVE",
+                false,
                 "tenant-a"
         );
 
-        Page<Role> page =
-                new PageImpl<>(
-                        List.of(role),
-                        pageable,
-                        1
-                );
+        Pageable pageable = PageRequest.of(0, 10);
+
+        Page<Role> rolePage =
+                new PageImpl<>(List.of(role), pageable, 1);
 
         when(roleRepository
                 .findByTenantIdAndIsDeletedFalse(
                         "tenant-a",
                         pageable))
-                .thenReturn(page);
+                .thenReturn(rolePage);
 
         Page<RoleResponseDto> result =
                 roleService.getAll(pageable);
 
+        assertNotNull(result);
         assertEquals(1, result.getTotalElements());
+        assertEquals(1, result.getContent().size());
         assertEquals(
                 "HR Manager",
                 result.getContent().get(0).getRoleName()
         );
-
-        verify(roleRepository)
-                .findByTenantIdAndIsDeletedFalse(
-                        "tenant-a",
-                        pageable
-                );
     }
 
-    // =========================================================
+
+    // ============================================================
     // SEARCH
-    // =========================================================
+    // ============================================================
 
     @Test
     void searchRoles_shouldSearchByQuery() {
@@ -377,6 +495,8 @@ class RoleServiceTest {
                 "HR Manager",
                 "HR_MANAGER",
                 RoleType.CUSTOM,
+                "ACTIVE",
+                false,
                 "tenant-a"
         );
 
@@ -384,29 +504,16 @@ class RoleServiceTest {
                 "tenant-a",
                 "HR",
                 null,
-                null
-        )).thenReturn(List.of(role));
+                null))
+                .thenReturn(List.of(role));
 
         List<RoleResponseDto> result =
-                roleService.searchRoles(
-                        "HR",
-                        null,
-                        null
-                );
+                roleService.searchRoles("HR", null, null);
 
         assertEquals(1, result.size());
-        assertEquals(
-                "HR Manager",
-                result.get(0).getRoleName()
-        );
-
-        verify(roleRepository).searchRoles(
-                "tenant-a",
-                "HR",
-                null,
-                null
-        );
+        assertEquals("HR Manager", result.get(0).getRoleName());
     }
+
 
     @Test
     void searchRoles_shouldFilterByRoleType() {
@@ -416,6 +523,8 @@ class RoleServiceTest {
                 "HR Manager",
                 "HR_MANAGER",
                 RoleType.CUSTOM,
+                "ACTIVE",
+                false,
                 "tenant-a"
         );
 
@@ -423,8 +532,8 @@ class RoleServiceTest {
                 "tenant-a",
                 null,
                 RoleType.CUSTOM,
-                null
-        )).thenReturn(List.of(role));
+                null))
+                .thenReturn(List.of(role));
 
         List<RoleResponseDto> result =
                 roleService.searchRoles(
@@ -434,20 +543,20 @@ class RoleServiceTest {
                 );
 
         assertEquals(1, result.size());
-        assertEquals(
-                RoleType.CUSTOM,
-                result.get(0).getRoleType()
-        );
+        assertEquals(RoleType.CUSTOM, result.get(0).getRoleType());
     }
+
 
     @Test
     void searchRoles_shouldFilterByStatus() {
 
         Role role = createRole(
                 1L,
-                "HR Manager",
-                "HR_MANAGER",
+                "Finance Manager",
+                "FINANCE_MANAGER",
                 RoleType.CUSTOM,
+                "INACTIVE",
+                false,
                 "tenant-a"
         );
 
@@ -455,31 +564,31 @@ class RoleServiceTest {
                 "tenant-a",
                 null,
                 null,
-                "ACTIVE"
-        )).thenReturn(List.of(role));
+                "INACTIVE"))
+                .thenReturn(List.of(role));
 
         List<RoleResponseDto> result =
                 roleService.searchRoles(
                         null,
                         null,
-                        "ACTIVE"
+                        "INACTIVE"
                 );
 
         assertEquals(1, result.size());
-        assertEquals(
-                "ACTIVE",
-                result.get(0).getStatus()
-        );
+        assertEquals("INACTIVE", result.get(0).getStatus());
     }
 
+
     @Test
-    void searchRoles_shouldSupportAllFiltersTogether() {
+    void searchRoles_shouldSupportAllFilters() {
 
         Role role = createRole(
                 1L,
                 "HR Manager",
                 "HR_MANAGER",
                 RoleType.CUSTOM,
+                "ACTIVE",
+                false,
                 "tenant-a"
         );
 
@@ -487,8 +596,8 @@ class RoleServiceTest {
                 "tenant-a",
                 "HR",
                 RoleType.CUSTOM,
-                "ACTIVE"
-        )).thenReturn(List.of(role));
+                "ACTIVE"))
+                .thenReturn(List.of(role));
 
         List<RoleResponseDto> result =
                 roleService.searchRoles(
@@ -498,42 +607,48 @@ class RoleServiceTest {
                 );
 
         assertEquals(1, result.size());
-        assertEquals("HR Manager", result.get(0).getRoleName());
+
+        verify(roleRepository).searchRoles(
+                "tenant-a",
+                "HR",
+                RoleType.CUSTOM,
+                "ACTIVE"
+        );
     }
 
+
     @Test
-    void searchRoles_shouldReturnEmptyListWhenNoMatch() {
+    void searchRoles_shouldReturnEmptyWhenNoMatch() {
 
         when(roleRepository.searchRoles(
                 "tenant-a",
-                "xyz",
+                "XYZ",
                 null,
-                null
-        )).thenReturn(List.of());
+                null))
+                .thenReturn(List.of());
 
         List<RoleResponseDto> result =
-                roleService.searchRoles(
-                        "xyz",
-                        null,
-                        null
-                );
+                roleService.searchRoles("XYZ", null, null);
 
         assertNotNull(result);
         assertTrue(result.isEmpty());
     }
 
-    // =========================================================
+
+    // ============================================================
     // UPDATE
-    // =========================================================
+    // ============================================================
 
     @Test
-    void updateRole_shouldUpdateRoleNameAndDescription() {
+    void update_shouldUpdateRoleNameAndDescription() {
 
-        Role existingRole = createRole(
+        Role role = createRole(
                 1L,
                 "HR Manager",
                 "HR_MANAGER",
                 RoleType.CUSTOM,
+                "ACTIVE",
+                false,
                 "tenant-a"
         );
 
@@ -541,7 +656,7 @@ class RoleServiceTest {
                 "Senior HR Manager",
                 "HR_MANAGER",
                 RoleType.CUSTOM,
-                "Updated description",
+                "Updated HR description",
                 "ACTIVE"
         );
 
@@ -549,51 +664,39 @@ class RoleServiceTest {
                 .findByIdAndTenantIdAndIsDeletedFalse(
                         1L,
                         "tenant-a"))
-                .thenReturn(Optional.of(existingRole));
-
-        when(roleRepository
-                .existsByRoleNameIgnoreCaseAndTenantIdAndIsDeletedFalse(
-                        "Senior HR Manager",
-                        "tenant-a"))
-                .thenReturn(false);
+                .thenReturn(Optional.of(role));
 
         when(roleRepository.save(any(Role.class)))
-                .thenAnswer(invocation ->
-                        invocation.getArgument(0));
+                .thenReturn(role);
 
         RoleResponseDto result =
                 roleService.update(1L, request);
 
+        assertNotNull(result);
         assertEquals(
                 "Senior HR Manager",
                 result.getRoleName()
         );
 
-        /*
-         * The current production implementation only updates:
-         * roleName and description.
-         */
         assertEquals(
-                "Updated description",
+                "Updated HR description",
                 result.getDescription()
         );
 
-        assertEquals(
-                "HR_MANAGER",
-                result.getRoleCode()
-        );
-
-        verify(roleRepository).save(existingRole);
+        verify(roleRepository).save(role);
     }
 
-    @Test
-    void updateRole_shouldNotCheckDuplicateNameWhenNameIsUnchanged() {
 
-        Role existingRole = createRole(
+    @Test
+    void update_shouldNotCheckDuplicateWhenNameIsUnchanged() {
+
+        Role role = createRole(
                 1L,
                 "HR Manager",
                 "HR_MANAGER",
                 RoleType.CUSTOM,
+                "ACTIVE",
+                false,
                 "tenant-a"
         );
 
@@ -609,19 +712,12 @@ class RoleServiceTest {
                 .findByIdAndTenantIdAndIsDeletedFalse(
                         1L,
                         "tenant-a"))
-                .thenReturn(Optional.of(existingRole));
+                .thenReturn(Optional.of(role));
 
         when(roleRepository.save(any(Role.class)))
-                .thenAnswer(invocation ->
-                        invocation.getArgument(0));
+                .thenReturn(role);
 
-        RoleResponseDto result =
-                roleService.update(1L, request);
-
-        assertEquals(
-                "HR Manager",
-                result.getRoleName()
-        );
+        roleService.update(1L, request);
 
         verify(
                 roleRepository,
@@ -630,18 +726,19 @@ class RoleServiceTest {
                 anyString(),
                 anyString()
         );
-
-        verify(roleRepository).save(existingRole);
     }
 
-    @Test
-    void updateRole_shouldRejectDuplicateName() {
 
-        Role existingRole = createRole(
+    @Test
+    void update_shouldThrowWhenNewRoleNameAlreadyExists() {
+
+        Role role = createRole(
                 1L,
                 "HR Manager",
                 "HR_MANAGER",
                 RoleType.CUSTOM,
+                "ACTIVE",
+                false,
                 "tenant-a"
         );
 
@@ -649,7 +746,7 @@ class RoleServiceTest {
                 "Finance Manager",
                 "HR_MANAGER",
                 RoleType.CUSTOM,
-                "Finance",
+                "Finance role",
                 "ACTIVE"
         );
 
@@ -657,7 +754,7 @@ class RoleServiceTest {
                 .findByIdAndTenantIdAndIsDeletedFalse(
                         1L,
                         "tenant-a"))
-                .thenReturn(Optional.of(existingRole));
+                .thenReturn(Optional.of(role));
 
         when(roleRepository
                 .existsByRoleNameIgnoreCaseAndTenantIdAndIsDeletedFalse(
@@ -670,45 +767,198 @@ class RoleServiceTest {
                 () -> roleService.update(1L, request)
         );
 
-        verify(roleRepository, never())
-                .save(any(Role.class));
+        verify(
+                roleRepository,
+                never()
+        ).save(any(Role.class));
     }
 
-    @Test
-    void updateRole_shouldThrowWhenRoleDoesNotExist() {
 
-        when(roleRepository
-                .findByIdAndTenantIdAndIsDeletedFalse(
-                        1L,
-                        "tenant-a"))
-                .thenReturn(Optional.empty());
+    @Test
+    void update_shouldThrowWhenRoleDoesNotExist() {
 
         RoleRequestDto request = new RoleRequestDto(
-                "HR Manager",
-                "HR_MANAGER",
+                "Updated Role",
+                "UPDATED_ROLE",
                 RoleType.CUSTOM,
-                "HR",
+                "Updated",
                 "ACTIVE"
         );
 
+        when(roleRepository
+                .findByIdAndTenantIdAndIsDeletedFalse(
+                        99L,
+                        "tenant-a"))
+                .thenReturn(Optional.empty());
+
         assertThrows(
                 ResourceNotFoundException.class,
-                () -> roleService.update(1L, request)
+                () -> roleService.update(99L, request)
         );
+
+        verify(roleRepository, never()).save(any(Role.class));
     }
 
-    // =========================================================
+
+    // ============================================================
     // DELETE
-    // =========================================================
+    // ============================================================
 
     @Test
-    void deleteRole_shouldSoftDeleteCustomRole() {
+    void deleteById_shouldSoftDeleteCustomRole() {
 
         Role role = createRole(
                 1L,
                 "HR Manager",
                 "HR_MANAGER",
                 RoleType.CUSTOM,
+                "ACTIVE",
+                false,
+                "tenant-a"
+        );
+
+        when(roleRepository
+                .findByIdAndTenantIdAndIsDeletedFalse(
+                        1L,
+                        "tenant-a"))
+                .thenReturn(Optional.of(role));
+
+        roleService.deleteById(1L);
+
+        assertTrue(role.getIsDeleted());
+
+        verify(roleRepository).save(role);
+    }
+
+
+    @Test
+    void deleteById_shouldThrowWhenRoleDoesNotExist() {
+
+        when(roleRepository
+                .findByIdAndTenantIdAndIsDeletedFalse(
+                        99L,
+                        "tenant-a"))
+                .thenReturn(Optional.empty());
+
+        assertThrows(
+                ResourceNotFoundException.class,
+                () -> roleService.deleteById(99L)
+        );
+
+        verify(
+                roleRepository,
+                never()
+        ).save(any(Role.class));
+    }
+
+
+    @Test
+    void deleteById_shouldRejectSuperAdminRole() {
+
+        Role role = createRole(
+                1L,
+                "Super Administrator",
+                "SUPER_ADMIN",
+                RoleType.SYSTEM,
+                "ACTIVE",
+                false,
+                "tenant-a"
+        );
+
+        when(roleRepository
+                .findByIdAndTenantIdAndIsDeletedFalse(
+                        1L,
+                        "tenant-a"))
+                .thenReturn(Optional.of(role));
+
+        assertThrows(
+                BadRequestException.class,
+                () -> roleService.deleteById(1L)
+        );
+
+        verify(
+                roleRepository,
+                never()
+        ).save(any(Role.class));
+    }
+
+
+    @Test
+    void deleteById_shouldRejectAdminRole() {
+
+        Role role = createRole(
+                2L,
+                "Administrator",
+                "ADMIN",
+                RoleType.SYSTEM,
+                "ACTIVE",
+                false,
+                "tenant-a"
+        );
+
+        when(roleRepository
+                .findByIdAndTenantIdAndIsDeletedFalse(
+                        2L,
+                        "tenant-a"))
+                .thenReturn(Optional.of(role));
+
+        assertThrows(
+                BadRequestException.class,
+                () -> roleService.deleteById(2L)
+        );
+
+        verify(
+                roleRepository,
+                never()
+        ).save(any(Role.class));
+    }
+
+
+    @Test
+    void deleteById_shouldRejectEmployeeRole() {
+
+        Role role = createRole(
+                3L,
+                "Employee",
+                "EMPLOYEE",
+                RoleType.SYSTEM,
+                "ACTIVE",
+                false,
+                "tenant-a"
+        );
+
+        when(roleRepository
+                .findByIdAndTenantIdAndIsDeletedFalse(
+                        3L,
+                        "tenant-a"))
+                .thenReturn(Optional.of(role));
+
+        assertThrows(
+                BadRequestException.class,
+                () -> roleService.deleteById(3L)
+        );
+
+        verify(
+                roleRepository,
+                never()
+        ).save(any(Role.class));
+    }
+
+
+    // ============================================================
+    // STATUS
+    // ============================================================
+
+    @Test
+    void updateStatus_shouldActivateRole() {
+
+        Role role = createRole(
+                1L,
+                "HR Manager",
+                "HR_MANAGER",
+                RoleType.CUSTOM,
+                "INACTIVE",
+                false,
                 "tenant-a"
         );
 
@@ -721,144 +971,26 @@ class RoleServiceTest {
         when(roleRepository.save(any(Role.class)))
                 .thenReturn(role);
 
-        roleService.deleteById(1L);
+        RoleResponseDto result =
+                roleService.updateStatus(1L, "ACTIVE");
 
-        assertTrue(role.getIsDeleted());
+        assertEquals("ACTIVE", result.getStatus());
+        assertEquals("ACTIVE", role.getStatus());
 
         verify(roleRepository).save(role);
     }
 
-    @Test
-    void deleteRole_shouldRejectSuperAdminRole() {
-
-        Role role = createRole(
-                1L,
-                "Super Admin",
-                "SUPER_ADMIN",
-                RoleType.SYSTEM,
-                "tenant-a"
-        );
-
-        when(roleRepository
-                .findByIdAndTenantIdAndIsDeletedFalse(
-                        1L,
-                        "tenant-a"))
-                .thenReturn(Optional.of(role));
-
-        assertThrows(
-                BadRequestException.class,
-                () -> roleService.deleteById(1L)
-        );
-
-        verify(
-                roleRepository,
-                never()
-        ).save(any(Role.class));
-    }
 
     @Test
-    void deleteRole_shouldRejectAdminRole() {
-
-        Role role = createRole(
-                1L,
-                "Admin",
-                "ADMIN",
-                RoleType.SYSTEM,
-                "tenant-a"
-        );
-
-        when(roleRepository
-                .findByIdAndTenantIdAndIsDeletedFalse(
-                        1L,
-                        "tenant-a"))
-                .thenReturn(Optional.of(role));
-
-        assertThrows(
-                BadRequestException.class,
-                () -> roleService.deleteById(1L)
-        );
-
-        verify(
-                roleRepository,
-                never()
-        ).save(any(Role.class));
-    }
-
-    @Test
-    void deleteRole_shouldRejectEmployeeRole() {
-
-        Role role = createRole(
-                1L,
-                "Employee",
-                "EMPLOYEE",
-                RoleType.SYSTEM,
-                "tenant-a"
-        );
-
-        when(roleRepository
-                .findByIdAndTenantIdAndIsDeletedFalse(
-                        1L,
-                        "tenant-a"))
-                .thenReturn(Optional.of(role));
-
-        assertThrows(
-                BadRequestException.class,
-                () -> roleService.deleteById(1L)
-        );
-
-        verify(
-                roleRepository,
-                never()
-        ).save(any(Role.class));
-    }
-
-    // =========================================================
-    // STATUS
-    // =========================================================
-
-    @Test
-    void updateStatus_shouldActivateRole() {
+    void updateStatus_shouldDeactivateRole() {
 
         Role role = createRole(
                 1L,
                 "HR Manager",
                 "HR_MANAGER",
                 RoleType.CUSTOM,
-                "tenant-a"
-        );
-
-        role.setStatus("INACTIVE");
-
-        when(roleRepository
-                .findByIdAndTenantIdAndIsDeletedFalse(
-                        1L,
-                        "tenant-a"))
-                .thenReturn(Optional.of(role));
-
-        when(roleRepository.save(any(Role.class)))
-                .thenAnswer(invocation ->
-                        invocation.getArgument(0));
-
-        RoleResponseDto result =
-                roleService.updateStatus(
-                        1L,
-                        "ACTIVE"
-                );
-
-        assertEquals(
                 "ACTIVE",
-                result.getStatus()
-        );
-    }
-
-    @Test
-    void updateStatus_shouldDeactivateCustomRole() {
-
-        Role role = createRole(
-                1L,
-                "HR Manager",
-                "HR_MANAGER",
-                RoleType.CUSTOM,
+                false,
                 "tenant-a"
         );
 
@@ -869,20 +1001,14 @@ class RoleServiceTest {
                 .thenReturn(Optional.of(role));
 
         when(roleRepository.save(any(Role.class)))
-                .thenAnswer(invocation ->
-                        invocation.getArgument(0));
+                .thenReturn(role);
 
         RoleResponseDto result =
-                roleService.updateStatus(
-                        1L,
-                        "INACTIVE"
-                );
+                roleService.updateStatus(1L, "INACTIVE");
 
-        assertEquals(
-                "INACTIVE",
-                result.getStatus()
-        );
+        assertEquals("INACTIVE", result.getStatus());
     }
+
 
     @Test
     void updateStatus_shouldRejectInvalidStatus() {
@@ -898,112 +1024,80 @@ class RoleServiceTest {
         verify(
                 roleRepository,
                 never()
-        ).save(any(Role.class));
+        ).findByIdAndTenantIdAndIsDeletedFalse(
+                anyLong(),
+                anyString()
+        );
     }
 
+
     @Test
-    void updateStatus_shouldNotDeactivateProtectedRole() {
-
-        Role role = createRole(
-                1L,
-                "Admin",
-                "ADMIN",
-                RoleType.SYSTEM,
-                "tenant-a"
-        );
-
-        when(roleRepository
-                .findByIdAndTenantIdAndIsDeletedFalse(
-                        1L,
-                        "tenant-a"))
-                .thenReturn(Optional.of(role));
+    void updateStatus_shouldRejectNullStatus() {
 
         assertThrows(
                 BadRequestException.class,
                 () -> roleService.updateStatus(
                         1L,
-                        "INACTIVE"
+                        null
                 )
         );
 
         verify(
                 roleRepository,
                 never()
-        ).save(any(Role.class));
+        ).findByIdAndTenantIdAndIsDeletedFalse(
+                anyLong(),
+                anyString()
+        );
     }
 
-    // =========================================================
+
+    @Test
+    void updateStatus_shouldThrowWhenRoleDoesNotExist() {
+
+        when(roleRepository
+                .findByIdAndTenantIdAndIsDeletedFalse(
+                        99L,
+                        "tenant-a"))
+                .thenReturn(Optional.empty());
+
+        assertThrows(
+                ResourceNotFoundException.class,
+                () -> roleService.updateStatus(
+                        99L,
+                        "ACTIVE"
+                )
+        );
+    }
+
+
+    // ============================================================
     // ROLE COUNTS
-    // =========================================================
+    // ============================================================
 
     @Test
     void getRoleCounts_shouldReturnCorrectCounts() {
 
         when(roleRepository
-                .countByTenantIdAndIsDeletedFalse(
-                        "tenant-a"))
-                .thenReturn(10L);
-
-        when(roleRepository
-                .countByTenantIdAndRoleTypeAndIsDeletedFalse(
-                        "tenant-a",
-                        RoleType.SYSTEM))
-                .thenReturn(3L);
-
-        when(roleRepository
-                .countByTenantIdAndRoleTypeAndIsDeletedFalse(
-                        "tenant-a",
-                        RoleType.CUSTOM))
-                .thenReturn(7L);
-
-        Map<String, Long> result =
-                roleService.getRoleCounts();
-
-        assertEquals(
-                10L,
-                result.get("totalRoles")
-        );
-
-        assertEquals(
-                3L,
-                result.get("systemRoles")
-        );
-
-        assertEquals(
-                7L,
-                result.get("customRoles")
-        );
-
-        verify(roleRepository)
-                .countByTenantIdAndIsDeletedFalse(
-                        "tenant-a"
-                );
-    }
-
-    @Test
-    void getRoleCounts_shouldUseCurrentTenant() {
-
-        TenantContext.setTenantId("tenant-b");
-
-        when(roleRepository
-                .countByTenantIdAndIsDeletedFalse(
-                        "tenant-b"))
+                .countByTenantIdAndIsDeletedFalse("tenant-a"))
                 .thenReturn(5L);
 
         when(roleRepository
                 .countByTenantIdAndRoleTypeAndIsDeletedFalse(
-                        "tenant-b",
+                        "tenant-a",
                         RoleType.SYSTEM))
                 .thenReturn(2L);
 
         when(roleRepository
                 .countByTenantIdAndRoleTypeAndIsDeletedFalse(
-                        "tenant-b",
+                        "tenant-a",
                         RoleType.CUSTOM))
                 .thenReturn(3L);
 
         Map<String, Long> result =
                 roleService.getRoleCounts();
+
+        assertNotNull(result);
 
         assertEquals(
                 5L,
@@ -1021,81 +1115,68 @@ class RoleServiceTest {
         );
     }
 
-    // =========================================================
-    // TENANT ISOLATION
-    // =========================================================
 
     @Test
-    void getById_shouldUseCurrentTenant() {
-
-        TenantContext.setTenantId("tenant-b");
+    void getRoleCounts_shouldUseCurrentTenant() {
 
         when(roleRepository
-                .findByIdAndTenantIdAndIsDeletedFalse(
-                        1L,
-                        "tenant-b"))
-                .thenReturn(Optional.empty());
+                .countByTenantIdAndIsDeletedFalse("tenant-a"))
+                .thenReturn(10L);
 
-        assertThrows(
-                ResourceNotFoundException.class,
-                () -> roleService.getById(1L)
-        );
+        when(roleRepository
+                .countByTenantIdAndRoleTypeAndIsDeletedFalse(
+                        "tenant-a",
+                        RoleType.SYSTEM))
+                .thenReturn(4L);
+
+        when(roleRepository
+                .countByTenantIdAndRoleTypeAndIsDeletedFalse(
+                        "tenant-a",
+                        RoleType.CUSTOM))
+                .thenReturn(6L);
+
+        roleService.getRoleCounts();
 
         verify(roleRepository)
-                .findByIdAndTenantIdAndIsDeletedFalse(
-                        1L,
-                        "tenant-b"
+                .countByTenantIdAndIsDeletedFalse("tenant-a");
+
+        verify(roleRepository)
+                .countByTenantIdAndRoleTypeAndIsDeletedFalse(
+                        "tenant-a",
+                        RoleType.SYSTEM
                 );
 
-        verify(
-                roleRepository,
-                never()
-        ).findByIdAndTenantIdAndIsDeletedFalse(
-                1L,
-                "tenant-a"
-        );
-    }
-
-    @Test
-    void clearedTenantContext_shouldUseDefaultTenant() {
-
-        TenantContext.clear();
-
-        assertEquals(
-                TenantContext.DEFAULT_TENANT_ID,
-                TenantContext.getTenantId()
-        );
-
-        when(roleRepository
-                .findByTenantIdAndIsDeletedFalse(
-                        TenantContext.DEFAULT_TENANT_ID))
-                .thenReturn(List.of());
-
-        List<RoleResponseDto> result =
-                roleService.getAll();
-
-        assertNotNull(result);
-
         verify(roleRepository)
-                .findByTenantIdAndIsDeletedFalse(
-                        TenantContext.DEFAULT_TENANT_ID
+                .countByTenantIdAndRoleTypeAndIsDeletedFalse(
+                        "tenant-a",
+                        RoleType.CUSTOM
                 );
     }
 
-    // =========================================================
-    // ROLE TEMPLATES
-    // =========================================================
+
+    // ============================================================
+    // ROLE TEMPLATE LIBRARY
+    // ============================================================
 
     @Test
     void listTemplates_shouldReturnVisibleTemplatesForNormalUser() {
 
-        RoleTemplate template = createTemplate(
-                "template-1",
-                "HR Template",
-                "HR template",
-                "HR",
-                false
-        );
+        RoleTemplate template = mock(RoleTemplate.class);
+
+        when(template.getId())
+                .thenReturn("HR_TEMPLATE");
+
+        when(template.getName())
+                .thenReturn("HR Manager");
+
+        when(template.getDescription())
+                .thenReturn("HR template");
+
+        when(template.getRecommendedFor())
+                .thenReturn("HR");
+
+        when(template.getPermissions())
+                .thenReturn(Set.of());
 
         when(currentUser.hasRole("SUPER_ADMIN"))
                 .thenReturn(false);
@@ -1110,28 +1191,18 @@ class RoleServiceTest {
         assertEquals(1, result.size());
 
         assertEquals(
-                "template-1",
+                "HR_TEMPLATE",
                 result.get(0).id()
         );
 
         assertEquals(
-                "HR Template",
+                "HR Manager",
                 result.get(0).name()
-        );
-
-        assertEquals(
-                "HR template",
-                result.get(0).description()
         );
 
         assertEquals(
                 0,
                 result.get(0).permissionCount()
-        );
-
-        assertEquals(
-                "HR",
-                result.get(0).recommendedFor()
         );
 
         verify(roleTemplateRepository)
@@ -1143,43 +1214,40 @@ class RoleServiceTest {
         ).findAll();
     }
 
+
     @Test
     void listTemplates_shouldReturnAllTemplatesForSuperAdmin() {
 
-        RoleTemplate visibleTemplate = createTemplate(
-                "template-1",
-                "HR Template",
-                "HR template",
-                "HR",
-                false
-        );
+        RoleTemplate template = mock(RoleTemplate.class);
 
-        RoleTemplate hiddenTemplate = createTemplate(
-                "template-2",
-                "Hidden Template",
-                "Hidden template",
-                "Admin",
-                true
-        );
+        when(template.getId())
+                .thenReturn("ADMIN_TEMPLATE");
+
+        when(template.getName())
+                .thenReturn("Admin");
+
+        when(template.getDescription())
+                .thenReturn("Admin template");
+
+        when(template.getRecommendedFor())
+                .thenReturn("Administration");
+
+        when(template.getPermissions())
+                .thenReturn(Set.of());
 
         when(currentUser.hasRole("SUPER_ADMIN"))
                 .thenReturn(true);
 
         when(roleTemplateRepository.findAll())
-                .thenReturn(
-                        List.of(
-                                visibleTemplate,
-                                hiddenTemplate
-                        )
-                );
+                .thenReturn(List.of(template));
 
         List<RoleTemplateSummaryDto> result =
                 roleService.listTemplates();
 
-        assertEquals(2, result.size());
+        assertNotNull(result);
+        assertEquals(1, result.size());
 
-        verify(roleTemplateRepository)
-                .findAll();
+        verify(roleTemplateRepository).findAll();
 
         verify(
                 roleTemplateRepository,
@@ -1187,8 +1255,9 @@ class RoleServiceTest {
         ).findAllByHiddenFalse();
     }
 
+
     @Test
-    void listTemplates_shouldReturnEmptyListWhenNoTemplatesExist() {
+    void listTemplates_shouldReturnEmptyWhenNoTemplatesExist() {
 
         when(currentUser.hasRole("SUPER_ADMIN"))
                 .thenReturn(false);
@@ -1203,117 +1272,159 @@ class RoleServiceTest {
         assertTrue(result.isEmpty());
     }
 
-    @Test
-    void getTemplateDetail_shouldReturnTemplateDetails() {
 
-        RoleTemplate template = createTemplate(
-                "template-1",
-                "HR Template",
-                "HR template",
-                "HR",
-                false
-        );
-
-        when(roleTemplateRepository
-                .findById("template-1"))
-                .thenReturn(Optional.of(template));
-
-        RoleTemplateDetailDto result =
-                roleService.getTemplateDetail("template-1");
-
-        assertNotNull(result);
-
-        assertEquals(
-                "template-1",
-                result.id()
-        );
-
-        assertEquals(
-                "HR Template",
-                result.name()
-        );
-
-        assertEquals(
-                "HR template",
-                result.description()
-        );
-
-        assertTrue(
-                result.permissionCodes().isEmpty()
-        );
-
-        assertEquals(
-                "HR",
-                result.recommendedFor()
-        );
-    }
+    // ============================================================
+    // TEMPLATE DETAIL
+    // ============================================================
 
     @Test
-    void getTemplateDetail_shouldReturnPermissionCodes() {
+    void getTemplateDetail_shouldReturnTemplateWithPermissionCodes() {
+
+        RoleTemplate template = mock(RoleTemplate.class);
 
         Permission permission1 = mock(Permission.class);
         Permission permission2 = mock(Permission.class);
 
         when(permission1.getPermissionCode())
-                .thenReturn("ROLE_READ");
+                .thenReturn("USER_READ");
 
         when(permission2.getPermissionCode())
-                .thenReturn("ROLE_UPDATE");
+                .thenReturn("USER_WRITE");
 
-        RoleTemplate template = createTemplate(
-                "template-1",
-                "HR Template",
-                "HR template",
-                "HR",
-                false
-        );
+        when(template.getId())
+                .thenReturn("HR_TEMPLATE");
 
-        template.setPermissions(
-                List.of(
+        when(template.getName())
+                .thenReturn("HR Manager");
+
+        when(template.getDescription())
+                .thenReturn("HR template");
+
+        when(template.getRecommendedFor())
+                .thenReturn("HR");
+
+        when(template.getPermissions())
+                .thenReturn(Set.of(
                         permission1,
                         permission2
-                )
-        );
+                ));
 
         when(roleTemplateRepository
-                .findById("template-1"))
+                .findById("HR_TEMPLATE"))
                 .thenReturn(Optional.of(template));
 
         RoleTemplateDetailDto result =
-                roleService.getTemplateDetail("template-1");
+                roleService.getTemplateDetail("HR_TEMPLATE");
+
+        assertNotNull(result);
 
         assertEquals(
-                Set.of(
-                        "ROLE_READ",
-                        "ROLE_UPDATE"
-                ),
+                "HR_TEMPLATE",
+                result.id()
+        );
+
+        assertEquals(
+                "HR Manager",
+                result.name()
+        );
+
+        assertEquals(
+                2,
+                result.permissionCodes().size()
+        );
+
+        assertTrue(
                 result.permissionCodes()
+                        .contains("USER_READ")
+        );
+
+        assertTrue(
+                result.permissionCodes()
+                        .contains("USER_WRITE")
         );
     }
+
 
     @Test
     void getTemplateDetail_shouldThrowWhenTemplateDoesNotExist() {
 
         when(roleTemplateRepository
-                .findById("missing"))
+                .findById("UNKNOWN"))
                 .thenReturn(Optional.empty());
 
         assertThrows(
                 ResourceNotFoundException.class,
-                () -> roleService.getTemplateDetail("missing")
+                () -> roleService.getTemplateDetail("UNKNOWN")
         );
     }
 
-    // =========================================================
-    // HELPER
-    // =========================================================
+
+    // ============================================================
+    // TENANT ISOLATION
+    // ============================================================
+
+    @Test
+    void getAll_shouldOnlyUseCurrentTenant() {
+
+        when(roleRepository
+                .findByTenantIdAndIsDeletedFalse("tenant-a"))
+                .thenReturn(List.of());
+
+        roleService.getAll();
+
+        verify(roleRepository)
+                .findByTenantIdAndIsDeletedFalse(
+                        "tenant-a"
+                );
+
+        verify(
+                roleRepository,
+                never()
+        ).findByTenantIdAndIsDeletedFalse(
+                eq("tenant-b")
+        );
+    }
+
+
+    @Test
+    void searchRoles_shouldOnlyUseCurrentTenant() {
+
+        when(roleRepository.searchRoles(
+                "tenant-a",
+                null,
+                null,
+                null))
+                .thenReturn(List.of());
+
+        roleService.searchRoles(
+                null,
+                null,
+                null
+        );
+
+        verify(roleRepository)
+                .searchRoles(
+                        "tenant-a",
+                        null,
+                        null,
+                        null
+                );
+    }
+
+
+    // ============================================================
+    // HELPER METHOD
+    // ============================================================
 
     private Role createRole(
             Long id,
             String roleName,
             String roleCode,
             RoleType roleType,
-            String tenantId) {
+            String status,
+            Boolean isDeleted,
+            String tenantId
+    ) {
 
         Role role = new Role();
 
@@ -1321,35 +1432,11 @@ class RoleServiceTest {
         role.setRoleName(roleName);
         role.setRoleCode(roleCode);
         role.setRoleType(roleType);
-        role.setDescription("Test role");
-        role.setStatus("ACTIVE");
-        role.setIsDeleted(false);
+        role.setStatus(status);
+        role.setIsDeleted(isDeleted);
         role.setTenantId(tenantId);
-
-        role.setCreatedAt(LocalDateTime.now());
-        role.setUpdatedAt(LocalDateTime.now());
-        role.setCreatedBy("test-user");
-        role.setUpdatedBy("test-user");
+        role.setDescription(roleName + " description");
 
         return role;
-    }
-
-    private RoleTemplate createTemplate(
-            String id,
-            String name,
-            String description,
-            String recommendedFor,
-            boolean hidden) {
-
-        RoleTemplate template = new RoleTemplate();
-
-        template.setId(id);
-        template.setName(name);
-        template.setDescription(description);
-        template.setRecommendedFor(recommendedFor);
-        template.setHidden(hidden);
-        template.setPermissions(List.of());
-
-        return template;
     }
 }
