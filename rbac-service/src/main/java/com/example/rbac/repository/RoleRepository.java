@@ -32,6 +32,7 @@ Page<Role> findByTenantIdAndIsDeletedFalse(String tenantId, Pageable pageable);
        "AND (:roleType IS NULL OR r.roleType = :roleType) " +
        "AND (:status IS NULL OR :status = '' " +
        "OR LOWER(r.status) = LOWER(:status))")
+
 List<Role> searchRoles(
         @Param("tenantId") String tenantId,
         @Param("query") String query,
@@ -40,4 +41,16 @@ List<Role> searchRoles(
 
 long countByTenantIdAndIsDeletedFalse(String tenantId);
 long countByTenantIdAndRoleTypeAndIsDeletedFalse(String tenantId, RoleType roleType);
+
+    // Every tenant-facing query goes through tenantId — never fetch by id alone
+    // for anything the caller could see, to keep cross-tenant leaks impossible.
+    Optional<Role> findByIdAndTenantId(String id, String tenantId);
+
+    List<Role> findAllByTenantId(String tenantId);
+
+    List<Role> findAllByTenantIdAndType(String tenantId, RoleType type);
+
+    Optional<Role> findByTenantIdAndRoleCode(String tenantId, String roleCode);
+
+    boolean existsByTenantIdAndRoleCode(String tenantId, String roleCode);
 }

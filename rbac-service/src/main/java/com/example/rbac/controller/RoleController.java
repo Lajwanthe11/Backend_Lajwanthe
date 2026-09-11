@@ -1,15 +1,18 @@
 package com.example.rbac.controller;
 
 import com.example.common.abstracts.AbstractController;
-import com.example.rbac.dto.RoleRequestDto;
-import com.example.rbac.dto.RoleResponseDto;
+import com.example.rbac.dto.*;
 import com.example.rbac.entity.Role;
 import com.example.rbac.enums.RoleType;
 import com.example.rbac.service.serviceImpl.RoleServiceImpl;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 import java.util.List;
@@ -44,5 +47,48 @@ public class RoleController extends AbstractController<Role, Long, RoleRequestDt
     @GetMapping("/counts")
     public ResponseEntity<Map<String, Long>> getRoleCounts() {
         return ResponseEntity.ok(roleService.getRoleCounts());
+    }
+
+    @PreAuthorize("hasAuthority('ROLE_READ')")
+    @GetMapping("/system")
+    public List<RoleResponseDto> listSystemRoles() {
+        return roleService.listSystemRoles();
+    }
+
+    @PreAuthorize("hasAuthority('ROLE_WRITE')")
+    @PostMapping("/{roleId}/clone")
+    public RoleResponseDto cloneRole(@PathVariable String roleId,
+                                     @Valid @RequestBody RoleCloneRequest request) {
+        return roleService.cloneRole(roleId, request);
+    }
+
+    @PreAuthorize("hasAuthority('ROLE_READ')")
+    @GetMapping("/compare")
+    public RoleCompareResponse compareRoles(@RequestParam String role1Id,
+                                            @RequestParam String role2Id) {
+        return roleService.compareRoles(role1Id, role2Id);
+    }
+
+    @PreAuthorize("hasAuthority('ROLE_READ')")
+    @GetMapping("/{roleId}/history")
+    public List<RoleHistoryDto> getHistory(@PathVariable String roleId) {
+        return roleService.getHistory(roleId);
+    }
+
+    @PreAuthorize("hasAuthority('ROLE_READ')")
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> exportRoles(@RequestParam(defaultValue = "xlsx") String format) {
+        byte[] file = roleService.exportRoles(format);
+
+        MediaType mediaType = "pdf".equalsIgnoreCase(format)
+                ? MediaType.APPLICATION_PDF
+                : MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+
+        String filename = "roles-export." + ("pdf".equalsIgnoreCase(format) ? "pdf" : "xlsx");
+
+        return ResponseEntity.ok()
+                .contentType(mediaType)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .body(file);
     }
 }

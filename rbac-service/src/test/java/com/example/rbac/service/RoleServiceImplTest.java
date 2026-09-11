@@ -4,6 +4,7 @@ import com.example.rbac.dto.RoleRequestDto;
 import com.example.rbac.dto.RoleResponseDto;
 import com.example.rbac.entity.Role;
 import com.example.rbac.enums.RoleType;
+import com.example.rbac.repository.RoleHistoryRepository;
 import com.example.rbac.repository.RoleRepository;
 import com.example.rbac.repository.RoleTemplateRepository;
 import com.example.rbac.service.serviceImpl.RoleServiceImpl;
@@ -28,10 +29,12 @@ class RoleServiceImplTest {
         private RoleTemplateRepository roleTemplateRepository;
         private RoleServiceImpl roleService;
         private CurrentUserContext currentUserContext;
+        private RoleHistoryRepository roleHistoryRepository;
+        private RoleExportService roleExportService;
 
         @BeforeEach
         void setUp() {
-                roleService = new RoleServiceImpl(roleRepository,roleTemplateRepository,currentUserContext);
+                roleService = new RoleServiceImpl(roleRepository,roleTemplateRepository,currentUserContext, roleHistoryRepository,roleExportService);
         }
 
         @Test

@@ -2,11 +2,10 @@ package com.example.rbac.entity;
 
 import com.example.common.abstracts.BaseEntity;
 import com.example.rbac.enums.RoleType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "roles")
@@ -30,6 +29,24 @@ public class Role extends BaseEntity {
 
     @Column(name = "is_deleted", nullable = false)
     private Boolean isDeleted = false;
+
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "role_permissions",
+            joinColumns = @JoinColumn(name = "role_id"),
+            inverseJoinColumns = @JoinColumn(name = "permission_id")
+    )
+
+    // Source role this was cloned from, if any (nullable)
+    @Column(name = "cloned_from_role_id")
+    private Long clonedFromRoleId;
+
+    // Template this role was created from, if any (nullable)
+    @Column(name = "created_from_template_id")
+    private String createdFromTemplateId;
+
+    private Set<Permission> permissions = new HashSet<>();
 
     public String getRoleName() {
         return roleName;
@@ -78,4 +95,18 @@ public class Role extends BaseEntity {
     public void setIsDeleted(Boolean isDeleted) {
         this.isDeleted = isDeleted;
     }
+
+    public Set<Permission> getPermissions() {
+        return permissions;
+    }
+
+    public void setPermissions(Set<Permission> permissions) {
+        this.permissions = permissions;
+    }
+
+    public String getCreatedFromTemplateId() { return createdFromTemplateId; }
+    public void setCreatedFromTemplateId(String createdFromTemplateId) { this.createdFromTemplateId = createdFromTemplateId; }
+
+    public Long getClonedFromRoleId() { return clonedFromRoleId; }
+    public void setClonedFromRoleId(Long clonedFromRoleId) { this.clonedFromRoleId = clonedFromRoleId; }
 }
