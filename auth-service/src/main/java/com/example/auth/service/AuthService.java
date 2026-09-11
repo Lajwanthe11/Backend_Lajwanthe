@@ -6,9 +6,12 @@ import com.example.auth.dto.RegisterRequestDTO;
 import com.example.auth.dto.TokenRefreshRequestDTO;
 import com.example.auth.security.jwt.JwtTokenProvider;
 import com.example.auth.security.user.CustomUserDetailsService;
+import com.example.common.exception.AccountLockedException;
 import com.example.common.exception.BadRequestException;
 import com.example.common.tenant.TenantContext;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -17,7 +20,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -51,12 +55,38 @@ public class AuthService {
         }
         String tenantId = TenantContext.getTenantId();
 
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        loginRequest.getUsername(),
-                        loginRequest.getPassword()
-                )
-        );
+        Authentication authentication;
+        try {
+            authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            loginRequest.getUsername(),
+                            loginRequest.getPassword()
+                    )
+            );
+        } catch (LockedException ex) {
+            LocalDateTime lockedUntil = customUserDetailsService.getLockedUntil(loginRequest.getUsername(), tenantId);
+
+            String message = "Account is locked due to multiple failed login attempts. Please try again later.";
+            if (lockedUntil != null) {
+                Duration remaining = Duration.between(LocalDateTime.now(), lockedUntil);
+                if (!remaining.isNegative()) {
+                    long minutes = remaining.toMinutes();
+                    long seconds = remaining.minusMinutes(minutes).getSeconds();
+                    message = String.format(
+                            "Account locked after %d failed login attempts. Try again after %d min %d sec.",
+                            customUserDetailsService.getMaxAttempts(), minutes, seconds);
+                }
+            }
+            throw new AccountLockedException(message);
+        } catch (BadCredentialsException ex) {
+            // Wrong password -> track the failed attempt, then rethrow so the
+            // existing "invalid credentials" behavior is unchanged for the caller.
+            customUserDetailsService.incrementFailedAttempts(loginRequest.getUsername(), tenantId);
+            throw ex;
+        }
+
+        // Successful login -> clear any prior failed-attempt count / lock state
+        customUserDetailsService.resetFailedAttempts(loginRequest.getUsername(), tenantId);
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
@@ -142,6 +172,3 @@ public class AuthService {
                 .build();
     }
 }
-
-
-
