@@ -14,4 +14,6 @@ public interface DepartmentPermissionService {
     void removeAllDepartmentScope(UUID userRoleId);
 
     List<DeptScopeReportDto> getDeptScopeReport();
+
+    List<UUID> getUsersByPermission(UUID departmentId, String permissionCode);
 }

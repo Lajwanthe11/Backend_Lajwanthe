@@ -15,9 +15,16 @@ import java.util.UUID;
 public class DepartmentPermissionServiceImpl implements DepartmentPermissionService {
 
     private final RoleDepartmentMapRepository repository;
+    private final UserRoleRepository userRoleRepository;
+    private final RolePermissionRepository rolePermissionRepository;
 
-    public DepartmentPermissionServiceImpl(RoleDepartmentMapRepository repository) {
+    public DepartmentPermissionServiceImpl(
+            RoleDepartmentMapRepository repository,
+            UserRoleRepository userRoleRepository,
+            RolePermissionRepository rolePermissionRepository) {
         this.repository = repository;
+        this.userRoleRepository = userRoleRepository;
+        this.rolePermissionRepository = rolePermissionRepository;
     }
 
     @Override
@@ -35,6 +42,14 @@ public class DepartmentPermissionServiceImpl implements DepartmentPermissionServ
 
         if (departmentIds == null || departmentIds.isEmpty()) {
             throw new BadRequestException("Department list cannot be empty");
+        }
+
+        if (departmentIds.contains(null)) {
+            throw new BadRequestException("Department list cannot contain null values");
+        }
+
+        if (departmentIds.size() != new java.util.HashSet<>(departmentIds).size()) {
+            throw new BadRequestException("Department list cannot contain duplicate values");
         }
 
         repository.deleteByUserRoleId(userRoleId);
@@ -63,6 +78,32 @@ public class DepartmentPermissionServiceImpl implements DepartmentPermissionServ
                         map.getDepartmentId(),
                         map.getCreatedAt(),
                         map.getCreatedBy()))
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<UUID> getUsersByPermission(UUID departmentId, String permissionCode) {
+
+        List<RoleDepartmentMap> mappings = repository.findByDepartmentId(departmentId);
+
+        List<UUID> userRoleIds = mappings.stream()
+                .map(RoleDepartmentMap::getUserRoleId)
+                .toList();
+
+        if (userRoleIds.isEmpty()) {
+            return List.of();
+        }
+
+        List<UserRole> userRoles = userRoleRepository.findAllById(userRoleIds);
+
+        return userRoles.stream()
+                .filter(ur -> rolePermissionRepository
+                        .findByRole_IdAndActiveTrue(ur.getRoleId())
+                        .stream()
+                        .anyMatch(rp -> rp.getPermission().getPermissionCode().equals(permissionCode)))
+                .map(UserRole::getUserId)
+                .distinct()
                 .toList();
     }
 }

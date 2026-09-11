@@ -11,4 +11,6 @@ public interface RoleDepartmentMapRepository extends JpaRepository<RoleDepartmen
     List<RoleDepartmentMap> findByUserRoleId(UUID userRoleId);
 
     void deleteByUserRoleId(UUID userRoleId);
+
+    List<RoleDepartmentMap> findByDepartmentId(UUID departmentId);
 }
