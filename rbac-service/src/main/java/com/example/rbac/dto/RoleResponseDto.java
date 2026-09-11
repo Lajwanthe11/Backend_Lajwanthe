@@ -3,10 +3,11 @@ package com.example.rbac.dto;
 import com.example.rbac.enums.RoleType;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 public class RoleResponseDto {
 
-    private Long id;
+    private UUID id;
     private String roleName;
     private String roleCode;
     private RoleType roleType;
@@ -14,24 +15,27 @@ public class RoleResponseDto {
     private String status;
     private Boolean isDeleted;
     private LocalDateTime createdAt;
-    private String createdBy;
+    private UUID createdBy;
     private LocalDateTime updatedAt;
-    private String updatedBy;
+    private UUID updatedBy;
 
+    // Default constructor
     public RoleResponseDto() {
     }
 
-    public RoleResponseDto(Long id,
-                           String roleName,
-                           String roleCode,
-                           RoleType roleType,
-                           String description,
-                           String status,
-                           Boolean isDeleted,
-                           LocalDateTime createdAt,
-                           String createdBy,
-                           LocalDateTime updatedAt,
-                           String updatedBy) {
+    // Constructor used by RoleServiceImpl
+    public RoleResponseDto(
+            UUID id,
+            String roleName,
+            String roleCode,
+            RoleType roleType,
+            String description,
+            String status,
+            Boolean isDeleted,
+            LocalDateTime createdAt,
+            UUID createdBy,
+            LocalDateTime updatedAt,
+            UUID updatedBy) {
 
         this.id = id;
         this.roleName = roleName;
@@ -46,47 +50,91 @@ public class RoleResponseDto {
         this.updatedBy = updatedBy;
     }
 
-    public Long getId() {
+    public UUID getId() {
         return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
     }
 
     public String getRoleName() {
         return roleName;
     }
 
+    public void setRoleName(String roleName) {
+        this.roleName = roleName;
+    }
+
     public String getRoleCode() {
         return roleCode;
+    }
+
+    public void setRoleCode(String roleCode) {
+        this.roleCode = roleCode;
     }
 
     public RoleType getRoleType() {
         return roleType;
     }
 
+    public void setRoleType(RoleType roleType) {
+        this.roleType = roleType;
+    }
+
     public String getDescription() {
         return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public String getStatus() {
         return status;
     }
 
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
     public Boolean getIsDeleted() {
         return isDeleted;
+    }
+
+    public void setIsDeleted(Boolean isDeleted) {
+        this.isDeleted = isDeleted;
     }
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
 
-    public String getCreatedBy() {
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public UUID getCreatedBy() {
         return createdBy;
+    }
+
+    public void setCreatedBy(UUID createdBy) {
+        this.createdBy = createdBy;
     }
 
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
     }
 
-    public String getUpdatedBy() {
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public UUID getUpdatedBy() {
         return updatedBy;
+    }
+
+    public void setUpdatedBy(UUID updatedBy) {
+        this.updatedBy = updatedBy;
     }
 }

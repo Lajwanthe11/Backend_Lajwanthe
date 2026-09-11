@@ -1,15 +1,24 @@
 package com.example.rbac.entity;
 
-import com.example.common.abstracts.BaseEntity;
 import com.example.rbac.enums.RoleType;
 import jakarta.persistence.*;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 @Entity
 @Table(name = "roles")
-public class Role extends BaseEntity {
+public class Role {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "role_id", nullable = false, updatable = false)
+    private UUID id;
+
+    @Column(name = "tenant_id", nullable = false, updatable = false)
+    private UUID tenantId;
 
     @Column(name = "role_name", nullable = false, length = 100)
     private String roleName;
@@ -30,23 +39,66 @@ public class Role extends BaseEntity {
     @Column(name = "is_deleted", nullable = false)
     private Boolean isDeleted = false;
 
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
+    @Column(name = "created_by")
+    private UUID createdBy;
+
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_by")
+    private UUID updatedBy;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "role_permissions",
             joinColumns = @JoinColumn(name = "role_id"),
             inverseJoinColumns = @JoinColumn(name = "permission_id")
-    )
+        )
+    private Set<Permission> permissions = new HashSet<>();
 
-    // Source role this was cloned from, if any (nullable)
+    // Source role this was cloned from, if any
     @Column(name = "cloned_from_role_id")
-    private Long clonedFromRoleId;
+    private UUID clonedFromRoleId;
 
-    // Template this role was created from, if any (nullable)
+    // Template this role was created from, if any
     @Column(name = "created_from_template_id")
     private String createdFromTemplateId;
 
-    private Set<Permission> permissions = new HashSet<>();
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+
+        if (isDeleted == null) {
+            isDeleted = false;
+        }
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+
+    public UUID getId() {
+        return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
+    public UUID getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(UUID tenantId) {
+        this.tenantId = tenantId;
+    }
 
     public String getRoleName() {
         return roleName;
@@ -96,6 +148,46 @@ public class Role extends BaseEntity {
         this.isDeleted = isDeleted;
     }
 
+    public LocalDateTime getDeletedAt() {
+        return deletedAt;
+    }
+
+    public void setDeletedAt(LocalDateTime deletedAt) {
+        this.deletedAt = deletedAt;
+    }
+
+    public UUID getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(UUID createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public UUID getUpdatedBy() {
+        return updatedBy;
+    }
+
+    public void setUpdatedBy(UUID updatedBy) {
+        this.updatedBy = updatedBy;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
     public Set<Permission> getPermissions() {
         return permissions;
     }
@@ -104,9 +196,19 @@ public class Role extends BaseEntity {
         this.permissions = permissions;
     }
 
-    public String getCreatedFromTemplateId() { return createdFromTemplateId; }
-    public void setCreatedFromTemplateId(String createdFromTemplateId) { this.createdFromTemplateId = createdFromTemplateId; }
+    public UUID getClonedFromRoleId() {
+        return clonedFromRoleId;
+    }
 
-    public Long getClonedFromRoleId() { return clonedFromRoleId; }
-    public void setClonedFromRoleId(Long clonedFromRoleId) { this.clonedFromRoleId = clonedFromRoleId; }
+    public void setClonedFromRoleId(UUID clonedFromRoleId) {
+        this.clonedFromRoleId = clonedFromRoleId;
+    }
+
+    public String getCreatedFromTemplateId() {
+        return createdFromTemplateId;
+    }
+
+    public void setCreatedFromTemplateId(String createdFromTemplateId) {
+        this.createdFromTemplateId = createdFromTemplateId;
+    }
 }
