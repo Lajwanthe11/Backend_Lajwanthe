@@ -8,8 +8,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
-import com.example.rbac.RbacApplication;
-import org.springframework.test.context.ContextConfiguration;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -27,20 +25,24 @@ class RbacHealthTest {
     private PermissionCacheService permissionCacheService;
 
     @Test
-    void shouldReturnRbacHealthUp() throws Exception {
+    void shouldReturnRbacHealthUp()
+            throws Exception {
 
         mockMvc.perform(
                 get("/api/v1/rbac/health")
         )
         .andExpect(status().isOk())
-        .andExpect(content().contentTypeCompatibleWith(
-                "application/json"
-        ))
+        .andExpect(
+                content().contentTypeCompatibleWith(
+                        "application/json"
+                )
+        )
         .andExpect(jsonPath("$.status").value("UP"));
     }
 
     @Test
-    void shouldExposeCorrectHealthEndpoint() throws Exception {
+    void shouldExposeCorrectHealthEndpoint()
+            throws Exception {
 
         mockMvc.perform(
                 get("/api/v1/rbac/health")
