@@ -2,6 +2,7 @@ package com.example.rbac.dto;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 public class PermissionMatrixResponse {
 
@@ -13,8 +14,7 @@ public class PermissionMatrixResponse {
 
     public PermissionMatrixResponse(
             List<RoleColumn> roles,
-            List<PermissionGroupRow> permissionGroups
-    ) {
+            List<PermissionGroupRow> permissionGroups) {
         this.roles = roles;
         this.permissionGroups = permissionGroups;
     }
@@ -32,8 +32,7 @@ public class PermissionMatrixResponse {
     }
 
     public void setPermissionGroups(
-            List<PermissionGroupRow> permissionGroups
-    ) {
+            List<PermissionGroupRow> permissionGroups) {
         this.permissionGroups = permissionGroups;
     }
 
@@ -52,8 +51,7 @@ public class PermissionMatrixResponse {
         }
 
         public Builder permissionGroups(
-                List<PermissionGroupRow> permissionGroups
-        ) {
+                List<PermissionGroupRow> permissionGroups) {
             this.permissionGroups = permissionGroups;
             return this;
         }
@@ -61,14 +59,13 @@ public class PermissionMatrixResponse {
         public PermissionMatrixResponse build() {
             return new PermissionMatrixResponse(
                     roles,
-                    permissionGroups
-            );
+                    permissionGroups);
         }
     }
 
     public static class RoleColumn {
 
-        private Long roleId;
+        private UUID roleId;
         private String roleName;
         private String roleCode;
         private Long version;
@@ -77,22 +74,21 @@ public class PermissionMatrixResponse {
         }
 
         public RoleColumn(
-                Long roleId,
+                UUID roleId,
                 String roleName,
                 String roleCode,
-                Long version
-        ) {
+                Long version) {
             this.roleId = roleId;
             this.roleName = roleName;
             this.roleCode = roleCode;
             this.version = version;
         }
 
-        public Long getRoleId() {
+        public UUID getRoleId() {
             return roleId;
         }
 
-        public void setRoleId(Long roleId) {
+        public void setRoleId(UUID roleId) {
             this.roleId = roleId;
         }
 
@@ -126,12 +122,12 @@ public class PermissionMatrixResponse {
 
         public static class RoleColumnBuilder {
 
-            private Long roleId;
+            private UUID roleId;
             private String roleName;
             private String roleCode;
             private Long version;
 
-            public RoleColumnBuilder roleId(Long roleId) {
+            public RoleColumnBuilder roleId(UUID roleId) {
                 this.roleId = roleId;
                 return this;
             }
@@ -156,8 +152,7 @@ public class PermissionMatrixResponse {
                         roleId,
                         roleName,
                         roleCode,
-                        version
-                );
+                        version);
             }
         }
     }
@@ -174,8 +169,7 @@ public class PermissionMatrixResponse {
         public PermissionGroupRow(
                 String groupId,
                 String groupName,
-                List<PermissionRow> permissions
-        ) {
+                List<PermissionRow> permissions) {
             this.groupId = groupId;
             this.groupName = groupName;
             this.permissions = permissions;
@@ -226,8 +220,7 @@ public class PermissionMatrixResponse {
             }
 
             public PermissionGroupRowBuilder permissions(
-                    List<PermissionRow> permissions
-            ) {
+                    List<PermissionRow> permissions) {
                 this.permissions = permissions;
                 return this;
             }
@@ -236,8 +229,7 @@ public class PermissionMatrixResponse {
                 return new PermissionGroupRow(
                         groupId,
                         groupName,
-                        permissions
-                );
+                        permissions);
             }
         }
     }
@@ -258,8 +250,7 @@ public class PermissionMatrixResponse {
                 String permCode,
                 String displayName,
                 Map<String, Boolean> roleGrants,
-                boolean system
-        ) {
+                boolean system) {
             this.permId = permId;
             this.permCode = permCode;
             this.displayName = displayName;
@@ -296,8 +287,7 @@ public class PermissionMatrixResponse {
         }
 
         public void setRoleGrants(
-                Map<String, Boolean> roleGrants
-        ) {
+                Map<String, Boolean> roleGrants) {
             this.roleGrants = roleGrants;
         }
 
@@ -337,8 +327,7 @@ public class PermissionMatrixResponse {
             }
 
             public PermissionRowBuilder roleGrants(
-                    Map<String, Boolean> roleGrants
-            ) {
+                    Map<String, Boolean> roleGrants) {
                 this.roleGrants = roleGrants;
                 return this;
             }
@@ -354,8 +343,7 @@ public class PermissionMatrixResponse {
                         permCode,
                         displayName,
                         roleGrants,
-                        system
-                );
+                        system);
             }
         }
     }

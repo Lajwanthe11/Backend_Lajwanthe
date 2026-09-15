@@ -31,4 +31,3 @@ public class PermissionGrantRequest {
         this.granted = granted;
     }
 }
-

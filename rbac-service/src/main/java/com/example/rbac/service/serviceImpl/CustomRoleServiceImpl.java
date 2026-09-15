@@ -23,6 +23,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 @Transactional
@@ -92,7 +93,7 @@ public class CustomRoleServiceImpl implements CustomRoleService {
 
         role.setIsDeleted(false);
 
-        role.setTenantId(tenantId);
+        role.setTenantId(UUID.fromString(tenantId));
 
         role = roleRepository.save(role);
 

@@ -15,8 +15,7 @@ public class PermissionMatrixController {
     private final PermissionMatrixService permissionMatrixService;
 
     public PermissionMatrixController(
-            PermissionMatrixService permissionMatrixService
-    ) {
+            PermissionMatrixService permissionMatrixService) {
         this.permissionMatrixService = permissionMatrixService;
     }
 
@@ -26,7 +25,6 @@ public class PermissionMatrixController {
         String tenantId = TenantContext.getTenantId();
 
         return ResponseEntity.ok(
-                permissionMatrixService.getMatrix(tenantId)
-        );
+                permissionMatrixService.getMatrix(tenantId));
     }
 }
