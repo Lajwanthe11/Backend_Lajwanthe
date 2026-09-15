@@ -1,4 +1,4 @@
-package com.example.qa.sprint2.audit;
+package com.example.rbac.sprint2.audit;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;

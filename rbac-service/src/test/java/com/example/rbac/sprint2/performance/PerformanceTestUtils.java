@@ -1,4 +1,4 @@
-package com.example.qa.sprint2.performance;
+package com.example.rbac.sprint2.performance;
 
 import java.util.Arrays;
 

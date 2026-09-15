@@ -1,4 +1,4 @@
-package com.example.qa.sprint2.permission;
+package com.example.rbac.sprint2.permission;
 
 import com.example.rbac.dto.PermissionGroupResponseDto;
 import com.example.rbac.dto.PermissionResponseDto;

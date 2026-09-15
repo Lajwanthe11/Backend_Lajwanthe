@@ -1,4 +1,4 @@
-package com.example.qa.sprint2.rbac;
+package com.example.rbac.sprint2.rbac;
 
 import com.example.rbac.controller.RbacPermissionController;
 import com.example.rbac.service.PermissionCacheService;

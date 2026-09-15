@@ -1,4 +1,4 @@
-package com.example.qa.sprint2.department;
+package com.example.rbac.sprint2.department;
 
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;

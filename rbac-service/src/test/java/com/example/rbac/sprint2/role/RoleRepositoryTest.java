@@ -1,4 +1,4 @@
-package com.example.qa.sprint2.role;
+package com.example.rbac.sprint2.role;
 
 import static org.junit.jupiter.api.Assertions.*;
 

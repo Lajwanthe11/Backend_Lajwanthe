@@ -1,4 +1,4 @@
-package com.example.qa.sprint2.department;
+package com.example.rbac.sprint2.department;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;

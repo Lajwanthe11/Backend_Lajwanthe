@@ -1,4 +1,4 @@
-package com.example.qa.sprint2.rolePermission;
+package com.example.rbac.sprint2.rolePermission;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
