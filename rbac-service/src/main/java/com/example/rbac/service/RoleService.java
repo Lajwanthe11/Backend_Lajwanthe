@@ -1,8 +1,7 @@
 package com.example.rbac.service;
 
 import com.example.common.abstracts.BaseService;
-import com.example.rbac.dto.RoleRequestDto;
-import com.example.rbac.dto.RoleResponseDto;
+import com.example.rbac.dto.*;
 import com.example.rbac.entity.Role;
 import com.example.rbac.enums.RoleType;
 
@@ -17,4 +16,18 @@ public interface RoleService extends BaseService<Role, UUID, RoleRequestDto, Rol
     RoleResponseDto updateStatus(UUID id, String status);
 
     Map<String, Long> getRoleCounts();
+
+    List<RoleTemplateSummaryDto> listTemplates();
+
+    RoleTemplateDetailDto getTemplateDetail(String templateId);
+
+    RoleCompareResponse compareRoles(String role1Id, String role2Id);
+
+    List<RoleResponseDto> listSystemRoles();
+
+    RoleResponseDto cloneRole(String sourceRoleId, RoleCloneRequest request);
+
+    List<RoleHistoryDto> getHistory(String roleId);
+
+    byte[] exportRoles(String format);
 }

@@ -3,6 +3,7 @@ package com.example.rbac.entity;
 import com.example.common.abstracts.BaseEntity;
 import jakarta.persistence.*;
 import java.time.Instant;
+import java.util.UUID;
 
 @Entity
 @Table(name = "role_history")
@@ -43,7 +44,7 @@ public class RoleHistory extends BaseEntity {
     }
 
     public Long getRoleId() { return roleId; }
-    public void setRoleId(Long roleId) { this.roleId = roleId; }
+    public void setRoleId(UUID roleId) { this.roleId = roleId; }
 
     public String getChangedByUserId() { return changedByUserId; }
     public void setChangedByUserId(String changedByUserId) { this.changedByUserId = changedByUserId; }

@@ -489,7 +489,7 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
         UUID tenantId = getCurrentTenantUuid();
 
         return roleRepository
-                .findAllByTenantIdAndType(
+                .findAllByTenantIdAndRoleType(
                         tenantId,
                         RoleType.SYSTEM)
                 .stream()
