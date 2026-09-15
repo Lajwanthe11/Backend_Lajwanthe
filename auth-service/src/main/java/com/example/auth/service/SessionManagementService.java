@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
     @Service
     public class SessionManagementService {
 
-        private static final long SESSION_TIMEOUT_MINUTES = 15;
+        private static final long SESSION_TIMEOUT_MINUTES = 60;
 
         private final Map<String, Session> sessions = new ConcurrentHashMap<>();
 

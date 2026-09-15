@@ -132,15 +132,7 @@ public class AuthController {
 
         return ResponseEntity.ok(ApiResponse.ok("Logged out successfully", null));
     }
-    @PostMapping("/logout/{sessionId}")
-    public ResponseEntity<?> logout(@PathVariable String sessionId) {
 
-        sessionManagementService.invalidateSession(sessionId);
-
-        return ResponseEntity.ok("Logout successful");
-    }
-
-    // ---------------------------------------------------------------
     // Token Refresh
     // ---------------------------------------------------------------
 
