@@ -274,7 +274,7 @@ class CustomRoleControllerTest {
 
     // =========================================================
     // IMPACT
-    // GET /api/v1/roles/custom/{roleId}/impact
+    // GET /api/v1/roles/custom/{roleId}/impactgit status
     // =========================================================
 
     @Test
