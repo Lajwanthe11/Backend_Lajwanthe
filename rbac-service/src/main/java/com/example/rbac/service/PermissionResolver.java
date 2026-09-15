@@ -6,8 +6,7 @@ public interface PermissionResolver {
 
     Set<String> resolvePermissions(
             String userId,
-            String tenantId
-    );
+            String tenantId);
 
     default boolean hasPermission(
             String userId,
