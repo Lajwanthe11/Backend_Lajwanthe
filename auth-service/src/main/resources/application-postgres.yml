@@ -2,10 +2,10 @@
 # Supply the team's connection settings only after reviewing the schema change.
 spring:
   datasource:
-    url: ${SPRING_DATASOURCE_URL}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/microservice_db}
     driver-class-name: org.postgresql.Driver
-    username: ${SPRING_DATASOURCE_USERNAME}
-    password: ${SPRING_DATASOURCE_PASSWORD}
+    username: ${SPRING_DATASOURCE_USERNAME:postgre}
+    password: ${SPRING_DATASOURCE_PASSWORD:Postgre@123}
     hikari:
       minimum-idle: ${DB_POOL_MIN_IDLE:5}
       maximum-pool-size: ${DB_POOL_MAX_SIZE:20}
