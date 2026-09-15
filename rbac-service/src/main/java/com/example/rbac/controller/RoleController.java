@@ -4,7 +4,8 @@ import com.example.common.abstracts.AbstractController;
 import com.example.rbac.dto.*;
 import com.example.rbac.entity.Role;
 import com.example.rbac.enums.RoleType;
-import com.example.rbac.service.serviceImpl.RoleServiceImpl;
+import com.example.rbac.service.RoleService;
+
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -26,9 +27,9 @@ import java.util.UUID;
 @Tag(name = "Roles", description = "Role management operations")
 public class RoleController extends AbstractController<Role, UUID, RoleRequestDto, RoleResponseDto> {
 
-    private final RoleServiceImpl roleService;
+    private final RoleService roleService;
 
-    public RoleController(RoleServiceImpl roleService) {
+    public RoleController(RoleService roleService) {
         super(roleService);
         this.roleService = roleService;
     }

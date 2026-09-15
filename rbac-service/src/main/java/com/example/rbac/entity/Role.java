@@ -39,6 +39,9 @@ public class Role {
     @Column(name = "is_deleted", nullable = false)
     private Boolean isDeleted = false;
 
+    @Version 
+    private Long version;
+
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
@@ -211,4 +214,12 @@ public class Role {
     public void setCreatedFromTemplateId(String createdFromTemplateId) {
         this.createdFromTemplateId = createdFromTemplateId;
     }
+
+    public Long getVersion() {
+    return version;
+}
+
+public void setVersion(Long version) {
+    this.version = version;
+}
 }
