@@ -32,7 +32,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
-public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto, RoleResponseDto>implements RoleService {
+public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto, RoleResponseDto> implements RoleService {
 
     private final RoleRepository roleRepository;
     private final RoleTemplateRepository roleTemplateRepository;
