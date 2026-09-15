@@ -12,5 +12,5 @@ public record RoleCompareResponse(
         Set<String> onlyInRole1,
         Set<String> onlyInRole2
 ) {
-    public record RoleSummary(Long id, String name, int totalPermissions) {}
+    public record RoleSummary(java.util.UUID id, String name, int totalPermissions) {}
 }

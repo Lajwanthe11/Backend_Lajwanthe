@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Seeds the 8 default system roles for a tenant. Call seedForTenant(tenantId)
@@ -53,7 +54,7 @@ public class SystemRoleSeeder {
     );
 
     @Transactional
-    public void seedForTenant(String tenantId) {
+    public void seedForTenant(UUID tenantId) {
         for (SystemRoleDefinition def : SYSTEM_ROLES) {
             if (roleRepository.existsByTenantIdAndRoleCode(tenantId, def.code())) {
                 continue; // already seeded — idempotent no-op
