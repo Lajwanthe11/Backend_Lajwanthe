@@ -31,15 +31,18 @@ public class AuthService {
     private final CustomUserDetailsService customUserDetailsService;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider tokenProvider;
+    private final PasswordValidator passwordValidator;
 
     public AuthService(AuthenticationManager authenticationManager,
                        CustomUserDetailsService customUserDetailsService,
                        PasswordEncoder passwordEncoder,
-                       JwtTokenProvider tokenProvider) {
+                       JwtTokenProvider tokenProvider,
+                       PasswordValidator passwordValidator) {
         this.authenticationManager = authenticationManager;
         this.customUserDetailsService = customUserDetailsService;
         this.passwordEncoder = passwordEncoder;
         this.tokenProvider = tokenProvider;
+        this.passwordValidator = passwordValidator;
     }
 
     public AuthResponseDTO login(LoginRequestDTO loginRequest) {
@@ -75,6 +78,9 @@ public class AuthService {
     }
 
     public AuthResponseDTO register(RegisterRequestDTO registerRequest) {
+
+        passwordValidator.validate(registerRequest.getPassword());
+
         if (StringUtils.hasText(registerRequest.getTenantId())) {
             TenantContext.setTenantId(registerRequest.getTenantId());
         }
@@ -136,3 +142,6 @@ public class AuthService {
                 .build();
     }
 }
+
+
+

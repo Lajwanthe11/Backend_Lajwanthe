@@ -1,0 +1,6 @@
+com\example\rbac\service\serviceimpl\DepartmentPermissionServiceImpl.class
+com\example\rbac\service\serviceimpl\RoleServiceImpl.class
+com\example\rbac\service\serviceimpl\CustomRoleServiceImpl.class
+com\example\rbac\service\serviceimpl\CustomRoleServiceImpl$1.class
+com\example\rbac\service\serviceimpl\PermissionServiceImpl.class
+com\example\rbac\service\serviceimpl\PermissionGroupServiceImpl.class

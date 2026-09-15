@@ -56,10 +56,17 @@ public class DepartmentServiceImpl
 
     @Override
     public List<DepartmentResponse> searchDepartments(String departmentName) {
-        return departmentRepository
+
+        List<DepartmentResponse> departments = departmentRepository
                 .findByDepartmentNameContainingIgnoreCase(departmentName)
                 .stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
+
+        if (departments.isEmpty()) {
+            throw new RuntimeException("Department not found");
+        }
+
+        return departments;
     }
 }

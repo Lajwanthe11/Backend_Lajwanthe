@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -19,23 +20,25 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 /**
- * Shared JWT Authentication Filter — available to any microservice via common-lib.
+ * Shared JWT Authentication Filter — available to downstream microservices via base-service.
  *
  * Validates the JWT from the Authorization header locally using {@link JwtTokenValidator}
  * (shared secret), then reconstructs a {@link JwtUserPrincipal} from the token claims —
  * no user store lookup required.
  *
- * Used by all microservices except auth-service, which has its own filter that
- * additionally loads the user from {@code CustomUserDetailsService}.
+ * Used by microservices (e.g. platform-administration-service).
+ * Disabled in auth-service via app.security.common-jwt-filter.enabled=false because
+ * auth-service provides its own filter with user details and token revocation checks.
  */
-@Component
-public class JwtAuthenticationFilter extends OncePerRequestFilter {
+@Component("commonJwtAuthenticationFilter")
+@ConditionalOnProperty(name = "app.security.common-jwt-filter.enabled", havingValue = "true", matchIfMissing = true)
+public class CommonJwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
+    private static final Logger log = LoggerFactory.getLogger(CommonJwtAuthenticationFilter.class);
 
     private final JwtTokenValidator tokenValidator;
 
-    public JwtAuthenticationFilter(JwtTokenValidator tokenValidator) {
+    public CommonJwtAuthenticationFilter(JwtTokenValidator tokenValidator) {
         this.tokenValidator = tokenValidator;
     }
 
