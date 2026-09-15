@@ -3,7 +3,11 @@ package com.example.rbac.service;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import org.springframework.context.annotation.Profile;
+import org.springframework.stereotype.Service;
 
+@Service
+@Profile("dev")
 public class StubPermissionResolver implements PermissionResolver {
 
     private final Map<String, Set<String>> permissionsByUserId = new ConcurrentHashMap<>();

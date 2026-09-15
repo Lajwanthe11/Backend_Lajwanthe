@@ -4,6 +4,7 @@ import com.example.rbac.config.RequirePermission;
 import com.example.rbac.config.SecurityContextUtil;
 import com.example.rbac.dto.AuthenticatedUser;
 import org.springframework.stereotype.Service;
+import com.example.rbac.exception.PermissionDeniedException;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -25,7 +26,8 @@ public class PermissionAuthorizationService {
      * user does not satisfy the given {@code @RequirePermission} rule.
      * Returns normally if access is allowed.
      *
-     * <p>The tenant identity is sourced exclusively from the verified JWT
+     * <p>
+     * The tenant identity is sourced exclusively from the verified JWT
      * (via {@link SecurityContextUtil#currentUser()}) and never from
      * caller-supplied request parameters.
      */

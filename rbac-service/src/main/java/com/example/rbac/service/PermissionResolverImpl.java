@@ -4,6 +4,7 @@ import com.example.common.tenant.TenantContext;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -12,6 +13,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Service
+@Profile("!dev")
 public class PermissionResolverImpl implements PermissionResolver {
 
     private static final Duration CACHE_TTL = Duration.ofMinutes(15);
@@ -37,14 +39,12 @@ public class PermissionResolverImpl implements PermissionResolver {
 
         // Try Redis first
         try {
-            Set<String> cachedPermissions =
-                    redisTemplate.opsForSet().members(cacheKey);
+            Set<String> cachedPermissions = redisTemplate.opsForSet().members(cacheKey);
 
             if (cachedPermissions != null
                     && !cachedPermissions.isEmpty()) {
 
-                Set<String> permissions =
-                        new HashSet<>(cachedPermissions);
+                Set<String> permissions = new HashSet<>(cachedPermissions);
 
                 permissions.remove(NO_PERMISSIONS);
 
@@ -152,8 +152,7 @@ public class PermissionResolverImpl implements PermissionResolver {
         return new HashSet<>(
                 jdbcTemplate.query(
                         sql,
-                        (resultSet, rowNum) ->
-                                resultSet.getString("permission_code"),
+                        (resultSet, rowNum) -> resultSet.getString("permission_code"),
                         userId,
                         tenantId));
     }
@@ -165,8 +164,7 @@ public class PermissionResolverImpl implements PermissionResolver {
 
         String tenantId = TenantContext.getTenantId();
 
-        Set<String> permissions =
-                resolvePermissions(userId, tenantId);
+        Set<String> permissions = resolvePermissions(userId, tenantId);
 
         return permissions.contains("*")
                 || permissions.contains(permissionCode);
