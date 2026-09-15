@@ -36,30 +36,42 @@ public class AuthResponseDTO {
 
     public String getAccessToken()
     {
-        return accessToken; }
+        return accessToken;
+    }
     public void setAccessToken(String accessToken)
-    { this.accessToken = accessToken; }
+    {
+        this.accessToken = accessToken;
+    }
     public String getRefreshToken()
-    { return refreshToken; }
+    {
+        return refreshToken; }
     public void setRefreshToken(String refreshToken)
-    { this.refreshToken = refreshToken; }
+    {
+        this.refreshToken = refreshToken; }
     public String getTokenType() {
         return tokenType; }
     public void setTokenType(String tokenType) {
         this.tokenType = tokenType; }
     public String getUsername() {
         return username; }
-    public void setUsername(String username) { this.username = username; }
-    public String getTenantId() { return tenantId; }
-    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
-    public List<String> getRoles() { return roles; }
-    public void setRoles(List<String> roles) { this.roles = roles; }
+    public void setUsername(String username) {
+        this.username = username; }
+    public String getTenantId() {
+        return tenantId; }
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId; }
+    public List<String> getRoles() {
+        return roles; }
+    public void setRoles(List<String> roles) {
+        this.roles = roles; }
 
     public String getSessionId() {
+
         return sessionId;
     }
 
     public void setSessionId(String sessionId) {
+
         this.sessionId = sessionId;
     }
     public static class AuthResponseDTOBuilder {
@@ -78,7 +90,6 @@ public class AuthResponseDTO {
         public AuthResponseDTOBuilder username(String username) { this.username = username; return this; }
         public AuthResponseDTOBuilder tenantId(String tenantId) { this.tenantId = tenantId; return this; }
         public AuthResponseDTOBuilder roles(List<String> roles) { this.roles = roles; return this; }
-
         public AuthResponseDTOBuilder sessionId(String sessionId) {
             this.sessionId = sessionId;
             return this;
