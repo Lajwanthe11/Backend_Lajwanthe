@@ -5,7 +5,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.core.user.OAuth2User;
-
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -24,6 +24,8 @@ public class UserPrincipal implements UserDetails, OAuth2User {
     private final String tenantId;
     private final Collection<? extends GrantedAuthority> authorities;
     private final Map<String, Object> attributes;
+    private int failedAttempts = 0;
+    private LocalDateTime lockedUntil;
 
     public UserPrincipal(String id, String username, String email, String password, String tenantId,
                          Collection<? extends GrantedAuthority> authorities,
@@ -117,7 +119,9 @@ public class UserPrincipal implements UserDetails, OAuth2User {
     public boolean isAccountNonExpired() { return true; }
 
     @Override
-    public boolean isAccountNonLocked() { return true; }
+    public boolean isAccountNonLocked() {
+        return lockedUntil == null || LocalDateTime.now().isAfter(lockedUntil);
+    }
 
     @Override
     public boolean isCredentialsNonExpired() { return true; }
@@ -131,6 +135,15 @@ public class UserPrincipal implements UserDetails, OAuth2User {
     public String getEmail() { return email; }
     public String getTenantId() { return tenantId; }
 
+    // --- Account lockout accessors (additive) ---
+
+    public int getFailedAttempts() { return failedAttempts; }
+
+    public void setFailedAttempts(int failedAttempts) { this.failedAttempts = failedAttempts; }
+
+    public LocalDateTime getLockedUntil() { return lockedUntil; }
+
+    public void setLockedUntil(LocalDateTime lockedUntil) { this.lockedUntil = lockedUntil; }
     // --- Builder ---
 
     public static class UserPrincipalBuilder {

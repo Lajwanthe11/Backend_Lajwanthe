@@ -12,7 +12,6 @@ spring:
     driver-class-name: org.postgresql.Driver
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
     password: ${SPRING_DATASOURCE_PASSWORD:postgres}
-    password: ${SPRING_DATASOURCE_PASSWORD:password}
 
     hikari:
       minimum-idle: ${DB_POOL_MIN_IDLE:5}
