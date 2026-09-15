@@ -1,8 +1,8 @@
-package com.example.platformadmin.organizations.user.service;
+package com.example.platformadmin.user.service;
 
-import com.example.platformadmin.organizations.user.dto.UserProfileUpdateDto;
-import com.example.platformadmin.organizations.user.dto.UserRegistrationRequestDto;
-import com.example.platformadmin.organizations.user.dto.UserRegistrationResponseDto;
+import com.example.platformadmin.user.dto.UserProfileUpdateDto;
+import com.example.platformadmin.user.dto.UserRegistrationRequestDto;
+import com.example.platformadmin.user.dto.UserRegistrationResponseDto;
 
 public interface UserService {
 

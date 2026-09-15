@@ -1,13 +1,13 @@
-package com.example.platformadmin.organizations.user.service.impl;
+package com.example.platformadmin.user.service.impl;
 
-import com.example.platformadmin.organizations.user.dto.BulkUploadResponseDto;
-import com.example.platformadmin.organizations.user.dto.BulkUserRequestDto;
-import com.example.platformadmin.organizations.user.dto.ImportErrorDto;
-import com.example.platformadmin.organizations.user.dto.ImportSummaryDto;
-import com.example.platformadmin.organizations.user.entity.User;
-import com.example.platformadmin.organizations.user.enums.UserStatus;
-import com.example.platformadmin.organizations.user.repository.UserRepository;
-import com.example.platformadmin.organizations.user.service.UserImportService;
+import com.example.platformadmin.user.dto.BulkUploadResponseDto;
+import com.example.platformadmin.user.dto.BulkUserRequestDto;
+import com.example.platformadmin.user.dto.ImportErrorDto;
+import com.example.platformadmin.user.dto.ImportSummaryDto;
+import com.example.platformadmin.user.entity.User;
+import com.example.platformadmin.user.enums.UserStatus;
+import com.example.platformadmin.user.repository.UserRepository;
+import com.example.platformadmin.user.service.UserImportService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;

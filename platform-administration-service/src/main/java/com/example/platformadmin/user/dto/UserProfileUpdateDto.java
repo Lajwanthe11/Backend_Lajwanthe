@@ -1,4 +1,4 @@
-package com.example.platformadmin.organizations.user.dto;
+package com.example.platformadmin.user.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

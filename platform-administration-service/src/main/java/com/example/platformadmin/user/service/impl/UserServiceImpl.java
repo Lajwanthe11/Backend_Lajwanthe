@@ -1,15 +1,15 @@
-package com.example.platformadmin.organizations.user.service.impl;
+package com.example.platformadmin.user.service.impl;
 
 import com.example.common.abstracts.AbstractService;
-import com.example.platformadmin.organizations.user.dto.UserProfileUpdateDto;
-import com.example.platformadmin.organizations.user.dto.UserRegistrationRequestDto;
-import com.example.platformadmin.organizations.user.dto.UserRegistrationResponseDto;
-import com.example.platformadmin.organizations.user.entity.User;
-import com.example.platformadmin.organizations.user.enums.UserStatus;
-import com.example.platformadmin.organizations.user.exception.UserAlreadyExistsException;
-import com.example.platformadmin.organizations.user.exception.UserNotFoundException;
-import com.example.platformadmin.organizations.user.repository.UserRepository;
-import com.example.platformadmin.organizations.user.service.UserService;
+import com.example.platformadmin.user.dto.UserProfileUpdateDto;
+import com.example.platformadmin.user.dto.UserRegistrationRequestDto;
+import com.example.platformadmin.user.dto.UserRegistrationResponseDto;
+import com.example.platformadmin.user.entity.User;
+import com.example.platformadmin.user.enums.UserStatus;
+import com.example.platformadmin.user.exception.UserAlreadyExistsException;
+import com.example.platformadmin.user.exception.UserNotFoundException;
+import com.example.platformadmin.user.repository.UserRepository;
+import com.example.platformadmin.user.service.UserService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

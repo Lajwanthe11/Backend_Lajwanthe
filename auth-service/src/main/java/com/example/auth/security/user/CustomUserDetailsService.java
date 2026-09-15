@@ -1,12 +1,14 @@
 package com.example.auth.security.user;
 
 import com.example.common.tenant.TenantContext;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -21,6 +23,13 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     /** In-memory user store keyed as "tenantId:username" for multi-tenant lookup. */
     private final Map<String, UserPrincipal> users = new ConcurrentHashMap<>();
+
+    // --- Account lockout config (additive, externalized) ---
+    @Value("${app.security.lockout.max-attempts:5}")
+    private int maxAttempts;
+
+    @Value("${app.security.lockout.duration-minutes:15}")
+    private int lockDurationMinutes;
 
     public CustomUserDetailsService(PasswordEncoder passwordEncoder) {
         // Seed default admin and user for out-of-the-box testing
@@ -110,5 +119,75 @@ public class CustomUserDetailsService implements UserDetailsService {
         );
         users.put(key, updated);
         users.put(username, updated); // Keep direct-fallback key in sync
+    }
+
+    // ---------------------------------------------------------------
+    // Account Lockout support (additive)
+    // ---------------------------------------------------------------
+
+    /**
+     * Increment the failed-login counter for a user. If the counter reaches
+     * maxAttempts, the account is locked for lockDurationMinutes.
+     */
+    public void incrementFailedAttempts(String username, String tenantId) {
+        UserPrincipal user = resolveUser(username, tenantId);
+        if (user == null) {
+            return;
+        }
+
+        // Previous lock already expired na, fresh start pannu
+        if (user.getLockedUntil() != null && LocalDateTime.now().isAfter(user.getLockedUntil())) {
+            user.setFailedAttempts(0);
+            user.setLockedUntil(null);
+        }
+
+        int attempts = user.getFailedAttempts() + 1;
+        user.setFailedAttempts(attempts);
+
+        if (attempts >= maxAttempts) {
+            user.setLockedUntil(LocalDateTime.now().plusMinutes(lockDurationMinutes));
+        }
+    }
+
+    /**
+     * Reset the failed-login counter and unlock the account after a successful login.
+     */
+    public void resetFailedAttempts(String username, String tenantId) {
+        UserPrincipal user = resolveUser(username, tenantId);
+        if (user == null) {
+            return;
+        }
+        user.setFailedAttempts(0);
+        user.setLockedUntil(null);
+    }
+
+    /**
+     * Look up the same UserPrincipal instance stored in the map (current tenant,
+     * default tenant, then direct-username fallback) so mutations affect the stored object.
+     */
+    private UserPrincipal resolveUser(String username, String tenantId) {
+        String effectiveTenant = (tenantId != null && !tenantId.isBlank()) ? tenantId : TenantContext.getTenantId();
+
+        UserPrincipal user = users.get(buildUserKey(username, effectiveTenant));
+        if (user == null) {
+            user = users.get(buildUserKey(username, TenantContext.DEFAULT_TENANT_ID));
+        }
+        if (user == null) {
+            user = users.get(username);
+        }
+        return user;
+    }
+
+    public LocalDateTime getLockedUntil(String username, String tenantId) {
+        UserPrincipal user = resolveUser(username, tenantId);
+        return user != null ? user.getLockedUntil() : null;
+    }
+
+    public int getMaxAttempts() {
+        return maxAttempts;
+    }
+
+    public int getLockDurationMinutes() {
+        return lockDurationMinutes;
     }
 }

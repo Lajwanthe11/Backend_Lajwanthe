@@ -59,6 +59,9 @@ app:
   security:
     common-jwt-filter:
       enabled: false
+    lockout:
+        max-attempts: ${ACCOUNT_LOCKOUT_MAX_ATTEMPTS:3}
+        duration-minutes: ${ACCOUNT_LOCKOUT_DURATION_MINUTES:2}
   tenant:
     default-tenant: ${DEFAULT_TENANT_ID:default}
     header-name: ${TENANT_HEADER_NAME:X-Tenant-ID}

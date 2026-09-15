@@ -1,9 +1,9 @@
-package com.example.platformadmin.organizations.user.controller;
+package com.example.platformadmin.user.controller;
 
-import com.example.platformadmin.organizations.user.dto.BulkUploadResponseDto;
-import com.example.platformadmin.organizations.user.dto.BulkUserRequestDto;
-import com.example.platformadmin.organizations.user.dto.ImportSummaryDto;
-import com.example.platformadmin.organizations.user.service.UserImportService;
+import com.example.platformadmin.user.dto.BulkUploadResponseDto;
+import com.example.platformadmin.user.dto.BulkUserRequestDto;
+import com.example.platformadmin.user.dto.ImportSummaryDto;
+import com.example.platformadmin.user.service.UserImportService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
