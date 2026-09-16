@@ -10,9 +10,6 @@ public class RoleTemplateSummaryDto {
     private Integer permissionCount;
     private String recommendedFor;
 
-    public RoleTemplateSummaryDto() {
-    }
-
     public RoleTemplateSummaryDto(UUID id, String name, String description,
                                   Integer permissionCount, String recommendedFor) {
         this.id = id;

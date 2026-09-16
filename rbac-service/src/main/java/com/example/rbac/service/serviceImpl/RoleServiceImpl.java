@@ -5,7 +5,7 @@ import com.example.common.exception.BadRequestException;
 import com.example.rbac.exception.ResourceNotFoundException;
 import com.example.rbac.entity.RoleHistory;
 import com.example.rbac.repository.PermissionRepository;
-import com.example.rbac.service.RoleNotFoundException;
+import com.example.rbac.exception.RoleNotFoundException;
 import com.example.rbac.dto.*;
 import com.example.rbac.entity.Permission;
 import com.example.rbac.entity.Role;

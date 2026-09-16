@@ -13,27 +13,19 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-/**
- * Seeds the 8 default system roles for a tenant. Call seedForTenant(tenantId)
- * from your tenant-provisioning workflow (e.g. a listener on a
- * TenantCreatedEvent already fired by the Tenant Management module).
- *
- * Idempotency: the (tenant_id, role_code) unique constraint on Role, combined
- * with the existsBy check below, means calling this twice for the same
- * tenant is a safe no-op on the second call — no duplicate rows, no
- * exception surfaced to the caller.
- */
 @Component
 public class SystemRoleSeeder {
 
     private final RoleRepository roleRepository;
     private final PermissionRepository permissionRepository;
 
+    // Constructor to inject role and permission repositories
     public SystemRoleSeeder(RoleRepository roleRepository, PermissionRepository permissionRepository) {
         this.roleRepository = roleRepository;
         this.permissionRepository = permissionRepository;
     }
 
+    // Defines the system roles created for each tenant
     private static final List<SystemRoleDefinition> SYSTEM_ROLES = List.of(
             new SystemRoleDefinition("SUPER_ADMIN", "Super Admin",
                     "Full platform access across all tenants and modules"),
@@ -53,6 +45,7 @@ public class SystemRoleSeeder {
                     "View-only access across permitted modules")
     );
 
+    // Creates the default system roles for a tenant
     @Transactional
     public void seedForTenant(UUID tenantId) {
         for (SystemRoleDefinition def : SYSTEM_ROLES) {
@@ -74,10 +67,7 @@ public class SystemRoleSeeder {
         }
     }
 
-    // Maps each system role to its default permission codes. Fill in the
-    // real codes once the platform-wide Permission Matrix is finalized —
-    // any code not yet in the permissions table resolves to an empty set,
-    // it won't throw.
+    // Finds the permissions assigned to a specific system role
     private Set<Permission> resolvePermissions(String roleCode) {
         List<String> codes = switch (roleCode) {
             case "SUPER_ADMIN" -> List.of("*"); // wildcard — handle specially in your authorization layer
@@ -94,4 +84,6 @@ public class SystemRoleSeeder {
         return new HashSet<>(permissionRepository.findByPermissionCodeIn(codes));
     }
 
-    private record SystemRoleDefinition(String code, String name, String description) {}}
+    // Stores the code, name, and description of a system role
+    private record SystemRoleDefinition(String code, String name, String description) {}
+}
