@@ -1,8 +1,9 @@
 package com.example.platformadmin.superadmin.superadmindashboard.service.impl;
 
-import com.enterprise.platform.admin.superadmindashboard.dto.response.SuperAdminDashboardResponse;
-import com.enterprise.platform.admin.superadmindashboard.service.DashboardService;
 import org.springframework.stereotype.Service;
+
+import com.example.platformadmin.superadmin.superadmindashboard.dto.response.SuperAdminDashboardResponse;
+import com.example.platformadmin.superadmin.superadmindashboard.service.DashboardService;
 
 @Service
 public class DashboardServiceImpl implements DashboardService {
