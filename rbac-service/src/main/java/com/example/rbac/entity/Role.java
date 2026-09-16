@@ -39,6 +39,12 @@ public class Role {
     @Column(name = "is_deleted", nullable = false)
     private Boolean isDeleted = false;
 
+    @Column(name = "is_active", nullable = false)
+    private boolean active = true;
+
+    @Column(name = "is_deleted", nullable = false)
+    private boolean deleted;
+
     @Version
     private Long version;
 
@@ -73,6 +79,7 @@ public class Role {
     // Template this role was created from, if any
     @Column(name = "created_from_template_id")
     private String createdFromTemplateId;
+
 
     @PrePersist
     protected void onCreate() {
@@ -201,4 +208,12 @@ public class Role {
     public void setVersion(Long version) {
     this.version = version;
 }
+
+    public boolean isDeleted() {
+        return deleted;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
 }
