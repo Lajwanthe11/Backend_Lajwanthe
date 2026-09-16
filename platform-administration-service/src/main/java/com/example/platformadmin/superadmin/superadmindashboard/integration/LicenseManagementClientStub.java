@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
  *
  * TODO: replace with a real RestClient-based implementation once confirmed.
  */
-@Component
+@Component("superAdminLicenseClientStub")
 public class LicenseManagementClientStub implements LicenseManagementClient {
 
     @Override

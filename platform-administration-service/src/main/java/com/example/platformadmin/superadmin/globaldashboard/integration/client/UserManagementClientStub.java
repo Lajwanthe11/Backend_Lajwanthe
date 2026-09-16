@@ -4,8 +4,8 @@ import com.example.platformadmin.superadmin.globaldashboard.integration.dto.User
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-@Component
-@Profile("local")
+@Component("globalDashboardUserClientStub")
+@Profile({"local", "default"})
 public class UserManagementClientStub implements UserManagementClient {
 
     @Override

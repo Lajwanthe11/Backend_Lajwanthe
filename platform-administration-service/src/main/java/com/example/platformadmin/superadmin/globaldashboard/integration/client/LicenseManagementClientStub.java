@@ -4,8 +4,8 @@ import com.example.platformadmin.superadmin.globaldashboard.integration.dto.Lice
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-@Component
-@Profile("local")
+@Component("globalDashboardLicenseClientStub")
+@Profile({"local", "default"})
 public class LicenseManagementClientStub
         implements LicenseManagementClient {
 
