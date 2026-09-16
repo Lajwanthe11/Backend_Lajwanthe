@@ -5,16 +5,16 @@ import com.example.rbac.dto.RoleRequestDto;
 import com.example.rbac.dto.RoleResponseDto;
 import com.example.rbac.entity.Role;
 import com.example.rbac.enums.RoleType;
+
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
-//Service contract for Role operations
-public interface RoleService extends BaseService<Role, Long, RoleRequestDto, RoleResponseDto> {
+public interface RoleService extends BaseService<Role, UUID, RoleRequestDto, RoleResponseDto> {
 
-//Service roles by name or code
-List<RoleResponseDto> searchRoles(String query, RoleType roleType, String status);
- // Activate or deactivate role
-RoleResponseDto updateStatus(Long id, String status);
+    List<RoleResponseDto> searchRoles( String query, RoleType roleType, String status);
 
-Map<String, Long> getRoleCounts();
+    RoleResponseDto updateStatus(UUID id, String status);
+
+    Map<String, Long> getRoleCounts();
 }

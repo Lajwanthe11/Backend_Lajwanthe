@@ -1,12 +1,19 @@
 package com.example.rbac.service;
 
+import com.example.rbac.dto.DeptScopeReportDto;
+
 import java.util.List;
+import java.util.UUID;
 
 public interface DepartmentPermissionService {
 
-    List<Long> getDepartmentScope(Long userRoleId);
+    List<UUID> getDepartmentScope(UUID userRoleId);
 
-    void updateDepartmentScope(Long userRoleId, List<Long> departmentIds);
+    void updateDepartmentScope(UUID userRoleId, List<UUID> departmentIds);
 
-    void removeAllDepartmentScope(Long userRoleId);
+    void removeAllDepartmentScope(UUID userRoleId);
+
+    List<DeptScopeReportDto> getDeptScopeReport();
+
+    List<UUID> getUsersByPermission(UUID departmentId, String permissionCode);
 }

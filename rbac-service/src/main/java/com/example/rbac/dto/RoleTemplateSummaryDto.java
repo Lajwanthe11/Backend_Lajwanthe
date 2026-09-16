@@ -4,6 +4,7 @@ public record RoleTemplateSummaryDto(
         String id,
         String name,
         String description,
+        int permissionCount,
         String recommendedFor
 ){
 }
