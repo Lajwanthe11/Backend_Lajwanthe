@@ -19,13 +19,15 @@ public interface RoleService extends BaseService<Role, UUID, RoleRequestDto, Rol
 
     List<RoleTemplateSummaryDto> listTemplates();
 
-    RoleTemplateDetailDto getTemplateDetail(String templateId);
+    RoleTemplateDetailDto getTemplateDetail(UUID templateId);
 
-    RoleCompareResponse compareRoles(String role1Id, String role2Id);
+    void updateTemplateVisibility(UUID templateId, boolean hidden);
 
     List<RoleResponseDto> listSystemRoles();
 
     RoleResponseDto cloneRole(String sourceRoleId, RoleCloneRequest request);
+
+    RoleCompareResponse compareRoles(String role1Id, String role2Id);
 
     List<RoleHistoryDto> getHistory(String roleId);
 

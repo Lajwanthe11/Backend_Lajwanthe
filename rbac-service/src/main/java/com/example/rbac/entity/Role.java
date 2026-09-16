@@ -39,7 +39,7 @@ public class Role {
     @Column(name = "is_deleted", nullable = false)
     private Boolean isDeleted = false;
 
-    @Version 
+    @Version
     private Long version;
 
     @Column(name = "deleted_at")
@@ -63,6 +63,7 @@ public class Role {
             joinColumns = @JoinColumn(name = "role_id"),
             inverseJoinColumns = @JoinColumn(name = "permission_id")
         )
+
     private Set<Permission> permissions = new HashSet<>();
 
     // Source role this was cloned from, if any
@@ -87,18 +88,12 @@ public class Role {
         updatedAt = LocalDateTime.now();
     }
 
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
 
     public UUID getTenantId() {
         return tenantId;
     }
-
     public void setTenantId(UUID tenantId) {
         this.tenantId = tenantId;
     }
@@ -106,7 +101,6 @@ public class Role {
     public String getRoleName() {
         return roleName;
     }
-
     public void setRoleName(String roleName) {
         this.roleName = roleName;
     }
@@ -114,7 +108,6 @@ public class Role {
     public String getRoleCode() {
         return roleCode;
     }
-
     public void setRoleCode(String roleCode) {
         this.roleCode = roleCode;
     }
@@ -122,7 +115,6 @@ public class Role {
     public RoleType getRoleType() {
         return roleType;
     }
-
     public void setRoleType(RoleType roleType) {
         this.roleType = roleType;
     }
@@ -130,7 +122,6 @@ public class Role {
     public String getDescription() {
         return description;
     }
-
     public void setDescription(String description) {
         this.description = description;
     }
@@ -138,7 +129,6 @@ public class Role {
     public String getStatus() {
         return status;
     }
-
     public void setStatus(String status) {
         this.status = status;
     }
@@ -146,7 +136,6 @@ public class Role {
     public Boolean getIsDeleted() {
         return isDeleted;
     }
-
     public void setIsDeleted(Boolean isDeleted) {
         this.isDeleted = isDeleted;
     }
@@ -154,7 +143,6 @@ public class Role {
     public LocalDateTime getDeletedAt() {
         return deletedAt;
     }
-
     public void setDeletedAt(LocalDateTime deletedAt) {
         this.deletedAt = deletedAt;
     }
@@ -162,7 +150,6 @@ public class Role {
     public UUID getCreatedBy() {
         return createdBy;
     }
-
     public void setCreatedBy(UUID createdBy) {
         this.createdBy = createdBy;
     }
@@ -170,7 +157,6 @@ public class Role {
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
-
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
     }
@@ -178,7 +164,6 @@ public class Role {
     public UUID getUpdatedBy() {
         return updatedBy;
     }
-
     public void setUpdatedBy(UUID updatedBy) {
         this.updatedBy = updatedBy;
     }
@@ -186,7 +171,6 @@ public class Role {
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
     }
-
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
     }
@@ -194,7 +178,6 @@ public class Role {
     public Set<Permission> getPermissions() {
         return permissions;
     }
-
     public void setPermissions(Set<Permission> permissions) {
         this.permissions = permissions;
     }
@@ -202,7 +185,6 @@ public class Role {
     public UUID getClonedFromRoleId() {
         return clonedFromRoleId;
     }
-
     public void setClonedFromRoleId(UUID clonedFromRoleId) {
         this.clonedFromRoleId = clonedFromRoleId;
     }
@@ -210,17 +192,13 @@ public class Role {
     public String getCreatedFromTemplateId() {
         return createdFromTemplateId;
     }
-
     public void setCreatedFromTemplateId(String createdFromTemplateId) {
-        this.createdFromTemplateId = createdFromTemplateId;
-    }
+        this.createdFromTemplateId = createdFromTemplateId;}
 
     public Long getVersion() {
     return version;
 }
-
-
-public void setVersion(Long version) {
+    public void setVersion(Long version) {
     this.version = version;
 }
 }

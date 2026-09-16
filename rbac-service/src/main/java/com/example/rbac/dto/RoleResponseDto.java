@@ -3,6 +3,7 @@ package com.example.rbac.dto;
 import com.example.rbac.enums.RoleType;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 import java.util.UUID;
 
 public class RoleResponseDto {
@@ -14,6 +15,7 @@ public class RoleResponseDto {
     private String description;
     private String status;
     private Boolean isDeleted;
+    private Set<String> permissionCodes;
     private LocalDateTime createdAt;
     private UUID createdBy;
     private LocalDateTime updatedAt;
@@ -24,6 +26,34 @@ public class RoleResponseDto {
     }
 
     // Constructor used by RoleServiceImpl
+    public RoleResponseDto(
+            UUID id,
+            String roleName,
+            String roleCode,
+            RoleType roleType,
+            String description,
+            String status,
+            Boolean isDeleted,
+            Set<String> permissionCodes,
+            LocalDateTime createdAt,
+            UUID createdBy,
+            LocalDateTime updatedAt,
+            UUID updatedBy) {
+
+        this.id = id;
+        this.roleName = roleName;
+        this.roleCode = roleCode;
+        this.roleType = roleType;
+        this.description = description;
+        this.status = status;
+        this.isDeleted = isDeleted;
+        this.permissionCodes = permissionCodes;
+        this.createdAt = createdAt;
+        this.createdBy = createdBy;
+        this.updatedAt = updatedAt;
+        this.updatedBy = updatedBy;
+    }
+
     public RoleResponseDto(
             UUID id,
             String roleName,
@@ -49,6 +79,7 @@ public class RoleResponseDto {
         this.updatedAt = updatedAt;
         this.updatedBy = updatedBy;
     }
+
 
     public UUID getId() {
         return id;
@@ -105,6 +136,8 @@ public class RoleResponseDto {
     public void setIsDeleted(Boolean isDeleted) {
         this.isDeleted = isDeleted;
     }
+
+    public Set<String> getPermissionCodes() { return permissionCodes; }
 
     public LocalDateTime getCreatedAt() {
         return createdAt;

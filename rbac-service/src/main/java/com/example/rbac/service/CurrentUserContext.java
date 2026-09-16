@@ -1,7 +1,9 @@
 package com.example.rbac.service;
 
+import java.util.UUID;
+
 public interface CurrentUserContext {
-    String getTenantId();
+    UUID getTenantId();
     String getUserId();
     String getUserDisplayName();
     boolean hasRole(String roleCode);

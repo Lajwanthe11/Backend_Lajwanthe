@@ -1,5 +1,6 @@
 package com.example.rbac.repository;
 
+import com.example.rbac.entity.Permission;
 import com.example.rbac.entity.RolePermission;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -20,4 +21,7 @@ public interface RolePermissionRepository
         Optional<RolePermission> findByRole_IdAndPermission_PermissionId(
                         UUID roleId,
                         UUID permissionId);
+
+        Optional<Permission> findByPermissionCode(String permissionCode);
+        List<Permission> findByPermissionCodeIn(List<String> permissionCodes);
 }

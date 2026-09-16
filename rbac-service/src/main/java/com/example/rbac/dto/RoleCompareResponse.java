@@ -1,5 +1,7 @@
 package com.example.rbac.dto;
 
+import java.util.UUID;
+
 import java.util.Set;
 
 public record RoleCompareResponse(
@@ -12,5 +14,5 @@ public record RoleCompareResponse(
         Set<String> onlyInRole1,
         Set<String> onlyInRole2
 ) {
-    public record RoleSummary(java.util.UUID id, String name, int totalPermissions) {}
+    public record RoleSummary(UUID id, String name, int totalPermissions) {}
 }

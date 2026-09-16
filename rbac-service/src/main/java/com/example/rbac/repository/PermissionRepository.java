@@ -38,5 +38,5 @@ public interface PermissionRepository extends JpaRepository<Permission, UUID> {
             """)
     List<Permission> search(@Param("term") String term);
 
-    List<Permission> findByCodeIn(List<String> codes);
+    List<Permission> findByPermissionCodeIn(List<String> permissionCodes);
 }

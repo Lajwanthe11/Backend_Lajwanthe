@@ -60,53 +60,46 @@ public class RoleController extends AbstractController<Role, UUID, RoleRequestDt
     return ResponseEntity.ok(roleService.getRoleCounts());
     }
 
+    // List system roles
     @PreAuthorize("hasAuthority('ROLE_READ')")
     @GetMapping("/system")
     public List<RoleResponseDto> listSystemRoles() {
-    return roleService.listSystemRoles();
+        return roleService.listSystemRoles();
     }
 
+    // Clone role
     @PreAuthorize("hasAuthority('ROLE_WRITE')")
     @PostMapping("/{roleId}/clone")
-    public RoleResponseDto cloneRole(
-            @PathVariable String roleId,
-            @Valid @RequestBody RoleCloneRequest request) {
-
-    return roleService.cloneRole(roleId, request);
+    public RoleResponseDto cloneRole(@PathVariable String roleId, @Valid @RequestBody RoleCloneRequest request) {
+        return roleService.cloneRole(roleId, request);
     }
 
+    // Compare roles
     @PreAuthorize("hasAuthority('ROLE_READ')")
     @GetMapping("/compare")
-    public RoleCompareResponse compareRoles(
-            @RequestParam String role1Id,
-            @RequestParam String role2Id) {
-
-    return roleService.compareRoles(role1Id, role2Id);
+    public RoleCompareResponse compareRoles(@RequestParam String role1Id, @RequestParam String role2Id) {
+        return roleService.compareRoles(role1Id, role2Id);
     }
 
+    // Get role history
     @PreAuthorize("hasAuthority('ROLE_READ')")
     @GetMapping("/{roleId}/history")
-    public List<RoleHistoryDto> getHistory(
-            @PathVariable String roleId) {
-
-    return roleService.getHistory(roleId);
+    public List<RoleHistoryDto> getHistory(@PathVariable String roleId) {
+        return roleService.getHistory(roleId);
     }
 
+    // Export roles
     @PreAuthorize("hasAuthority('ROLE_READ')")
     @GetMapping("/export")
-    public ResponseEntity<byte[]> exportRoles(
-            @RequestParam(defaultValue = "xlsx") String format) {
-
+    public ResponseEntity<byte[]> exportRoles(@RequestParam(defaultValue = "xlsx") String format) {
         byte[] file = roleService.exportRoles(format);
-
-        MediaType mediaType =
-                "pdf".equalsIgnoreCase(format)
-                        ? MediaType.APPLICATION_PDF
-                        : MediaType.parseMediaType(
-                                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-
-        String filename = "roles-export." + ("pdf".equalsIgnoreCase(format) ? "pdf": "xlsx");
-
-        return ResponseEntity.ok().contentType(mediaType) .header(  HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"") .body(file);
+        MediaType mediaType = "pdf".equalsIgnoreCase(format)
+                ? MediaType.APPLICATION_PDF
+                : MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        String filename = "roles-export." + ("pdf".equalsIgnoreCase(format) ? "pdf" : "xlsx");
+        return ResponseEntity.ok()
+                .contentType(mediaType)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .body(file);
     }
 }
