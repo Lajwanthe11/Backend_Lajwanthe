@@ -1,0 +1,10 @@
+target/
+**/target/
+*.class
+*.log
+effective-pom.xml
+build-error.txt
+build-errors.txt
+errors.txt
+
+.idea/
