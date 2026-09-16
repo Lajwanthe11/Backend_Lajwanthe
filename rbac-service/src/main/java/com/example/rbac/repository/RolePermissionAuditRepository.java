@@ -7,11 +7,10 @@ import java.util.List;
 import java.util.UUID;
 
 public interface RolePermissionAuditRepository
-        extends JpaRepository<RolePermissionAudit, UUID> {
+                extends JpaRepository<RolePermissionAudit, UUID> {
 
-    List<RolePermissionAudit> findByRoleIdOrderByChangedAtDesc(Long roleId);
+        List<RolePermissionAudit> findByRoleIdOrderByChangedAtDesc(UUID roleId);
 
-    List<RolePermissionAudit> findByPermissionIdOrderByChangedAtDesc(
-            UUID permissionId
-    );
+        List<RolePermissionAudit> findByPermissionIdOrderByChangedAtDesc(
+                        UUID permissionId);
 }

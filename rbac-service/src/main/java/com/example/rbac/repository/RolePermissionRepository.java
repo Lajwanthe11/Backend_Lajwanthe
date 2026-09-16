@@ -1,5 +1,6 @@
 package com.example.rbac.repository;
 
+import com.example.rbac.entity.Permission;
 import com.example.rbac.entity.RolePermission;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -8,18 +9,19 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface RolePermissionRepository
-        extends JpaRepository<RolePermission, Long> {
+                extends JpaRepository<RolePermission, UUID> {
 
-    List<RolePermission> findByRole_IdAndActiveTrue(Long roleId);
+        List<RolePermission> findByRole_IdAndActiveTrue(UUID roleId);
 
-    List<RolePermission> findByRole_Id(Long roleId);
+        List<RolePermission> findByRole_Id(UUID roleId);
 
-    List<RolePermission> findByRole_IdInAndActiveTrue(
-            List<Long> roleIds
-    );
+        List<RolePermission> findByRole_IdInAndActiveTrue(
+                        List<UUID> roleIds);
 
-    Optional<RolePermission> findByRole_IdAndPermission_PermissionId(
-            Long roleId,
-            UUID permissionId
-    );
+        Optional<RolePermission> findByRole_IdAndPermission_PermissionId(
+                        UUID roleId,
+                        UUID permissionId);
+
+        Optional<Permission> findByPermissionCode(String permissionCode);
+        List<Permission> findByPermissionCodeIn(List<String> permissionCodes);
 }

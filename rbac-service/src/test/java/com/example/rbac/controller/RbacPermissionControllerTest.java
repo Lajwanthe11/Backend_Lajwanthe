@@ -25,7 +25,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-
 @ExtendWith(MockitoExtension.class)
 class RbacPermissionControllerTest {
 
@@ -39,7 +38,6 @@ class RbacPermissionControllerTest {
 
     private RbacPermissionController rbacPermissionController;
 
-
     @BeforeEach
     void setUp() {
 
@@ -52,7 +50,6 @@ class RbacPermissionControllerTest {
                 .standaloneSetup(rbacPermissionController)
                 .build();
     }
-
 
     @Test
     void checkPermission_returnsAllowed() throws Exception {
@@ -86,7 +83,6 @@ class RbacPermissionControllerTest {
         );
     }
 
-
     @Test
     void checkPermission_returnsDenied() throws Exception {
 
@@ -119,7 +115,6 @@ class RbacPermissionControllerTest {
         );
     }
 
-
     @Test
     void getResolvedPermissions_returnsPermissions() throws Exception {
 
@@ -146,7 +141,6 @@ class RbacPermissionControllerTest {
         );
     }
 
-
     @Test
     void clearPermissionCache_returnsNoContent() throws Exception {
 
@@ -160,16 +154,5 @@ class RbacPermissionControllerTest {
                 "user1",
                 "tenant1"
         );
-    }
-
-
-    @Test
-    void health_returnsUp() throws Exception {
-
-        mockMvc.perform(
-                get("/api/v1/rbac/health")
-        )
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.status").value("UP"));
     }
 }

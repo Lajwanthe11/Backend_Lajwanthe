@@ -1,25 +1,27 @@
 package com.example.rbac.dto;
 
+import java.util.UUID;
+
 public class BatchPermissionUpdateResponse {
 
-    private Long roleId;
+    private UUID roleId;
     private int updatedCount;
     private String message;
 
     public BatchPermissionUpdateResponse() {
     }
 
-    public BatchPermissionUpdateResponse(Long roleId, int updatedCount, String message) {
+    public BatchPermissionUpdateResponse(UUID roleId, int updatedCount, String message) {
         this.roleId = roleId;
         this.updatedCount = updatedCount;
         this.message = message;
     }
 
-    public Long getRoleId() {
+    public UUID getRoleId() {
         return roleId;
     }
 
-    public void setRoleId(Long roleId) {
+    public void setRoleId(UUID roleId) {
         this.roleId = roleId;
     }
 

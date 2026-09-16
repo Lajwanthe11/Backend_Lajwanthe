@@ -38,9 +38,9 @@ public interface RoleRepository extends JpaRepository<Role, UUID> {
             AND (:status IS NULL OR r.status = :status)""")
     List<Role> searchRoles( @Param("tenantId") UUID tenantId, @Param("query") String query, @Param("roleType") RoleType roleType, @Param("status") String status);
 
-    long countByTenantIdAndIsDeletedFalse( UUID tenantId);
+    long countByTenantIdAndIsDeletedFalse(UUID tenantId);
 
-    long countByTenantIdAndRoleTypeAndIsDeletedFalse( UUID tenantId, RoleType roleType);
+    long countByTenantIdAndRoleTypeAndIsDeletedFalse(UUID tenantId, RoleType roleType);
 
     Optional<Role> findByIdAndTenantId(UUID id,UUID tenantId);
 
@@ -48,5 +48,13 @@ public interface RoleRepository extends JpaRepository<Role, UUID> {
 
     boolean existsByTenantIdAndRoleCode(UUID tenantId,String roleCode);
 
-    List<Role> findAllByTenantId( UUID tenantId);
+    List<Role> findAllByTenantId(UUID tenantId);
+
+    Optional<Role> findByIdAndTenantId(String id, UUID tenantId);
+
+    List<Role> findAllByTenantIdAndType(UUID tenantId, RoleType type);
+
+    Optional<Role> findByRoleIdAndTenantId(UUID roleId, UUID tenantId);
+
+    Optional<Role> findByTenantIdAndRoleCodeIgnoreCase(UUID tenantId, String roleCode);
 }

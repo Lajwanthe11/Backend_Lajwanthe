@@ -34,4 +34,3 @@ public class BatchPermissionUpdateRequest {
         this.expectedVersion = expectedVersion;
     }
 }
-

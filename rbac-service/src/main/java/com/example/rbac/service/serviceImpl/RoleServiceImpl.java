@@ -2,8 +2,9 @@ package com.example.rbac.service.serviceImpl;
 
 import com.example.common.abstracts.AbstractService;
 import com.example.common.exception.BadRequestException;
-import com.example.common.exception.ResourceNotFoundException;
+import com.example.rbac.exception.ResourceNotFoundException;
 import com.example.rbac.entity.RoleHistory;
+import com.example.rbac.repository.PermissionRepository;
 import com.example.rbac.service.RoleNotFoundException;
 import com.example.rbac.dto.*;
 import com.example.rbac.entity.Permission;
@@ -24,28 +25,27 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto, RoleResponseDto>implements RoleService {
+public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto, RoleResponseDto> implements RoleService {
 
     private final RoleRepository roleRepository;
     private final RoleTemplateRepository roleTemplateRepository;
     private final CurrentUserContext currentUser;
     private final RoleHistoryRepository roleHistoryRepository;
     private final RoleExportService roleExportService;
+    private final PermissionRepository permissionRepository;
 
     public RoleServiceImpl(
             RoleRepository roleRepository,
             RoleTemplateRepository roleTemplateRepository,
             CurrentUserContext currentUser,
             RoleHistoryRepository roleHistoryRepository,
-            RoleExportService roleExportService) {
+            RoleExportService roleExportService,
+            PermissionRepository permissionRepository
+            ) {
 
         super(roleRepository, "Role");
 
@@ -54,11 +54,12 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
         this.currentUser = currentUser;
         this.roleHistoryRepository = roleHistoryRepository;
         this.roleExportService = roleExportService;
+        this.permissionRepository = permissionRepository;
     }
 
     // Convert current tenant ID from JWT String to UUID
     private UUID getCurrentTenantUuid() {
-        return UUID.fromString(currentUser.getTenantId());
+        return currentUser.getTenantId();
     }
 
     // Convert request DTO to Role entity
@@ -355,310 +356,206 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
                 "customRoles", customRoles);
     }
 
-    // -------- Harish code below - logic kept same --------
-
+    // ---------------------------------------------------------------
+    // listTemplates()
+    // ---------------------------------------------------------------
     @Override
     public List<RoleTemplateSummaryDto> listTemplates() {
-
-        // Super Admin sees hidden templates too (management view);
-        // everyone else only sees the visible library.
-        List<RoleTemplate> templates =
-                currentUser.hasRole("SUPER_ADMIN")
-                        ? roleTemplateRepository.findAll()
-                        : roleTemplateRepository.findAllByHiddenFalse();
+        List<RoleTemplate> templates = currentUser.hasRole("SUPER_ADMIN")
+                ? roleTemplateRepository.findAll()
+                : roleTemplateRepository.findAllByHiddenFalse();
 
         return templates.stream()
                 .map(t -> new RoleTemplateSummaryDto(
-                        t.getId(),
-                        t.getName(),
-                        t.getDescription(),
-                        t.getPermissions().size(),
-                        t.getRecommendedFor()
-                ))
+                        t.getId(), t.getName(), t.getDescription(),
+                        t.getPermissions().size(), t.getRecommendedFor()))
                 .toList();
     }
 
+    // ---------------------------------------------------------------
+    // getTemplateDetail()
+    // ---------------------------------------------------------------
     @Override
-    public RoleTemplateDetailDto getTemplateDetail(
-            String templateId) {
+    public RoleTemplateDetailDto getTemplateDetail(UUID templateId) {
+        RoleTemplate template = roleTemplateRepository.findById(String.valueOf(templateId))
+                .orElseThrow(() -> new ResourceNotFoundException("Template not found: " + templateId));
 
-        RoleTemplate template =
-                roleTemplateRepository
-                .findById(templateId)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "RoleTemplate",
-                                "id",
-                                templateId));
-
-        Set<String> permissionCodes =
-                template.getPermissions()
-                        .stream()
-                        .map(Permission::getPermissionCode)
-                        .collect(Collectors.toSet());
+        Set<String> permissionCodes = template.getPermissions().stream()
+                .map(Permission::getPermissionCode)
+                .collect(Collectors.toSet());
 
         return new RoleTemplateDetailDto(
-                template.getId(),
-                template.getName(),
-                template.getDescription(),
-                permissionCodes,
-                template.getRecommendedFor()
-        );
+                template.getId(), template.getName(), template.getDescription(),
+                template.getRecommendedFor(), permissionCodes);
     }
 
+    // ---------------------------------------------------------------
+    // updateTemplateVisibility()
+    // Templates are never deleted — only hidden/shown in the library.
+    // Endpoint-level @PreAuthorize restricts this to Super Admin already;
+    // no additional role check needed here.
+    // ---------------------------------------------------------------
     @Override
-    public RoleCompareResponse compareRoles(
-            String role1Id,
-            String role2Id) {
+    @Transactional
+    public void updateTemplateVisibility(UUID templateId, boolean hidden) {
+        RoleTemplate template = roleTemplateRepository.findById(String.valueOf(templateId))
+                .orElseThrow(() -> new ResourceNotFoundException("Template not found: " + templateId));
+        template.setHidden(hidden);
+        roleTemplateRepository.save(template);
+    }
 
-        UUID tenantId = getCurrentTenantUuid();
+    // ---------------------------------------------------------------
+    // listSystemRoles()
+    // ---------------------------------------------------------------
+    @Override
+    public List<RoleResponseDto> listSystemRoles() {
+        UUID tenantId = currentUser.getTenantId();
+        return roleRepository.findAllByTenantIdAndType(tenantId, RoleType.SYSTEM)
+                .stream()
+                .map(this::toDtos)
+                .toList();
+    }
 
-        UUID firstRoleId =
-                UUID.fromString(role1Id);
+    // ---------------------------------------------------------------
+    // cloneRole()
+    // NOTE: takes String ids (not UUID) — matches the current real service
+    // signature confirmed by your compile errors. Ids are parsed with
+    // UUID.fromString at the point they're actually needed as UUID.
+    // ---------------------------------------------------------------
+    @Override
+    @Transactional
+    public RoleResponseDto cloneRole(String sourceRoleId, RoleCloneRequest request) {
+        UUID tenantId = currentUser.getTenantId();
 
-        UUID secondRoleId =
-                UUID.fromString(role2Id);
+        Role source = roleRepository.findByIdAndTenantId(sourceRoleId, tenantId)
+                .orElseThrow(() -> new RoleNotFoundException(sourceRoleId));
 
-        Role role1 =
-                roleRepository
-                .findByIdAndTenantId(
-                        firstRoleId,
-                        tenantId)
-                .orElseThrow(() ->
-                        new RoleNotFoundException(
-                                role1Id));
+        Role clone = new Role();
+        clone.setTenantId(tenantId);
+        clone.setRoleName(request.getNewName());
+        clone.setDescription(source.getDescription());
+        clone.setRoleType(RoleType.CUSTOM); // always CUSTOM, even cloning a SYSTEM role
+        clone.setRoleCode(generateUniqueRoleCode(tenantId, request.getNewName()));
+        clone.setClonedFromRoleId(source.getId());
+        clone.setPermissions(new HashSet<>(source.getPermissions()));
 
-        Role role2 =
-                roleRepository
-                .findByIdAndTenantId(
-                        secondRoleId,
-                        tenantId)
-                .orElseThrow(() ->
-                        new RoleNotFoundException(
-                                role2Id));
+        Role saved = roleRepository.save(clone);
 
-        // Permission sets default to empty (never null)
-        // so roles with zero permissions compare cleanly.
-        Set<String> perms1 =
-                role1.getPermissions()
-                        .stream()
-                        .map(Permission::getPermissionCode)
-                        .collect(Collectors.toCollection(
-                                HashSet::new));
+        recordHistory(saved.getId().toString(), "CREATED", "role",
+                null, "Cloned from '" + source.getRoleName() + "'");
 
-        Set<String> perms2 =
-                role2.getPermissions()
-                        .stream()
-                        .map(Permission::getPermissionCode)
-                        .collect(Collectors.toCollection(
-                                HashSet::new));
+        return toDtos(saved);
+    }
 
-        Set<String> shared =
-                new HashSet<>(perms1);
+    // ---------------------------------------------------------------
+    // compareRoles()
+    // ---------------------------------------------------------------
+    @Override
+    public RoleCompareResponse compareRoles(String role1Id, String role2Id) {
+        UUID tenantId = currentUser.getTenantId();
 
+        Role role1 = roleRepository.findByIdAndTenantId(role1Id, tenantId)
+                .orElseThrow(() -> new RoleNotFoundException(role1Id));
+        Role role2 = roleRepository.findByIdAndTenantId(role2Id, tenantId)
+                .orElseThrow(() -> new RoleNotFoundException(role2Id));
+
+        // Permission sets default to empty (never null) so roles with zero
+        // permissions compare cleanly instead of NPE-ing.
+        Set<String> perms1 = role1.getPermissions().stream()
+                .map(Permission::getPermissionCode)
+                .collect(Collectors.toCollection(HashSet::new));
+        Set<String> perms2 = role2.getPermissions().stream()
+                .map(Permission::getPermissionCode)
+                .collect(Collectors.toCollection(HashSet::new));
+
+        Set<String> shared = new HashSet<>(perms1);
         shared.retainAll(perms2);
 
-        Set<String> onlyIn1 =
-                new HashSet<>(perms1);
-
+        Set<String> onlyIn1 = new HashSet<>(perms1);
         onlyIn1.removeAll(perms2);
 
-        Set<String> onlyIn2 =
-                new HashSet<>(perms2);
-
+        Set<String> onlyIn2 = new HashSet<>(perms2);
         onlyIn2.removeAll(perms1);
 
         return new RoleCompareResponse(
-                new RoleCompareResponse.RoleSummary(
-                        role1.getId(),
-                        role1.getRoleName(),
-                        perms1.size()),
-                new RoleCompareResponse.RoleSummary(
-                        role2.getId(),
-                        role2.getRoleName(),
-                        perms2.size()),
-                shared,
-                onlyIn1,
-                onlyIn2
+                new RoleCompareResponse.RoleSummary(role1.getId(), role1.getRoleName(), perms1.size()),
+                new RoleCompareResponse.RoleSummary(role2.getId(), role2.getRoleName(), perms2.size()),
+                shared, onlyIn1, onlyIn2
         );
     }
 
+    // ---------------------------------------------------------------
+    // getHistory()
+    // ---------------------------------------------------------------
     @Override
-    public List<RoleResponseDto> listSystemRoles() {
+    public List<RoleHistoryDto> getHistory(String roleId) {
+        UUID tenantId = currentUser.getTenantId();
 
-        UUID tenantId = getCurrentTenantUuid();
+        // Confirms the role belongs to the caller's tenant before returning
+        // any history for it.
+        roleRepository.findByIdAndTenantId(roleId, tenantId)
+                .orElseThrow(() -> new RoleNotFoundException(roleId));
 
-        return roleRepository
-                .findAllByTenantIdAndType(
-                        tenantId,
-                        RoleType.SYSTEM)
-                .stream()
-                .map(this::toDto)
-                .toList();
-    }
-
-    @Override
-    @Transactional
-    public RoleResponseDto cloneRole(
-            String sourceRoleId,
-            RoleCloneRequest request) {
-
-        UUID tenantId = getCurrentTenantUuid();
-        UUID sourceId = UUID.fromString(sourceRoleId);
-
-        // Tenant-scoped lookup only
-        Role source =
-                roleRepository
-                .findByIdAndTenantId(
-                        sourceId,
-                        tenantId)
-                .orElseThrow(() ->
-                        new RoleNotFoundException(
-                                sourceRoleId));
-
-        Role clone = new Role();
-
-        clone.setTenantId(tenantId);
-        clone.setRoleName(request.newName());
-        clone.setDescription(source.getDescription());
-
-        // Cloned roles are always CUSTOM
-        clone.setRoleType(RoleType.CUSTOM);
-
-        clone.setRoleCode(
-                generateUniqueRoleCode(
-                        tenantId,
-                        request.newName()));
-
-        clone.setClonedFromRoleId(
-                source.getId());
-
-        clone.setPermissions(
-                new HashSet<>(
-                        source.getPermissions()));
-
-        Role saved =
-                roleRepository.save(clone);
-
-        recordHistory(
-                saved.getId(),
-                "CREATED",
-                "role",
-                null,
-                "Cloned from '"
-                        + source.getRoleName()
-                        + "'");
-
-        return toDto(saved);
-    }
-
-    @Override
-    public List<RoleHistoryDto> getHistory(
-            String roleId) {
-
-        UUID tenantId = getCurrentTenantUuid();
-        UUID roleUuid = UUID.fromString(roleId);
-
-        // Confirms the role belongs to caller tenant
-        roleRepository
-                .findByIdAndTenantId(
-                        roleUuid,
-                        tenantId)
-                .orElseThrow(() ->
-                        new RoleNotFoundException(
-                                roleId));
-
-        return roleHistoryRepository
-                .findAllByRoleIdOrderByChangedAtDesc(
-                        roleUuid)
+        return roleHistoryRepository.findAllByRoleIdOrderByChangedAtDesc(roleId)
                 .stream()
                 .map(h -> new RoleHistoryDto(
-                        h.getChangedByName(),
-                        h.getChangedAt(),
-                        h.getChangeType(),
-                        h.getFieldName(),
-                        h.getOldValue(),
-                        h.getNewValue()
-                ))
+                        h.getChangedByName(), h.getChangedAt(), h.getChangeType(),
+                        h.getFieldName(), h.getOldValue(), h.getNewValue()))
                 .toList();
     }
 
-    private void recordHistory(
-            UUID roleId,
-            String changeType,
-            String fieldName,
-            String oldValue,
-            String newValue) {
+    // ---------------------------------------------------------------
+    // exportRoles()
+    // ---------------------------------------------------------------
+    @Override
+    public byte[] exportRoles(String format) {
+        UUID tenantId = currentUser.getTenantId();
+        // tenantId comes only from the verified token — "format" never
+        // influences which tenant's data gets pulled.
+        List<Role> roles = roleRepository.findAllByTenantId(tenantId);
+        return roleExportService.export(roles, format);
+    }
 
-        RoleHistory history =
-                new RoleHistory();
+    // --- helpers ---
 
+    private Set<Permission> resolvePermissionsByCode(Set<String> codes) {
+        if (codes == null || codes.isEmpty()) return new HashSet<>();
+        return new HashSet<>(permissionRepository.findByPermissionCodeIn(new ArrayList<>(codes)));
+    }
+
+    private String generateUniqueRoleCode(UUID tenantId, String baseName) {
+        String base = baseName.trim().toUpperCase().replaceAll("[^A-Z0-9]+", "_");
+        String candidate = base;
+        int suffix = 1;
+        while (roleRepository.existsByTenantIdAndRoleCode(tenantId, candidate)) {
+            candidate = base + "_COPY_" + suffix++;
+        }
+        return candidate;
+    }
+
+    private void recordHistory(String roleId, String changeType, String fieldName,
+                               String oldValue, String newValue) {
+        RoleHistory history = new RoleHistory();
         history.setRoleId(roleId);
-
-        history.setChangedByUserId(
-                currentUser.getUserId());
-
-        history.setChangedByName(
-                currentUser.getUserDisplayName());
-
-        history.setChangedAt(
-                Instant.now());
-
-        history.setChangeType(
-                changeType);
-
-        history.setFieldName(
-                fieldName);
-
-        history.setOldValue(
-                oldValue);
-
-        history.setNewValue(
-                newValue);
-
+        history.setChangedByUserId(currentUser.getUserId());
+        history.setChangedByName(currentUser.getUserDisplayName());
+        history.setChangedAt(Instant.now());
+        history.setChangeType(changeType);
+        history.setFieldName(fieldName);
+        history.setOldValue(oldValue);
+        history.setNewValue(newValue);
         roleHistoryRepository.save(history);
     }
 
-    @Override
-    public byte[] exportRoles(String format) {
+    private RoleResponseDto toDtos(Role role) {
+        Set<String> permissionCodes = role.getPermissions().stream()
+                .map(Permission::getPermissionCode)
+                .collect(Collectors.toSet());
 
-        UUID tenantId = getCurrentTenantUuid();
-
-        // tenantId comes only from verified token
-        List<Role> roles =
-                roleRepository
-                .findAllByTenantId(
-                        tenantId);
-
-        return roleExportService
-                .export(roles, format);
-    }
-
-    private String generateUniqueRoleCode(
-            UUID tenantId,
-            String baseName) {
-
-        String base =
-                baseName.trim()
-                        .toUpperCase()
-                        .replaceAll(
-                                "[^A-Z0-9]+",
-                                "_");
-
-        String candidate = base;
-        int suffix = 1;
-
-        while (roleRepository
-                .existsByTenantIdAndRoleCode(
-                        tenantId,
-                        candidate)) {
-
-            candidate =
-                    base
-                    + "_COPY_"
-                    + suffix++;
-        }
-
-        return candidate;
+        return new RoleResponseDto(
+                role.getId(), role.getRoleName(), role.getRoleCode(), role.getRoleType(),
+                role.getDescription(), role.getStatus(), role.getIsDeleted(), permissionCodes,
+                role.getCreatedAt(), role.getCreatedBy(), role.getUpdatedAt(), role.getUpdatedBy()
+        );
     }
 }

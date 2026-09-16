@@ -7,6 +7,10 @@ import com.example.rbac.repository.RoleDepartmentMapRepository;
 import com.example.rbac.service.DepartmentPermissionService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.rbac.entity.UserRole;
+import com.example.rbac.repository.RolePermissionRepository;
+import com.example.rbac.repository.UserRoleRepository;
+
 
 import java.util.List;
 import java.util.UUID;

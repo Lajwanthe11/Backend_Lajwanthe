@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.example.rbac.config.RequirePermission;
 
 import java.util.List;
 import java.util.Map;
@@ -22,6 +23,7 @@ public class DepartmentPermissionController {
     }
 
     @GetMapping("/{userId}/roles/{roleId}/departments")
+    @RequirePermission("DEPT_READ")
     @Operation(summary = "Get department scope for a user's role")
     public ResponseEntity<List<UUID>> getDepartmentScope(
             @PathVariable UUID userId,
@@ -30,6 +32,7 @@ public class DepartmentPermissionController {
     }
 
     @PutMapping("/{userId}/roles/{roleId}/departments")
+    @RequirePermission("ROLE_ASSIGN")
     @Operation(summary = "Update department scope for a user's role")
     public ResponseEntity<Void> updateDepartmentScope(
             @PathVariable UUID userId,
@@ -42,6 +45,7 @@ public class DepartmentPermissionController {
     }
 
     @DeleteMapping("/{userId}/roles/{roleId}/departments/all")
+    @RequirePermission("ROLE_ASSIGN")
     @Operation(summary = "Remove all department scope for a user's role")
     public ResponseEntity<Void> removeAllDepartmentScope(
             @PathVariable UUID userId,

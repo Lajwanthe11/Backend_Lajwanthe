@@ -27,28 +27,60 @@ public class UnannotatedEndpointScanner {
     public void scanOnStartup() {
         Map<RequestMappingInfo, HandlerMethod> handlerMethods = handlerMapping.getHandlerMethods();
 
-        int uncovered = 0;
+        int unprotected = 0;
+        int publicEndpoints = 0;
+
         for (Map.Entry<RequestMappingInfo, HandlerMethod> entry : handlerMethods.entrySet()) {
             HandlerMethod handlerMethod = entry.getValue();
 
-            RequirePermission methodLevel = AnnotatedElementUtils.findMergedAnnotation(
-                    handlerMethod.getMethod(), RequirePermission.class);
-            RequirePermission classLevel = AnnotatedElementUtils.findMergedAnnotation(
-                    handlerMethod.getBeanType(), RequirePermission.class);
+            boolean hasPermission =
+                    AnnotatedElementUtils.findMergedAnnotation(handlerMethod.getMethod(), RequirePermission.class) != null
+                    || AnnotatedElementUtils.findMergedAnnotation(handlerMethod.getBeanType(), RequirePermission.class) != null;
 
-            if (methodLevel == null && classLevel == null) {
-                uncovered++;
-                log.warn("[RBAC-STARTUP-WARNING] Endpoint {} on {} has no @RequirePermission "
-                        + "- it is PUBLIC. If this is intentional, ignore this warning.",
-                        entry.getKey(), handlerMethod.getMethod().getName());
+            boolean isPublic =
+                    AnnotatedElementUtils.findMergedAnnotation(handlerMethod.getMethod(), PublicEndpoint.class) != null
+                    || AnnotatedElementUtils.findMergedAnnotation(handlerMethod.getBeanType(), PublicEndpoint.class) != null;
+
+            if (hasPermission) {
+                // Good — permission-protected endpoint.
+                continue;
             }
+
+            if (isPublic) {
+                // Explicitly opted out of permission checks.
+                publicEndpoints++;
+                PublicEndpoint annotation = AnnotatedElementUtils.findMergedAnnotation(
+                        handlerMethod.getMethod(), PublicEndpoint.class);
+                if (annotation == null) {
+                    annotation = AnnotatedElementUtils.findMergedAnnotation(
+                            handlerMethod.getBeanType(), PublicEndpoint.class);
+                }
+                log.info("[RBAC-STARTUP] Public endpoint {} on {} — reason: \"{}\"",
+                        entry.getKey(), handlerMethod.getMethod().getName(),
+                        annotation != null ? annotation.reason() : "N/A");
+                continue;
+            }
+
+            // Neither annotation present — this endpoint will be BLOCKED at runtime
+            // by PermissionAuthorizationAspect (deny-by-default policy).
+            unprotected++;
+            log.error("[RBAC-STARTUP-ERROR] Endpoint {} on {}.{} has NEITHER @RequirePermission NOR "
+                            + "@PublicEndpoint. It will be BLOCKED at runtime (fail-closed policy). "
+                            + "Add one of these annotations to fix.",
+                    entry.getKey(),
+                    handlerMethod.getBeanType().getSimpleName(),
+                    handlerMethod.getMethod().getName());
         }
 
-        if (uncovered > 0) {
-            log.warn("[RBAC-STARTUP-WARNING] {} endpoint(s) are unprotected (no @RequirePermission).",
-                    uncovered);
+        if (unprotected > 0) {
+            log.error("[RBAC-STARTUP-ERROR] {} endpoint(s) are UNPROTECTED and will be denied at runtime. "
+                    + "See errors above.", unprotected);
         } else {
-            log.info("[RBAC-STARTUP] All controller endpoints carry a @RequirePermission annotation.");
+            log.info("[RBAC-STARTUP] All {} controller endpoint(s) are annotated "
+                    + "({} with @RequirePermission, {} with @PublicEndpoint).",
+                    handlerMethods.size() - publicEndpoints + publicEndpoints,
+                    handlerMethods.size() - publicEndpoints,
+                    publicEndpoints);
         }
     }
 }

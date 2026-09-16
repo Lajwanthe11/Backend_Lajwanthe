@@ -2,8 +2,18 @@ package com.example.rbac.dto;
 
 import jakarta.validation.constraints.NotBlank;
 
-public record RoleCloneRequest(
-        @NotBlank String newName
-        // roleCode is always server-generated — never accepted from the client,
-        // so a caller can't collide with or spoof an existing system role code.
-) {}
+public class RoleCloneRequest {
+
+    @NotBlank(message = "New role name is required")
+    private String newName;
+
+    public RoleCloneRequest() {
+    }
+
+    public RoleCloneRequest(String newName) {
+        this.newName = newName;
+    }
+
+    public String getNewName() { return newName; }
+    public void setNewName(String newName) { this.newName = newName; }
+}

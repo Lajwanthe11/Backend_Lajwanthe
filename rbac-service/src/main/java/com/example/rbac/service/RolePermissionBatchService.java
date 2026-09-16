@@ -1,4 +1,4 @@
-  package com.example.rbac.service;
+package com.example.rbac.service;
 
 import com.example.rbac.dto.BatchPermissionUpdateRequest;
 import com.example.rbac.dto.BatchPermissionUpdateResponse;
@@ -9,6 +9,8 @@ import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.UUID;
+
 @Service
 public class RolePermissionBatchService {
 
@@ -17,53 +19,44 @@ public class RolePermissionBatchService {
 
     public RolePermissionBatchService(
             RoleRepository roleRepository,
-            RolePermissionService rolePermissionService
-    ) {
+            RolePermissionService rolePermissionService) {
         this.roleRepository = roleRepository;
         this.rolePermissionService = rolePermissionService;
     }
 
     @Transactional
     public BatchPermissionUpdateResponse updatePermissions(
-            Long roleId,
+            UUID roleId,
             BatchPermissionUpdateRequest request,
-            String userId
-    ) {
+            String userId) {
         Role role = roleRepository.findById(roleId)
-                .orElseThrow(() ->
-                        new IllegalArgumentException("Role not found"));
+                .orElseThrow(() -> new IllegalArgumentException("Role not found"));
 
         Long currentVersion = role.getVersion();
 
-        if (currentVersion != null
-                && !currentVersion.equals(request.getExpectedVersion())) {
-
+        if (!request.getExpectedVersion().equals(currentVersion)) {
             throw new ObjectOptimisticLockingFailureException(
                     Role.class,
-                    roleId
-            );
+                    roleId);
         }
 
         int updatedCount = 0;
 
-        for (PermissionGrantRequest permission :
-                request.getPermissions()) {
+        for (PermissionGrantRequest permission : request.getPermissions()) {
 
             if (Boolean.TRUE.equals(permission.getGranted())) {
 
                 rolePermissionService.grantPermission(
                         roleId,
                         permission.getPermissionId(),
-                        userId
-                );
+                        userId);
 
             } else {
 
                 rolePermissionService.revokePermission(
                         roleId,
                         permission.getPermissionId(),
-                        userId
-                );
+                        userId);
             }
 
             updatedCount++;
@@ -76,14 +69,12 @@ public class RolePermissionBatchService {
         } catch (ObjectOptimisticLockingFailureException ex) {
             throw new ObjectOptimisticLockingFailureException(
                     Role.class,
-                    roleId
-            );
+                    roleId);
         }
 
         return new BatchPermissionUpdateResponse(
                 roleId,
                 updatedCount,
-                "Permissions updated successfully"
-        );
+                "Permissions updated successfully");
     }
 }

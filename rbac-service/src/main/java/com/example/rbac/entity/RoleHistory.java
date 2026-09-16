@@ -3,26 +3,30 @@ package com.example.rbac.entity;
 import com.example.common.abstracts.BaseEntity;
 import jakarta.persistence.*;
 import java.time.Instant;
+import java.util.UUID;
 
 @Entity
 @Table(name = "role_history")
-public class RoleHistory extends BaseEntity {
+public class RoleHistory {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
+
+    // Stored/queried as String to match findAllByRoleIdOrderByChangedAtDesc(String)
+    // used in the service — role id is converted to String at the call site.
     @Column(name = "role_id", nullable = false)
-    private Long roleId;
+    private String roleId;
 
     @Column(name = "changed_by_user_id", nullable = false)
     private String changedByUserId;
 
-    // Denormalized at write time so history reads don't depend on the user
-    // service still having that user, and stays fast on the history endpoint.
     @Column(name = "changed_by_name", nullable = false, length = 150)
     private String changedByName;
 
     @Column(name = "changed_at", nullable = false)
     private Instant changedAt;
 
-    // CREATED, RENAMED, PERMISSION_ADDED, PERMISSION_REMOVED, CLONED, etc.
     @Column(name = "change_type", nullable = false, length = 40)
     private String changeType;
 
@@ -35,15 +39,11 @@ public class RoleHistory extends BaseEntity {
     @Column(name = "new_value", length = 500)
     private String newValue;
 
-    @PrePersist
-    protected void onCreate() {
-        if (changedAt == null) {
-            changedAt = Instant.now();
-        }
-    }
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
 
-    public Long getRoleId() { return roleId; }
-    public void setRoleId(Long roleId) { this.roleId = roleId; }
+    public String getRoleId() { return roleId; }
+    public void setRoleId(String roleId) { this.roleId = roleId; }
 
     public String getChangedByUserId() { return changedByUserId; }
     public void setChangedByUserId(String changedByUserId) { this.changedByUserId = changedByUserId; }

@@ -17,7 +17,7 @@ public class RolePermissionAudit {
     private String tenantId;
 
     @Column(name = "role_id", nullable = false)
-    private Long roleId;
+    private UUID roleId;
 
     @Column(name = "permission_id", nullable = false)
     private UUID permissionId;
@@ -60,11 +60,11 @@ public class RolePermissionAudit {
         this.tenantId = tenantId;
     }
 
-    public Long getRoleId() {
+    public UUID getRoleId() {
         return roleId;
     }
 
-    public void setRoleId(Long roleId) {
+    public void setRoleId(UUID roleId) {
         this.roleId = roleId;
     }
 

@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Seeds the 8 default system roles for a tenant. Call seedForTenant(tenantId)
@@ -53,7 +54,7 @@ public class SystemRoleSeeder {
     );
 
     @Transactional
-    public void seedForTenant(String tenantId) {
+    public void seedForTenant(UUID tenantId) {
         for (SystemRoleDefinition def : SYSTEM_ROLES) {
             if (roleRepository.existsByTenantIdAndRoleCode(tenantId, def.code())) {
                 continue; // already seeded — idempotent no-op
@@ -65,6 +66,8 @@ public class SystemRoleSeeder {
             role.setRoleName(def.name());
             role.setDescription(def.description());
             role.setRoleType(RoleType.SYSTEM);
+            role.setStatus("ACTIVE");
+            role.setIsDeleted(false);
             role.setPermissions(resolvePermissions(def.code()));
 
             roleRepository.save(role);
@@ -72,11 +75,12 @@ public class SystemRoleSeeder {
     }
 
     // Maps each system role to its default permission codes. Fill in the
-    // real permission codes once the platform-wide permission list (from
-    // the Permission Matrix wireframe) is finalized.
+    // real codes once the platform-wide Permission Matrix is finalized —
+    // any code not yet in the permissions table resolves to an empty set,
+    // it won't throw.
     private Set<Permission> resolvePermissions(String roleCode) {
         List<String> codes = switch (roleCode) {
-            case "SUPER_ADMIN" -> List.of("*"); // wildcard handled specially in your authorization layer
+            case "SUPER_ADMIN" -> List.of("*"); // wildcard — handle specially in your authorization layer
             case "ORG_ADMIN" -> List.of("ORG_MANAGE", "EMPLOYEE_MANAGE", "ROLE_READ", "ROLE_WRITE");
             case "DEPARTMENT_MANAGER" -> List.of("EMPLOYEE_VIEW", "EMPLOYEE_APPROVE", "DEPARTMENT_MANAGE");
             case "HR_MANAGER" -> List.of("EMPLOYEE_MANAGE", "ONBOARDING_MANAGE");
@@ -87,8 +91,7 @@ public class SystemRoleSeeder {
             default -> List.of();
         };
 
-        return new HashSet<>(permissionRepository.findByCodeIn(codes));
+        return new HashSet<>(permissionRepository.findByPermissionCodeIn(codes));
     }
 
-    private record SystemRoleDefinition(String code, String name, String description) {}
-}
+    private record SystemRoleDefinition(String code, String name, String description) {}}

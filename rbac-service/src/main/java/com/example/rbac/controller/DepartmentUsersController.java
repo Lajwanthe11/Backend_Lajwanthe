@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import com.example.rbac.config.RequirePermission;
 
 import java.util.List;
 import java.util.UUID;
@@ -25,6 +26,7 @@ public class DepartmentUsersController {
     }
 
     @GetMapping("/{deptId}/users/by-permission")
+    @RequirePermission("DEPT_READ")
     @Operation(summary = "Get users in a department who have a specific permission")
     public ResponseEntity<List<UUID>> getUsersByPermission(
             @PathVariable UUID deptId,

@@ -5,69 +5,76 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import java.util.Set;
+import java.util.UUID;
+
 public class RoleRequestDto {
   
-@NotBlank(message = "Role name is required")
-@Size(min = 3, max = 100, message = "Role name must be between 3 and 100 characters")
-private String roleName;
+    @NotBlank(message = "Role name is required")
+    @Size(min = 3, max = 100, message = "Role name must be between 3 and 100 characters")
+    private String roleName;
 
-private String roleCode;
+    private String roleCode;
 
-@NotNull(message = "Role type is required")
-private RoleType roleType;
+    @NotNull(message = "Role type is required")
+    private RoleType roleType;
 
-private String description;
+    private String description;
 
-private String status = "ACTIVE";
+    private String status = "ACTIVE";
 
-public RoleRequestDto() {
-    
-}
-public String getRoleName() {
-    return roleName;
-}
-public RoleRequestDto(String roleName, String roleCode,RoleType roleType, String description,String status) {
-    this.roleName = roleName;
-    this.roleCode = roleCode;
-    this.roleType = roleType;
-    this.description = description;
-    this.status = status != null ? status : "ACTIVE";
-}
-  
+    private UUID templateId;
 
-public void setRoleName(String roleName) {
-    this.roleName = roleName;
-}
+    private Set<String> permissionCodes;
+    public RoleRequestDto() {
+    }
 
-public String getRoleCode() {
-    return roleCode;
-}
+    public RoleRequestDto(String roleName, String roleCode,RoleType roleType, String description,String status) {
+        this.roleName = roleName;
+        this.roleCode = roleCode;
+        this.roleType = roleType;
+        this.description = description;
+        this.status = status != null ? status : "ACTIVE";
+    }
 
-public void setRoleCode(String roleCode) {
-    this.roleCode = roleCode;
-}
+    public String getRoleName() {
+        return roleName;
+    }
+    public void setRoleName(String roleName) {
+        this.roleName = roleName;
+    }
 
-public RoleType getRoleType() {
-    return roleType;
-}
+    public String getRoleCode() {
+        return roleCode;
+    }
+    public void setRoleCode(String roleCode) {
+        this.roleCode = roleCode;
+    }
 
-public void setRoleType(RoleType roleType) {
-    this.roleType = roleType;
-}
+    public RoleType getRoleType() {
+        return roleType;
+    }
+    public void setRoleType(RoleType roleType) {
+        this.roleType = roleType;
+    }
 
-public String getDescription() {
-    return description;
-}
+    public String getDescription() {
+        return description;
+    }
+    public void setDescription(String description) {
+        this.description = description;
+    }
 
-public void setDescription(String description) {
-    this.description = description;
-}
+    public String getStatus() {
+        return status;
+    }
+    public void setStatus(String status) {
+        this.status = status;
+    }
 
-public String getStatus() {
-    return status;
-}
+    public UUID getTemplateId() { return templateId; }
+    public void setTemplateId(UUID templateId) { this.templateId = templateId; }
 
-public void setStatus(String status) {
-    this.status = status;
-}
+    public Set<String> getPermissionCodes() { return permissionCodes; }
+    public void setPermissionCodes(Set<String> permissionCodes) { this.permissionCodes = permissionCodes; }
 }

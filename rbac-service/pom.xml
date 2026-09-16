@@ -45,11 +45,12 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
         </dependency>
-        <!-- h2 database -->
+        <!-- h2 database: TEST ONLY. Never ships into production builds.
+             The production datasource is PostgreSQL (configured via app.datasource.*). -->
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
-            <scope>runtime</scope>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -67,6 +68,11 @@
             <artifactId>lombok</artifactId>
             <version>1.18.48</version>
             <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+             <groupId>org.springframework.boot</groupId>
+             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
         <!-- PostgreSQL Database -->

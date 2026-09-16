@@ -2,7 +2,7 @@ package com.example.rbac.config;
 
 import com.example.rbac.dto.AuthenticatedUser;
 import com.example.rbac.service.PermissionAuthorizationService;
-import com.example.rbac.service.PermissionDeniedException;
+import com.example.rbac.exception.PermissionDeniedException;
 import com.example.rbac.service.SecurityEventLogger;
 import jakarta.servlet.http.HttpServletRequest;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -38,6 +38,7 @@ public class PermissionAuthorizationAspect {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         Method method = signature.getMethod();
 
+        // --- Check @RequirePermission (method, then class) ---
         RequirePermission requirePermission = AnnotatedElementUtils.findMergedAnnotation(
                 method, RequirePermission.class);
         if (requirePermission == null) {
@@ -45,20 +46,39 @@ public class PermissionAuthorizationAspect {
                     method.getDeclaringClass(), RequirePermission.class);
         }
 
-        if (requirePermission == null) {
-            // No annotation => treated as PUBLIC (see UnannotatedEndpointScanner
-            // for the startup-time warning that catches this).
+        if (requirePermission != null) {
+            // Permission check required — enforce it.
+            try {
+                authorizationService.authorize(requirePermission);
+            } catch (PermissionDeniedException denied) {
+                logDeniedEvent(denied);
+                throw denied;
+            }
             return joinPoint.proceed();
         }
 
-        try {
-            authorizationService.authorize(requirePermission);
-        } catch (PermissionDeniedException denied) {
-            logDeniedEvent(denied);
-            throw denied;
+        // --- Check @PublicEndpoint (method, then class) ---
+        PublicEndpoint publicEndpoint = AnnotatedElementUtils.findMergedAnnotation(
+                method, PublicEndpoint.class);
+        if (publicEndpoint == null) {
+            publicEndpoint = AnnotatedElementUtils.findMergedAnnotation(
+                    method.getDeclaringClass(), PublicEndpoint.class);
         }
 
-        return joinPoint.proceed();
+        if (publicEndpoint != null) {
+            // Explicitly marked public — allow through.
+            return joinPoint.proceed();
+        }
+
+        // --- DENY BY DEFAULT ---
+        // No @RequirePermission and no @PublicEndpoint found.
+        // Fail closed: treat as unauthorized rather than silently allowing access.
+        // Fix: add @RequirePermission(<permission>) or @PublicEndpoint(reason="...") to the method.
+        String methodRef = method.getDeclaringClass().getSimpleName() + "#" + method.getName();
+        throw new PermissionDeniedException(
+                "Endpoint " + methodRef + " has no @RequirePermission or @PublicEndpoint — "
+                        + "access denied by default (fail-closed policy).",
+                "UNDEFINED");
     }
 
     private void logDeniedEvent(PermissionDeniedException denied) {

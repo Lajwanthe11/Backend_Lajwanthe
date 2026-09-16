@@ -136,4 +136,19 @@ public class Permission {
     public void setModule(String module) {
         this.module = module;
     }
+
+    // Required for correct behavior inside a HashSet (Role.permissions /
+    // RoleTemplate.permissions are both Set<Permission>).
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Permission)) return false;
+        Permission other = (Permission) o;
+        return permissionId != null && permissionId.equals(other.permissionId);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
 }

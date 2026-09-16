@@ -11,6 +11,7 @@ import com.example.rbac.service.RolePermissionService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,116 +21,102 @@ import java.util.UUID;
 @RequestMapping("/api/v1/roles/{roleId}/permissions")
 public class RolePermissionController {
 
-    private final RolePermissionService rolePermissionService;
-    private final RolePermissionBatchService rolePermissionBatchService;
-    private final PermissionMatrixService permissionMatrixService;
+        private final RolePermissionService rolePermissionService;
+        private final RolePermissionBatchService rolePermissionBatchService;
+        private final PermissionMatrixService permissionMatrixService;
 
-    public RolePermissionController(
-            RolePermissionService rolePermissionService,
-            RolePermissionBatchService rolePermissionBatchService,
-            PermissionMatrixService permissionMatrixService
-    ) {
-        this.rolePermissionService = rolePermissionService;
-        this.rolePermissionBatchService = rolePermissionBatchService;
-        this.permissionMatrixService = permissionMatrixService;
-    }
-
-    @GetMapping
-    public ResponseEntity<List<RolePermission>> getPermissions(
-            @PathVariable Long roleId
-    ) {
-        return ResponseEntity.ok(
-                rolePermissionService.getPermissionsByRole(roleId)
-        );
-    }
-
-    @PostMapping
-    public ResponseEntity<RolePermission> grantPermission(
-            @PathVariable Long roleId,
-            @Valid @RequestBody PermissionGrantRequest request
-    ) {
-        String userId = "SYSTEM";
-
-        if (!Boolean.TRUE.equals(request.getGranted())) {
-            rolePermissionService.revokePermission(
-                    roleId,
-                    request.getPermissionId(),
-                    userId
-            );
-
-            return ResponseEntity.noContent().build();
+        public RolePermissionController(
+                        RolePermissionService rolePermissionService,
+                        RolePermissionBatchService rolePermissionBatchService,
+                        PermissionMatrixService permissionMatrixService) {
+                this.rolePermissionService = rolePermissionService;
+                this.rolePermissionBatchService = rolePermissionBatchService;
+                this.permissionMatrixService = permissionMatrixService;
         }
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(
-                rolePermissionService.grantPermission(
-                        roleId,
-                        request.getPermissionId(),
-                        userId
-                )
-        );
-    }
+        @GetMapping
+        public ResponseEntity<List<RolePermission>> getPermissions(
+                        @PathVariable UUID roleId) {
+                return ResponseEntity.ok(
+                                rolePermissionService.getPermissionsByRole(roleId));
+        }
 
-    @DeleteMapping("/{permissionId}")
-    public ResponseEntity<Void> revokePermission(
-            @PathVariable Long roleId,
-            @PathVariable UUID permissionId
-    ) {
-        String userId = "SYSTEM";
+        @PostMapping
+        public ResponseEntity<RolePermission> grantPermission(
+                        @PathVariable UUID roleId,
+                        @Valid @RequestBody PermissionGrantRequest request,
+                        Authentication authentication) {
 
-        rolePermissionService.revokePermission(
-                roleId,
-                permissionId,
-                userId
-        );
+                String userId = authentication.getName();
 
-        return ResponseEntity.noContent().build();
-    }
+                if (!Boolean.TRUE.equals(request.getGranted())) {
+                        rolePermissionService.revokePermission(
+                                        roleId,
+                                        request.getPermissionId(),
+                                        userId);
 
-    @PutMapping("/batch")
-    public ResponseEntity<BatchPermissionUpdateResponse> updateBatch(
-            @PathVariable Long roleId,
-            @Valid @RequestBody BatchPermissionUpdateRequest request
-    ) {
-        String userId = "SYSTEM";
+                        return ResponseEntity.noContent().build();
+                }
 
-        return ResponseEntity.ok(
-                rolePermissionBatchService.updatePermissions(
-                        roleId,
-                        request,
-                        userId
-                )
-        );
-    }
+                return ResponseEntity.status(HttpStatus.CREATED).body(
+                                rolePermissionService.grantPermission(
+                                                roleId,
+                                                request.getPermissionId(),
+                                                userId));
+        }
 
-    @GetMapping("/grouped")
-    public ResponseEntity<
-            List<PermissionMatrixResponse.PermissionGroupRow>>
-    getGroupedPermissions(
-            @PathVariable Long roleId
-    ) {
-        return ResponseEntity.ok(
-                permissionMatrixService.getGroupedPermissions(roleId)
-        );
-    }
+        @DeleteMapping("/{permissionId}")
+        public ResponseEntity<Void> revokePermission(
+                        @PathVariable UUID roleId,
+                        @PathVariable UUID permissionId,
+                        Authentication authentication) {
 
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<String> handleBadRequest(
-            IllegalArgumentException ex
-    ) {
-        return ResponseEntity
-                .badRequest()
-                .body(ex.getMessage());
-    }
+                String userId = authentication.getName();
 
-    @ExceptionHandler(
-            org.springframework.orm.ObjectOptimisticLockingFailureException.class
-    )
-    public ResponseEntity<String> handleConflict(Exception ex) {
-        return ResponseEntity
-                .status(HttpStatus.CONFLICT)
-                .body(
-                        "Permission matrix was modified by another user. " +
-                        "Refresh the matrix and try again."
-                );
-    }
+                rolePermissionService.revokePermission(
+                                roleId,
+                                permissionId,
+                                userId);
+
+                return ResponseEntity.noContent().build();
+        }
+
+        @PutMapping("/batch")
+        public ResponseEntity<BatchPermissionUpdateResponse> updateBatch(
+                        @PathVariable UUID roleId,
+                        @Valid @RequestBody BatchPermissionUpdateRequest request,
+                        Authentication authentication) {
+
+                String userId = authentication.getName();
+
+                return ResponseEntity.ok(
+                                rolePermissionBatchService.updatePermissions(
+                                                roleId,
+                                                request,
+                                                userId));
+        }
+
+        @GetMapping("/grouped")
+        public ResponseEntity<List<PermissionMatrixResponse.PermissionGroupRow>> getGroupedPermissions(
+                        @PathVariable UUID roleId) {
+                return ResponseEntity.ok(
+                                permissionMatrixService.getGroupedPermissions(roleId));
+        }
+
+        @ExceptionHandler(IllegalArgumentException.class)
+        public ResponseEntity<String> handleBadRequest(
+                        IllegalArgumentException ex) {
+                return ResponseEntity
+                                .badRequest()
+                                .body(ex.getMessage());
+        }
+
+        @ExceptionHandler(org.springframework.orm.ObjectOptimisticLockingFailureException.class)
+        public ResponseEntity<String> handleConflict(Exception ex) {
+                return ResponseEntity
+                                .status(HttpStatus.CONFLICT)
+                                .body(
+                                                "Permission matrix was modified by another user. " +
+                                                                "Refresh the matrix and try again.");
+        }
 }
