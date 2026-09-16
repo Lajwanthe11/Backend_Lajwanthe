@@ -1,14 +1,8 @@
 package com.example.rbac.service;
 
-import com.example.common.exception.BadRequestException;
-import com.example.rbac.dto.RoleCloneRequest;
-import com.example.rbac.dto.RoleCompareResponse;
 import com.example.rbac.dto.RoleRequestDto;
 import com.example.rbac.dto.RoleResponseDto;
-import com.example.rbac.entity.Permission;
 import com.example.rbac.entity.Role;
-import com.example.rbac.entity.RoleHistory;
-import com.example.rbac.entity.RoleTemplate;
 import com.example.rbac.enums.RoleType;
 import com.example.rbac.repository.PermissionRepository;
 import com.example.rbac.repository.RoleHistoryRepository;
@@ -19,23 +13,15 @@ import com.example.rbac.service.serviceImpl.RoleServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class RoleServiceImplTest {
