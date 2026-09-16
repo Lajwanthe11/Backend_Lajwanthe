@@ -1,4 +1,4 @@
-package com.example.rbac.service;
+package com.example.rbac.exception;
 
 import java.util.UUID;
 
