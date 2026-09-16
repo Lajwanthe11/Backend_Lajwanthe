@@ -20,6 +20,7 @@ public class RbacPermissionController {
     public RbacPermissionController(
             PermissionCheckService permissionCheckService,
             PermissionCacheService permissionCacheService) {
+
         this.permissionCheckService = permissionCheckService;
         this.permissionCacheService = permissionCacheService;
     }
@@ -31,12 +32,10 @@ public class RbacPermissionController {
         boolean allowed = permissionCheckService.hasPermission(
                 request.getUserId(),
                 request.getTenantId(),
-                request.getPermissionCode()
-        );
+                request.getPermissionCode());
 
         return ResponseEntity.ok(
-                Map.of("allowed", allowed)
-        );
+                Map.of("allowed", allowed));
     }
 
     @GetMapping("/users/{userId}/permissions/resolved")
@@ -47,8 +46,7 @@ public class RbacPermissionController {
         Set<String> permissions =
                 permissionCheckService.getResolvedPermissions(
                         userId,
-                        tenantId
-                );
+                        tenantId);
 
         return ResponseEntity.ok(permissions);
     }
@@ -60,16 +58,8 @@ public class RbacPermissionController {
 
         permissionCacheService.clearUserPermissionsCache(
                 userId,
-                tenantId
-        );
+                tenantId);
 
         return ResponseEntity.noContent().build();
-    }
-
-    @GetMapping("/rbac/health")
-    public ResponseEntity<Map<String, String>> health() {
-        return ResponseEntity.ok(
-                Map.of("status", "UP")
-        );
     }
 }

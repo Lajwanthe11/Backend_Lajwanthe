@@ -1,10 +1,12 @@
 package com.example.rbac.service;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 
 import java.util.Set;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,17 +14,32 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.RedisTemplate;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+
 @ExtendWith(MockitoExtension.class)
 class PermissionCacheServiceTest {
 
     @Mock
     private RedisTemplate<String, String> redisTemplate;
 
+    private SimpleMeterRegistry meterRegistry;
+
     private PermissionCacheService permissionCacheService;
 
     @BeforeEach
     void setUp() {
-        permissionCacheService = new PermissionCacheService(redisTemplate);
+
+        meterRegistry = new SimpleMeterRegistry();
+
+        permissionCacheService =
+                new PermissionCacheService(
+                        redisTemplate,
+                        meterRegistry);
+    }
+
+    @AfterEach
+    void tearDown() {
+        meterRegistry.close();
     }
 
     @Test
@@ -71,5 +88,11 @@ class PermissionCacheServiceTest {
 
         verify(redisTemplate).delete(
                 "perms:tenant1:user1");
+
+        assertEquals(
+                1.0,
+                meterRegistry
+                        .counter("redis.cache.failures")
+                        .count());
     }
 }
