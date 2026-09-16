@@ -1,0 +1,27 @@
+# Explicit integration profile. Not selected by ordinary local review commands.
+# Supply the team's connection settings only after reviewing the schema change.
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    driver-class-name: org.postgresql.Driver
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    hikari:
+      minimum-idle: ${DB_POOL_MIN_IDLE:5}
+      maximum-pool-size: ${DB_POOL_MAX_SIZE:20}
+      idle-timeout: ${DB_POOL_IDLE_TIMEOUT:300000}
+      max-lifetime: ${DB_POOL_MAX_LIFETIME:1200000}
+      connection-timeout: ${DB_POOL_CONN_TIMEOUT:20000}
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+        default_schema: ${SPRING_JPA_DEFAULT_SCHEMA:public}
+        jdbc:
+          lob:
+            non_contextual_creation: true

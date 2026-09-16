@@ -1,25 +1,10 @@
-﻿target/
-!.mvn/wrapper/maven-wrapper.jar
+target/
+**/target/
+*.class
+*.log
+effective-pom.xml
+build-error.txt
+build-errors.txt
+errors.txt
 
-### IntelliJ IDEA ###
 .idea/
-*.iws
-*.iml
-*.ipr
-out/
-
-### Eclipse ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
-
-### VS Code ###
-.vscode/
-
-### OS files ###
-.DS_Store
-Thumbs.db
