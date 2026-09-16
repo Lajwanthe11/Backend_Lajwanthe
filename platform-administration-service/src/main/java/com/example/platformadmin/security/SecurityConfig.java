@@ -29,40 +29,47 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http) throws Exception {
 
         http
-                // REST API - disable CSRF
                 .csrf(AbstractHttpConfigurer::disable)
 
-                // Return JSON 401 response for unauthorized requests
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(authenticationEntryPoint)
                 )
 
-                // JWT authentication is stateless
                 .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                        .sessionCreationPolicy(
+                                SessionCreationPolicy.STATELESS
+                        )
                 )
 
-                // Authorization rules
                 .authorizeHttpRequests(auth -> auth
 
-                        // Swagger / OpenAPI
+                        // Swagger
                         .requestMatchers(
-                                "/v3/api-docs/**",
+                                "/swagger-ui.html",
                                 "/swagger-ui/**",
-                                "/swagger-ui.html"
+                                "/v3/api-docs",
+                                "/v3/api-docs/**",
+                                "/webjars/**"
+                        ).permitAll()
+
+                        // Health
+                        .requestMatchers(
+                                "/actuator/health"
                         ).permitAll()
 
                         // Spring error endpoint
-                        .requestMatchers("/error").permitAll()
+                        .requestMatchers(
+                                "/error"
+                        ).permitAll()
 
-                        // All other APIs require JWT
+                        // All application APIs require JWT
                         .anyRequest().authenticated()
                 )
 
-                // Process JWT before Spring's username/password authentication
                 .addFilterBefore(
                         jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class
