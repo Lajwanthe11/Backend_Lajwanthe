@@ -1,4 +1,4 @@
-package com.example.rbac.service.impl;
+package com.example.rbac.service.serviceImpl;
 
 import com.example.rbac.entity.Role;
 import com.example.rbac.exception.RoleAssignmentValidationException;

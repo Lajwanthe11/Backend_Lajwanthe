@@ -1,4 +1,4 @@
-package com.example.rbac.service.impl;
+package com.example.rbac.service.serviceImpl;
 
 import com.example.rbac.service.RoleAuditService;
 import org.slf4j.Logger;

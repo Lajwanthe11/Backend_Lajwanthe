@@ -1,4 +1,4 @@
-package com.example.rbac.service.impl;
+package com.example.rbac.service.serviceImpl;
 
 import com.example.rbac.entity.UserRole;
 import com.example.rbac.service.RoleExpiryNotificationService;
