@@ -1,12 +1,20 @@
 package com.example.rbac.controller;
 
 import com.example.rbac.config.SecurityContextUtil;
-import com.example.rbac.dto.*;
+import com.example.rbac.dto.AuthenticatedUser;
+import com.example.rbac.dto.DepartmentRoleDistribution;
+import com.example.rbac.dto.ExpiringRoleAssignment;
+import com.example.rbac.dto.ExpiryNotificationResponse;
+import com.example.rbac.dto.RoleAssignmentReportRow;
 import com.example.rbac.enums.RoleType;
 import com.example.rbac.exception.RoleAssignmentValidationException;
 import com.example.rbac.service.RoleAssignmentExportService;
 import com.example.rbac.service.RoleAssignmentQueryService;
 import com.example.rbac.service.RoleExpiryService;
+
+// use the actual package from your project
+import com.example.rbac.config.RequirePermission;
+
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -28,22 +36,26 @@ public class RoleAssignmentReportController {
     public RoleAssignmentReportController(
             RoleAssignmentQueryService queryService,
             RoleAssignmentExportService exportService,
-            RoleExpiryService expiryService, SecurityContextUtil securityContextUtil
+            RoleExpiryService expiryService,
+            SecurityContextUtil securityContextUtil
     ) {
         this.queryService = queryService;
         this.exportService = exportService;
         this.expiryService = expiryService;
-        this.securityContextUtil=securityContextUtil;
+        this.securityContextUtil = securityContextUtil;
     }
 
+    @RequirePermission("ROLE_READ")
     @GetMapping("/report")
     public ResponseEntity<?> report(
             @RequestParam(defaultValue = "json") String format
     ) {
 
-        AuthenticatedUser currentUser = securityContextUtil.currentUser();
+        AuthenticatedUser currentUser =
+                securityContextUtil.currentUser();
 
-        UUID tenantId = UUID.fromString(currentUser.tenantId());
+        UUID tenantId =
+                UUID.fromString(currentUser.tenantId());
 
         List<RoleAssignmentReportRow> rows =
                 queryService.getReport(tenantId);
@@ -85,30 +97,41 @@ public class RoleAssignmentReportController {
         };
     }
 
+    @RequirePermission("ROLE_READ")
     @GetMapping("/by-department")
-    public ResponseEntity<List<DepartmentRoleDistribution>> byDepartment() {
+    public ResponseEntity<List<DepartmentRoleDistribution>>
+    byDepartment() {
 
-        AuthenticatedUser currentUser = securityContextUtil.currentUser();
+        AuthenticatedUser currentUser =
+                securityContextUtil.currentUser();
 
-        UUID tenantId = UUID.fromString(currentUser.tenantId());
+        UUID tenantId =
+                UUID.fromString(currentUser.tenantId());
 
         return ResponseEntity.ok(
-                queryService.getDistributionByDepartment(tenantId)
+                queryService.getDistributionByDepartment(
+                        tenantId
+                )
         );
     }
 
-
+    @RequirePermission("ROLE_READ")
     @GetMapping("/expiring")
     public ResponseEntity<List<ExpiringRoleAssignment>> expiring(
             @RequestParam(defaultValue = "7") int days,
-            @RequestParam(required = false) UUID organizationId,
-            @RequestParam(required = false) UUID departmentId,
-            @RequestParam(required = false) RoleType roleType
+            @RequestParam(required = false)
+            UUID organizationId,
+            @RequestParam(required = false)
+            UUID departmentId,
+            @RequestParam(required = false)
+            RoleType roleType
     ) {
 
-        AuthenticatedUser currentUser = securityContextUtil.currentUser();
+        AuthenticatedUser currentUser =
+                securityContextUtil.currentUser();
 
-        UUID tenantId = UUID.fromString(currentUser.tenantId());
+        UUID tenantId =
+                UUID.fromString(currentUser.tenantId());
 
         return ResponseEntity.ok(
                 queryService.getExpiring(
@@ -121,16 +144,21 @@ public class RoleAssignmentReportController {
         );
     }
 
+    @RequirePermission("ROLE_ASSIGN")
     @PostMapping("/expiry-notify")
     public ResponseEntity<ExpiryNotificationResponse>
     triggerExpiryNotifications() {
 
-        AuthenticatedUser currentUser = securityContextUtil.currentUser();
+        AuthenticatedUser currentUser =
+                securityContextUtil.currentUser();
 
-        UUID tenantId = UUID.fromString(currentUser.tenantId());
+        UUID tenantId =
+                UUID.fromString(currentUser.tenantId());
 
         return ResponseEntity.ok(
-                expiryService.triggerForTenant(tenantId)
+                expiryService.triggerForTenant(
+                        tenantId
+                )
         );
     }
 }

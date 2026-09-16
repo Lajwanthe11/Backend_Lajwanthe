@@ -1,9 +1,17 @@
 package com.example.rbac.controller;
 
 import com.example.rbac.config.SecurityContextUtil;
-import com.example.rbac.dto.*;
+import com.example.rbac.dto.AuthenticatedUser;
+import com.example.rbac.dto.BulkOperationResponse;
+import com.example.rbac.dto.BulkRoleAssignmentRequest;
+import com.example.rbac.dto.BulkRoleRevokeRequest;
+import com.example.rbac.dto.CsvImportResponse;
 import com.example.rbac.service.BulkRoleAssignmentService;
 import com.example.rbac.service.CsvRoleImportService;
+
+
+import com.example.rbac.config.RequirePermission;
+
 import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -22,54 +30,63 @@ public class BulkRoleAssignmentController {
 
     public BulkRoleAssignmentController(
             BulkRoleAssignmentService bulkRoleAssignmentService,
-            CsvRoleImportService csvRoleImportService,SecurityContextUtil securityContextUtil
+            CsvRoleImportService csvRoleImportService,
+            SecurityContextUtil securityContextUtil
     ) {
         this.bulkRoleAssignmentService = bulkRoleAssignmentService;
         this.csvRoleImportService = csvRoleImportService;
         this.securityContextUtil = securityContextUtil;
     }
 
+    @RequirePermission("ROLE_ASSIGN")
     @PostMapping("/bulk-assign")
     public ResponseEntity<BulkOperationResponse> bulkAssign(
             @Valid @RequestBody BulkRoleAssignmentRequest request
     ) {
 
-        AuthenticatedUser currentUser = securityContextUtil.currentUser();
+        AuthenticatedUser currentUser =
+                securityContextUtil.currentUser();
 
-        UUID tenantId = UUID.fromString(currentUser.tenantId());
-        UUID actorId = UUID.fromString(currentUser.userId());
+        UUID tenantId =
+                UUID.fromString(currentUser.tenantId());
 
-        BulkOperationResponse response =
+        UUID actorId =
+                UUID.fromString(currentUser.userId());
+
+        return ResponseEntity.ok(
                 bulkRoleAssignmentService.bulkAssign(
                         tenantId,
                         actorId,
                         request
-                );
-
-        return ResponseEntity.ok(response);
+                )
+        );
     }
 
-
+    @RequirePermission("ROLE_ASSIGN")
     @PostMapping("/bulk-revoke")
     public ResponseEntity<BulkOperationResponse> bulkRevoke(
             @Valid @RequestBody BulkRoleRevokeRequest request
     ) {
 
-        AuthenticatedUser currentUser = securityContextUtil.currentUser();
+        AuthenticatedUser currentUser =
+                securityContextUtil.currentUser();
 
-        UUID tenantId = UUID.fromString(currentUser.tenantId());
-        UUID actorId = UUID.fromString(currentUser.userId());
+        UUID tenantId =
+                UUID.fromString(currentUser.tenantId());
 
-        BulkOperationResponse response =
+        UUID actorId =
+                UUID.fromString(currentUser.userId());
+
+        return ResponseEntity.ok(
                 bulkRoleAssignmentService.bulkRevoke(
                         tenantId,
                         actorId,
                         request
-                );
-
-        return ResponseEntity.ok(response);
+                )
+        );
     }
 
+    @RequirePermission("ROLE_ASSIGN")
     @PostMapping(
             value = "/import",
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
@@ -78,18 +95,21 @@ public class BulkRoleAssignmentController {
             @RequestPart("file") MultipartFile file
     ) {
 
-        AuthenticatedUser currentUser = securityContextUtil.currentUser();
+        AuthenticatedUser currentUser =
+                securityContextUtil.currentUser();
 
-        UUID tenantId = UUID.fromString(currentUser.tenantId());
-        UUID actorId = UUID.fromString(currentUser.userId());
+        UUID tenantId =
+                UUID.fromString(currentUser.tenantId());
 
-        CsvImportResponse response =
+        UUID actorId =
+                UUID.fromString(currentUser.userId());
+
+        return ResponseEntity.ok(
                 csvRoleImportService.importCsv(
                         tenantId,
                         actorId,
                         file
-                );
-
-        return ResponseEntity.ok(response);
+                )
+        );
     }
 }

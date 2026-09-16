@@ -9,8 +9,12 @@ import java.util.List;
 import java.util.UUID;
 
 public record BulkRoleAssignmentRequest(
+
         @NotEmpty(message = "userIds must contain at least one user")
-        @Size(max = 500, message = "A maximum of 500 users can be assigned in one request")
+        @Size(
+                max = 500,
+                message = "A maximum of 500 users can be assigned in one request"
+        )
         List<@NotNull UUID> userIds,
 
         @NotNull(message = "roleId is required")
