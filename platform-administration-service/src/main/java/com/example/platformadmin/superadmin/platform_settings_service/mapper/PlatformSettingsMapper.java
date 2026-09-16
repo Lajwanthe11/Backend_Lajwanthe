@@ -1,12 +1,44 @@
 package com.example.platformadmin.superadmin.platform_settings_service.mapper;
 
+import com.example.platformadmin.superadmin.platform_settings_service.dto.request.CreatePlatformSettingsRequest;
 import com.example.platformadmin.superadmin.platform_settings_service.dto.request.UpdatePlatformSettingsRequest;
 import com.example.platformadmin.superadmin.platform_settings_service.dto.response.PlatformSettingsResponse;
 import com.example.platformadmin.superadmin.platform_settings_service.entity.PlatformSetting;
+import com.example.platformadmin.superadmin.platform_settings_service.enums.SettingStatus;
 import org.springframework.stereotype.Component;
 
 @Component
 public class PlatformSettingsMapper {
+
+    // Converts a CreatePlatformSettingsRequest DTO into a PlatformSetting entity.
+    public PlatformSetting toEntity(CreatePlatformSettingsRequest request) {
+
+        return PlatformSetting.builder()
+                .settingName(request.getSettingName())
+                .category(request.getCategory())
+                .description(request.getDescription())
+                .status(SettingStatus.VALIDATED)
+                .defaultLanguage(request.getDefaultLanguage())
+                .defaultTimeZone(request.getDefaultTimeZone())
+                .defaultCurrency(request.getDefaultCurrency())
+                .dateFormat(request.getDateFormat())
+                .timeFormat(request.getTimeFormat())
+                .numberFormat(request.getNumberFormat())
+                .sessionTimeout(request.getSessionTimeout())
+                .autoLogout(request.getAutoLogout())
+                .passwordExpiry(request.getPasswordExpiry())
+                .maximumLoginAttempts(request.getMaximumLoginAttempts())
+                .maintenanceNotification(request.getMaintenanceNotification())
+                .systemAnnouncement(request.getSystemAnnouncement())
+                .multiFactorAuthentication(request.getMultiFactorAuthentication())
+                .emailNotifications(request.getEmailNotifications())
+                .smsNotifications(request.getSmsNotifications())
+                .pushNotifications(request.getPushNotifications())
+                .maximumFileUploadSize(request.getMaximumFileUploadSize())
+                .defaultTheme(request.getDefaultTheme())
+                .maintenanceMode(request.getMaintenanceMode())
+                .build();
+    }
 
     // Converts a PlatformSetting entity into a PlatformSettingsResponse DTO.
     public PlatformSettingsResponse toResponse(PlatformSetting entity) {
