@@ -35,6 +35,8 @@ public class CustomUserDetailsService implements UserDetailsService {
         // Seed default admin and user for out-of-the-box testing
         registerUser("admin", "admin@example.com", passwordEncoder.encode("admin123"),
                 List.of("ROLE_ADMIN", "ROLE_USER"), TenantContext.DEFAULT_TENANT_ID);
+        registerUser("superadmin", "superadmin@example.com", passwordEncoder.encode("superadmin123"),
+                List.of("ROLE_SUPER_ADMIN"), TenantContext.DEFAULT_TENANT_ID);
         registerUser("user", "user@example.com", passwordEncoder.encode("user123"),
                 List.of("ROLE_USER"), TenantContext.DEFAULT_TENANT_ID);
     }
