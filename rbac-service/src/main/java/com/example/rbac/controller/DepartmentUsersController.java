@@ -14,6 +14,7 @@ import com.example.rbac.config.RequirePermission;
 import java.util.List;
 import java.util.UUID;
 
+// Separate controller since this endpoint lives under /departments, not /users
 @RestController
 @RequestMapping("/api/v1/departments")
 @Tag(name = "Department Users", description = "Lookup users by department and permission")

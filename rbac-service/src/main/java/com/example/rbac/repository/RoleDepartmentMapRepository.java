@@ -8,9 +8,12 @@ import java.util.UUID;
 
 public interface RoleDepartmentMapRepository extends JpaRepository<RoleDepartmentMap, Long> {
 
+    // All department scope rows for a given role assignment
     List<RoleDepartmentMap> findByUserRoleId(UUID userRoleId);
 
+    // Used when resetting/removing scope for a role assignment
     void deleteByUserRoleId(UUID userRoleId);
 
+    // All role assignments scoped to a given department
     List<RoleDepartmentMap> findByDepartmentId(UUID departmentId);
 }

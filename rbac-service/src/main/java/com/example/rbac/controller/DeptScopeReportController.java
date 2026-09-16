@@ -12,6 +12,7 @@ import com.example.rbac.config.RequirePermission;
 
 import java.util.List;
 
+// Separate controller since this endpoint lives under /permissions, not /users
 @RestController
 @RequestMapping("/api/v1/permissions")
 @Tag(name = "Department Scope Report", description = "Reporting for department permission scope")

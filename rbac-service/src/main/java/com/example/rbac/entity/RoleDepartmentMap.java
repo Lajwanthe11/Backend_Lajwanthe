@@ -7,6 +7,8 @@ import jakarta.persistence.Table;
 
 import java.util.UUID;
 
+// Links a role assignment (UserRole) to a department it is scoped to
+// id, tenantId, createdAt/By etc are inherited from BaseEntity
 @Entity
 @Table(name = "role_department_map")
 public class RoleDepartmentMap extends BaseEntity {
