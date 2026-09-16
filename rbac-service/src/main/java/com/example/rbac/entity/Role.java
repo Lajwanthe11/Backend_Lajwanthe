@@ -219,6 +219,7 @@ public class Role {
     return version;
 }
 
+
 public void setVersion(Long version) {
     this.version = version;
 }
