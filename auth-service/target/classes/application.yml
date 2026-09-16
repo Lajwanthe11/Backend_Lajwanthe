@@ -12,9 +12,11 @@ spring:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/microservice_db}
     driver-class-name: org.postgresql.Driver
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
+
     # IMP default for local dev convenience — override via SPRING_DATASOURCE_PASSWORD
     # env var / .env file before production release.
     password: ${SPRING_DATASOURCE_PASSWORD:wiz@linux}
+
     hikari:
       minimum-idle: ${DB_POOL_MIN_IDLE:5}
       maximum-pool-size: ${DB_POOL_MAX_SIZE:20}
@@ -85,6 +87,9 @@ app:
   security:
     common-jwt-filter:
       enabled: false
+    lockout:
+        max-attempts: ${ACCOUNT_LOCKOUT_MAX_ATTEMPTS:3}
+        duration-minutes: ${ACCOUNT_LOCKOUT_DURATION_MINUTES:2}
   tenant:
     default-tenant: ${DEFAULT_TENANT_ID:default}
     header-name: ${TENANT_HEADER_NAME:X-Tenant-ID}
