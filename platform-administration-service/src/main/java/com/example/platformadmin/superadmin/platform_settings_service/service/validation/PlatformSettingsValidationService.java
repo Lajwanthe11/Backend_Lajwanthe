@@ -1,5 +1,6 @@
 package com.example.platformadmin.superadmin.platform_settings_service.service.validation;
 
+import com.example.platformadmin.superadmin.platform_settings_service.dto.request.CreatePlatformSettingsRequest;
 import com.example.platformadmin.superadmin.platform_settings_service.dto.request.UpdatePlatformSettingsRequest;
 import com.example.platformadmin.superadmin.platform_settings_service.entity.PlatformSetting;
 import com.example.platformadmin.superadmin.platform_settings_service.exception.InvalidSettingException;
@@ -11,6 +12,35 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class PlatformSettingsValidationService {
+
+    // Validates the CreatePlatformSettingsRequest for required fields and value ranges.
+    public void validateCreate(CreatePlatformSettingsRequest request) {
+
+        requireText(request.getSettingName(), "Setting name is required");
+        requireText(request.getCategory(), "Category is required");
+        requireText(request.getDefaultLanguage(), "Default language is required");
+        requireText(request.getDefaultTimeZone(), "Time zone is required");
+        requireText(request.getDefaultCurrency(), "Default currency is required");
+        requireText(request.getDateFormat(), "Date format is required");
+        requireText(request.getTimeFormat(), "Time format is required");
+        requireText(request.getNumberFormat(), "Number format is required");
+        requireText(request.getDefaultTheme(), "Default theme is required");
+
+        validateRange(request.getPasswordExpiry(), 30, 365,
+                "Password expiry must be between 30 and 365 days");
+
+        validateRange(request.getSessionTimeout(), 5, 240,
+                "Session timeout must be between 5 and 240 minutes");
+
+        validateRange(request.getMaximumLoginAttempts(), 3, 10,
+                "Maximum login attempts must be between 3 and 10");
+
+        if (request.getMaximumFileUploadSize() == null
+                || request.getMaximumFileUploadSize() <= 0) {
+
+            throw new InvalidSettingException("Maximum file upload size must be a positive value");
+        }
+    }
 
     // Validates the UpdatePlatformSettingsRequest for required fields and value ranges.
     public void validate(UpdatePlatformSettingsRequest request) {
