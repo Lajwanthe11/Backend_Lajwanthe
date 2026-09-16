@@ -24,8 +24,7 @@ public class StubPermissionResolver implements PermissionResolver {
         permissionsByUserId.put("user-admin-1", Set.of(
                 "USER_READ", "USER_CREATE", "USER_UPDATE", "USER_DELETE",
                 "REPORT_VIEW", "REPORT_EXPORT", "SECURITY_EVENTS_VIEW"));
-        // trusted internal service account, used to call
-        // POST /api/v1/rbac/access/validate on behalf of other services
+
         permissionsByUserId.put("svc-internal-1", Set.of("INTERNAL_SERVICE"));
     }
 
