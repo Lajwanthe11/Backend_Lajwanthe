@@ -1,5 +1,6 @@
 package com.example.platformadmin.superadmin.platform_settings_service.service.impl;
 
+import com.example.platformadmin.superadmin.platform_settings_service.dto.request.CreatePlatformSettingsRequest;
 import com.example.platformadmin.superadmin.platform_settings_service.dto.request.UpdatePlatformSettingsRequest;
 import com.example.platformadmin.superadmin.platform_settings_service.dto.request.UpdateSettingStatusRequest;
 import com.example.platformadmin.superadmin.platform_settings_service.dto.response.PlatformSettingsHistoryResponse;
@@ -46,6 +47,50 @@ public class PlatformSettingsServiceImpl implements PlatformSettingsService {
     private final PlatformSettingsValidationService validationService;
     private final PlatformSettingsPropagationIntegration propagationIntegration;
     private final PlatformSettingsAuditIntegration auditIntegration;
+
+    // ---------------------------------------------------------
+    // Create Platform Setting
+    // ---------------------------------------------------------
+
+    @Override
+    public PlatformSettingsResponse createSetting(CreatePlatformSettingsRequest request) {
+
+        log.info("Creating new platform setting. settingName={}", request.getSettingName());
+
+        // Check duplicate setting name
+        if (settingRepository.existsBySettingName(request.getSettingName())) {
+            throw new InvalidSettingException("Platform setting already exists: " + request.getSettingName());
+        }
+
+        // Validate request
+        validationService.validateCreate(request);
+
+        // Convert request to entity
+        PlatformSetting setting = mapper.toEntity(request);
+
+        // Set system generated fields
+        setting.setVersionNumber(1L);
+        setting.setCreatedAt(now());
+        setting.setCreatedBy(currentUserProvider.getUserName());
+        setting.setUpdatedAt(now());
+        setting.setUpdatedBy(currentUserProvider.getUserName());
+
+        // New setting starts as VALIDATED
+        // It becomes effective only after activation through PATCH /{key}/status.
+        setting.setStatus(SettingStatus.VALIDATED);
+
+        // Save to database
+        PlatformSetting saved = settingRepository.save(setting);
+
+        // Save history + audit
+        recordHistoryAndAudit(saved, SettingAction.CREATED);
+
+        log.info("Platform setting created successfully. settingName={}, version={}",
+                saved.getSettingName(), saved.getVersionNumber());
+
+        // Return response
+        return mapper.toResponse(saved);
+    }
 
     // ---------------------------------------------------------
     // Get All Settings
