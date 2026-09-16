@@ -150,11 +150,6 @@
             <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>com.example</groupId>
-            <artifactId>base-service</artifactId>
-        </dependency>
-
     </dependencies>
 
     
