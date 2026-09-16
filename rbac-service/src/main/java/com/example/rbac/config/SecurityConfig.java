@@ -3,6 +3,7 @@ package com.example.rbac.config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -39,10 +40,6 @@ public class SecurityConfig {
         return http.build();
     }
 
-    /**
-     * Production filter chain. The /api/v1/dev/** permitAll rule is intentionally
-     * absent here — all requests must be authenticated via a signed JWT.
-     */
     @Bean
     @Order(1)
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -59,6 +56,7 @@ public class SecurityConfig {
     }
 
     @Bean
+    @Primary
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(allowedOrigins);
