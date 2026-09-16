@@ -187,7 +187,7 @@ public class RoleAssignmentQueryServiceImpl implements RoleAssignmentQueryServic
 
         Map<UUID, Role> roles = new HashMap<>();
         roleRepository.findAllById(roleIds)
-                .forEach(role -> roles.put(role.getRoleId(), role));
+                .forEach(role -> roles.put(role.getId(), role));
         return roles;
     }
 
