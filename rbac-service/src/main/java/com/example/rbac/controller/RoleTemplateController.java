@@ -20,22 +20,22 @@ public class RoleTemplateController {
         this.roleService = roleService;
     }
 
-    // Show list of templates
+    // Get all role templates
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('ORG_ADMIN')")
     @GetMapping
     public List<RoleTemplateSummaryDto> listTemplates() {
         return roleService.listTemplates();
     }
 
-    // Get template detials
+    // Get details of one role template
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('ORG_ADMIN')")
     @GetMapping("/{id}")
     public RoleTemplateDetailDto getTemplate(@PathVariable UUID id) {
         return roleService.getTemplateDetail(id);
     }
 
-    // Templates are never deleted, only hidden from the library — Super
-    // Admin only, per the security spec.
+    // Hide or show a role template
+    // Only SUPER_ADMIN can change template visibility
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @PatchMapping("/{id}/hidden")
     public ResponseEntity<Void> updateVisibility(@PathVariable UUID id, @RequestParam boolean hidden) {

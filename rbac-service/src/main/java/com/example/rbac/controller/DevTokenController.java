@@ -15,16 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Date;
 import java.util.Map;
 
-/**
- * TEST-ONLY helper that mints signed JWTs for integration tests.
- *
- * This class lives in src/test/ and is NEVER compiled into the production JAR.
- * @Profile("dev") is kept as an additional guard so that integration tests that
- * boot the full Spring context must explicitly activate the "dev" profile to
- * register this endpoint.
- *
- * DO NOT move this file back to src/main/.
- */
+
 @Profile("dev")
 @RestController
 @RequestMapping("/api/v1/dev")

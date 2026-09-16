@@ -21,7 +21,4 @@ public interface RolePermissionRepository
         Optional<RolePermission> findByRole_IdAndPermission_PermissionId(
                         UUID roleId,
                         UUID permissionId);
-
-        Optional<Permission> findByPermissionCode(String permissionCode);
-        List<Permission> findByPermissionCodeIn(List<String> permissionCodes);
 }

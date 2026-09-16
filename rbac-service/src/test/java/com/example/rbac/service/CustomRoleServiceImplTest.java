@@ -51,7 +51,9 @@ class CustomRoleServiceImplTest {
 
     private MockedStatic<TenantContext> tenantContextMock;
 
-    private static final String TENANT_ID = "11111111-1111-1111-1111-111111111111";
+    private static final UUID TENANT_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
+
+    private static final UUID ROLE_ID = UUID.fromString("22222222-2222-2222-2222-222222222222");
 
     @BeforeEach
     void setUp() {
@@ -62,14 +64,13 @@ class CustomRoleServiceImplTest {
 
         tenantContextMock = mockStatic(TenantContext.class);
 
-        tenantContextMock.when(TenantContext::getTenantId).thenReturn(TENANT_ID);
+        tenantContextMock.when(TenantContext::getTenantId).thenReturn(TENANT_ID.toString());
     }
 
     @AfterEach
     void tearDown() {
         tenantContextMock.close();
     }
-
 
     // =========================================================
     // CREATE
@@ -86,47 +87,51 @@ class CustomRoleServiceImplTest {
         request.setPermissionIds(List.of(1L, 2L, 3L));
         request.setPublishNotes("Initial draft");
 
+        when(roleRepository.existsByRoleNameIgnoreCaseAndTenantId("HR Manager", TENANT_ID.toString())).thenReturn(false);
 
-        when(roleRepository.existsByRoleNameIgnoreCaseAndTenantId("HR Manager", TENANT_ID)).thenReturn(false);
+        when(roleRepository.existsByRoleCodeIgnoreCaseAndTenantId("HR_MANAGER", TENANT_ID.toString())).thenReturn(false);
 
-        when(roleRepository.existsByRoleCodeIgnoreCaseAndTenantId("HR_MANAGER", TENANT_ID)).thenReturn(false);
         when(roleRepository.save(any(Role.class))).thenAnswer(invocation -> {
 
             Role role = invocation.getArgument(0);
 
-            role.setId(1L);
+            role.setId(ROLE_ID);
 
             return role;
         });
 
-
         when(configRepository.save(any(CustomRoleConfig.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(versionRepository.save(any(CustomRoleVersion.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        CustomRoleResponse response = customRoleService.create(request);
 
+        when(versionRepository.save(any(CustomRoleVersion.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        CustomRoleResponse response = customRoleService.create(request);
 
         assertNotNull(response);
 
-        assertEquals(1L, response.getRoleId());
+        assertEquals(ROLE_ID, response.getRoleId());
+
         assertEquals("HR Manager", response.getRoleName());
+
         assertEquals("HR_MANAGER", response.getRoleCode());
+
         assertEquals("HR custom role", response.getDescription());
 
         assertEquals(CustomRoleStatus.DRAFT, response.getStatus());
 
         assertEquals(1, response.getDraftVersion());
+
         assertEquals(0, response.getPublishedVersion());
 
         assertEquals(List.of(1L, 2L, 3L), response.getPermissionIds());
 
         assertEquals(3, response.getPermissionCount());
 
-
         verify(roleRepository).save(any(Role.class));
+
         verify(configRepository).save(any(CustomRoleConfig.class));
+
         verify(versionRepository).save(any(CustomRoleVersion.class));
     }
-
 
     @Test
     void create_shouldRejectDuplicateRoleName() {
@@ -135,13 +140,16 @@ class CustomRoleServiceImplTest {
 
         request.setRoleName("HR Manager");
 
-        when(roleRepository.existsByRoleNameIgnoreCaseAndTenantId("HR Manager", TENANT_ID)).thenReturn(true);
+        when(roleRepository.existsByRoleNameIgnoreCaseAndTenantId("HR Manager", TENANT_ID.toString())).thenReturn(true);
+
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> customRoleService.create(request));
+
         assertEquals("Role name already exists", exception.getMessage());
+
         verify(roleRepository, never()).save(any(Role.class));
+
         verify(configRepository, never()).save(any(CustomRoleConfig.class));
     }
-
 
     @Test
     void create_shouldRejectDuplicateRoleCode() {
@@ -151,14 +159,16 @@ class CustomRoleServiceImplTest {
         request.setRoleName("HR Manager");
         request.setRoleCode("HR_MANAGER");
 
+        when(roleRepository.existsByRoleNameIgnoreCaseAndTenantId("HR Manager", TENANT_ID.toString())).thenReturn(false);
 
-        when(roleRepository.existsByRoleNameIgnoreCaseAndTenantId("HR Manager", TENANT_ID)).thenReturn(false);
-        when(roleRepository.existsByRoleCodeIgnoreCaseAndTenantId("HR_MANAGER", TENANT_ID)).thenReturn(true);
+        when(roleRepository.existsByRoleCodeIgnoreCaseAndTenantId("HR_MANAGER", TENANT_ID.toString())).thenReturn(true);
+
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> customRoleService.create(request));
+
         assertEquals("Role code already exists", exception.getMessage());
+
         verify(roleRepository, never()).save(any(Role.class));
     }
-
 
     @Test
     void create_shouldGenerateRoleCodeWhenCodeIsBlank() {
@@ -169,26 +179,29 @@ class CustomRoleServiceImplTest {
         request.setRoleCode(null);
         request.setPermissionIds(List.of(1L));
 
+        when(roleRepository.existsByRoleNameIgnoreCaseAndTenantId(anyString(), eq(TENANT_ID.toString()))).thenReturn(false);
 
-        when(roleRepository.existsByRoleNameIgnoreCaseAndTenantId(anyString(), eq(TENANT_ID))).thenReturn(false);
-        when(roleRepository.existsByRoleCodeIgnoreCaseAndTenantId(anyString(), eq(TENANT_ID))).thenReturn(false);
+        when(roleRepository.existsByRoleCodeIgnoreCaseAndTenantId(anyString(), eq(TENANT_ID.toString()))).thenReturn(false);
+
         when(roleRepository.save(any(Role.class))).thenAnswer(invocation -> {
 
             Role role = invocation.getArgument(0);
 
-            role.setId(1L);
+            role.setId(ROLE_ID);
 
             return role;
         });
 
-
         when(configRepository.save(any(CustomRoleConfig.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(versionRepository.save(any(CustomRoleVersion.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        CustomRoleResponse response = customRoleService.create(request);
-        assertEquals("HR_MANAGER", response.getRoleCode());
-        verify(roleRepository).existsByRoleCodeIgnoreCaseAndTenantId("HR_MANAGER", TENANT_ID);
-    }
 
+        when(versionRepository.save(any(CustomRoleVersion.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        CustomRoleResponse response = customRoleService.create(request);
+
+        assertEquals("HR_MANAGER", response.getRoleCode());
+
+        verify(roleRepository).existsByRoleCodeIgnoreCaseAndTenantId("HR_MANAGER", TENANT_ID.toString());
+    }
 
     @Test
     void create_shouldHandleNullPermissions() {
@@ -198,30 +211,24 @@ class CustomRoleServiceImplTest {
         request.setRoleName("HR Manager");
         request.setPermissionIds(null);
 
-        when(roleRepository.existsByRoleNameIgnoreCaseAndTenantId(anyString(), eq(TENANT_ID))).thenReturn(false);
+        when(roleRepository.existsByRoleNameIgnoreCaseAndTenantId(anyString(), eq(TENANT_ID.toString()))).thenReturn(false);
 
-
-        when(roleRepository.existsByRoleCodeIgnoreCaseAndTenantId(anyString(), eq(TENANT_ID))).thenReturn(false);
-
+        when(roleRepository.existsByRoleCodeIgnoreCaseAndTenantId(anyString(), eq(TENANT_ID.toString()))).thenReturn(false);
 
         when(roleRepository.save(any(Role.class))).thenAnswer(invocation -> {
 
             Role role = invocation.getArgument(0);
 
-            role.setId(1L);
+            role.setId(ROLE_ID);
 
             return role;
         });
 
-
         when(configRepository.save(any(CustomRoleConfig.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
 
         when(versionRepository.save(any(CustomRoleVersion.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-
         CustomRoleResponse response = customRoleService.create(request);
-
 
         assertNotNull(response);
 
@@ -232,7 +239,6 @@ class CustomRoleServiceImplTest {
         assertEquals(0, response.getPermissionCount());
     }
 
-
     // =========================================================
     // GET ALL
     // =========================================================
@@ -240,28 +246,21 @@ class CustomRoleServiceImplTest {
     @Test
     void getAll_shouldReturnCustomRoles() {
 
-        CustomRoleConfig config = createConfig(1L, CustomRoleStatus.DRAFT, 1, 0);
+        CustomRoleConfig config = createConfig(ROLE_ID, CustomRoleStatus.DRAFT, 1, 0);
 
-
-        Role role = createRole(1L, "HR Manager", "HR_MANAGER");
-
+        Role role = createRole(ROLE_ID, "HR Manager", "HR_MANAGER");
 
         CustomRoleVersion version = createVersion(1);
 
         version.setPermissionSnapshot("[1,2,3]");
 
+        when(configRepository.findAllByTenantId(TENANT_ID.toString())).thenReturn(List.of(config));
 
-        when(configRepository.findAllByTenantId(TENANT_ID)).thenReturn(List.of(config));
+        when(roleRepository.findByIdAndTenantId(ROLE_ID, TENANT_ID.toString())).thenReturn(Optional.of(role));
 
-
-        when(roleRepository.findByIdAndTenantId(1L, TENANT_ID)).thenReturn(Optional.of(role));
-
-
-        when(versionRepository.findByRoleIdAndTenantIdAndVersionNumber(1L, TENANT_ID, 1)).thenReturn(Optional.of(version));
-
+        when(versionRepository.findByRoleIdAndTenantIdAndVersionNumber(ROLE_ID, TENANT_ID.toString(), 1)).thenReturn(Optional.of(version));
 
         List<CustomRoleResponse> result = customRoleService.getAll();
-
 
         assertNotNull(result);
 
@@ -274,81 +273,61 @@ class CustomRoleServiceImplTest {
         assertEquals(3, result.get(0).getPermissionCount());
     }
 
-
     @Test
     void getAll_shouldReturnEmptyListWhenNoRolesExist() {
 
-        when(configRepository.findAllByTenantId(TENANT_ID)).thenReturn(List.of());
-
+        when(configRepository.findAllByTenantId(TENANT_ID.toString())).thenReturn(List.of());
 
         List<CustomRoleResponse> result = customRoleService.getAll();
-
 
         assertNotNull(result);
 
         assertTrue(result.isEmpty());
     }
 
-
     @Test
     void getAll_shouldSkipDeletedRoles() {
 
-        CustomRoleConfig config = createConfig(1L, CustomRoleStatus.DRAFT, 1, 0);
+        CustomRoleConfig config = createConfig(ROLE_ID, CustomRoleStatus.DRAFT, 1, 0);
 
-
-        Role role = createRole(1L, "Deleted Role", "DELETED_ROLE");
+        Role role = createRole(ROLE_ID, "Deleted Role", "DELETED_ROLE");
 
         role.setIsDeleted(true);
 
+        when(configRepository.findAllByTenantId(TENANT_ID.toString())).thenReturn(List.of(config));
 
-        when(configRepository.findAllByTenantId(TENANT_ID)).thenReturn(List.of(config));
-
-
-        when(roleRepository.findByIdAndTenantId(1L, TENANT_ID)).thenReturn(Optional.of(role));
-
+        when(roleRepository.findByIdAndTenantId(ROLE_ID, TENANT_ID.toString())).thenReturn(Optional.of(role));
 
         List<CustomRoleResponse> result = customRoleService.getAll();
 
-
         assertTrue(result.isEmpty());
 
-
-        verify(versionRepository, never()).findByRoleIdAndTenantIdAndVersionNumber(anyLong(), anyString(), anyInt());
+        verify(versionRepository, never()).findByRoleIdAndTenantIdAndVersionNumber(any(UUID.class), anyString(), anyInt());
     }
-
 
     @Test
     void getAll_shouldUsePublishedVersionWhenRoleIsPublished() {
 
-        CustomRoleConfig config = createConfig(1L, CustomRoleStatus.PUBLISHED, 2, 1);
+        CustomRoleConfig config = createConfig(ROLE_ID, CustomRoleStatus.PUBLISHED, 2, 1);
 
-
-        Role role = createRole(1L, "HR Manager", "HR_MANAGER");
-
+        Role role = createRole(ROLE_ID, "HR Manager", "HR_MANAGER");
 
         CustomRoleVersion version = createVersion(1);
 
         version.setPermissionSnapshot("[10,20]");
 
+        when(configRepository.findAllByTenantId(TENANT_ID.toString())).thenReturn(List.of(config));
 
-        when(configRepository.findAllByTenantId(TENANT_ID)).thenReturn(List.of(config));
+        when(roleRepository.findByIdAndTenantId(ROLE_ID, TENANT_ID.toString())).thenReturn(Optional.of(role));
 
-
-        when(roleRepository.findByIdAndTenantId(1L, TENANT_ID)).thenReturn(Optional.of(role));
-
-
-        when(versionRepository.findByRoleIdAndTenantIdAndVersionNumber(1L, TENANT_ID, 1)).thenReturn(Optional.of(version));
-
+        when(versionRepository.findByRoleIdAndTenantIdAndVersionNumber(ROLE_ID, TENANT_ID.toString(), 1)).thenReturn(Optional.of(version));
 
         List<CustomRoleResponse> result = customRoleService.getAll();
 
-
         assertEquals(List.of(10L, 20L), result.get(0).getPermissionIds());
 
-
-        verify(versionRepository).findByRoleIdAndTenantIdAndVersionNumber(1L, TENANT_ID, 1);
+        verify(versionRepository).findByRoleIdAndTenantIdAndVersionNumber(ROLE_ID, TENANT_ID.toString(), 1);
     }
-
 
     // =========================================================
     // UPDATE
@@ -357,14 +336,11 @@ class CustomRoleServiceImplTest {
     @Test
     void update_shouldCreateNewDraftVersion() {
 
-        Role role = createRole(1L, "HR Manager", "HR_MANAGER");
+        Role role = createRole(ROLE_ID, "HR Manager", "HR_MANAGER");
 
-
-        CustomRoleConfig config = createConfig(1L, CustomRoleStatus.DRAFT, 1, 0);
-
+        CustomRoleConfig config = createConfig(ROLE_ID, CustomRoleStatus.DRAFT, 1, 0);
 
         CustomRoleVersion existingVersion = createVersion(1);
-
 
         CustomRoleRequest request = new CustomRoleRequest();
 
@@ -373,146 +349,105 @@ class CustomRoleServiceImplTest {
         request.setDescription("Updated HR role");
         request.setPermissionIds(List.of(1L, 2L));
 
+        when(roleRepository.findByIdAndTenantId(ROLE_ID, TENANT_ID.toString())).thenReturn(Optional.of(role));
 
-        when(roleRepository.findByIdAndTenantId(1L, TENANT_ID)).thenReturn(Optional.of(role));
+        when(configRepository.findByRoleIdAndTenantId(ROLE_ID, TENANT_ID.toString())).thenReturn(Optional.of(config));
 
-
-        when(configRepository.findByRoleIdAndTenantId(1L, TENANT_ID)).thenReturn(Optional.of(config));
-
-
-        when(versionRepository.findTopByRoleIdAndTenantIdOrderByVersionNumberDesc(1L, TENANT_ID)).thenReturn(Optional.of(existingVersion));
-
+        when(versionRepository.findTopByRoleIdAndTenantIdOrderByVersionNumberDesc(ROLE_ID, TENANT_ID.toString())).thenReturn(Optional.of(existingVersion));
 
         when(versionRepository.save(any(CustomRoleVersion.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-
         when(roleRepository.save(any(Role.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
 
         when(configRepository.save(any(CustomRoleConfig.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-
-        CustomRoleResponse response = customRoleService.update(1L, request);
-
+        CustomRoleResponse response = customRoleService.update(ROLE_ID, request);
 
         assertEquals(2, response.getDraftVersion());
 
-
         assertEquals(CustomRoleStatus.DRAFT, response.getStatus());
-
 
         assertEquals("Updated HR role", response.getDescription());
 
-
         assertEquals(List.of(1L, 2L), response.getPermissionIds());
-
 
         verify(versionRepository).save(any(CustomRoleVersion.class));
 
-
         verify(configRepository).save(config);
-
 
         verify(roleRepository).save(role);
     }
 
-
     @Test
     void update_shouldRejectArchivedRole() {
 
-        Role role = createRole(1L, "HR Manager", "HR_MANAGER");
+        Role role = createRole(ROLE_ID, "HR Manager", "HR_MANAGER");
 
-
-        CustomRoleConfig config = createConfig(1L, CustomRoleStatus.ARCHIVED, 1, 0);
-
+        CustomRoleConfig config = createConfig(ROLE_ID, CustomRoleStatus.ARCHIVED, 1, 0);
 
         CustomRoleRequest request = new CustomRoleRequest();
 
         request.setRoleName("HR Manager");
 
+        when(roleRepository.findByIdAndTenantId(ROLE_ID, TENANT_ID.toString())).thenReturn(Optional.of(role));
 
-        when(roleRepository.findByIdAndTenantId(1L, TENANT_ID)).thenReturn(Optional.of(role));
+        when(configRepository.findByRoleIdAndTenantId(ROLE_ID, TENANT_ID.toString())).thenReturn(Optional.of(config));
 
-
-        when(configRepository.findByRoleIdAndTenantId(1L, TENANT_ID)).thenReturn(Optional.of(config));
-
-
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> customRoleService.update(1L, request));
-
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> customRoleService.update(ROLE_ID, request));
 
         assertEquals("Archived custom role cannot be updated", exception.getMessage());
-
 
         verify(versionRepository, never()).save(any());
     }
 
-
     @Test
     void update_shouldRejectDuplicateRoleName() {
 
-        Role role = createRole(1L, "HR Manager", "HR_MANAGER");
+        Role role = createRole(ROLE_ID, "HR Manager", "HR_MANAGER");
 
-
-        CustomRoleConfig config = createConfig(1L, CustomRoleStatus.DRAFT, 1, 0);
-
+        CustomRoleConfig config = createConfig(ROLE_ID, CustomRoleStatus.DRAFT, 1, 0);
 
         CustomRoleRequest request = new CustomRoleRequest();
 
         request.setRoleName("Finance Manager");
 
+        when(roleRepository.findByIdAndTenantId(ROLE_ID, TENANT_ID.toString())).thenReturn(Optional.of(role));
 
-        when(roleRepository.findByIdAndTenantId(1L, TENANT_ID)).thenReturn(Optional.of(role));
+        when(configRepository.findByRoleIdAndTenantId(ROLE_ID, TENANT_ID.toString())).thenReturn(Optional.of(config));
 
+        when(roleRepository.existsByRoleNameIgnoreCaseAndTenantId("Finance Manager", TENANT_ID.toString())).thenReturn(true);
 
-        when(configRepository.findByRoleIdAndTenantId(1L, TENANT_ID)).thenReturn(Optional.of(config));
-
-
-        when(roleRepository.existsByRoleNameIgnoreCaseAndTenantId("Finance Manager", TENANT_ID)).thenReturn(true);
-
-
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> customRoleService.update(1L, request));
-
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> customRoleService.update(ROLE_ID, request));
 
         assertEquals("Role name already exists", exception.getMessage());
-
 
         verify(versionRepository, never()).save(any());
     }
 
-
     @Test
     void update_shouldRejectDuplicateRoleCode() {
 
-        Role role = createRole(1L, "HR Manager", "HR_MANAGER");
+        Role role = createRole(ROLE_ID, "HR Manager", "HR_MANAGER");
 
-
-        CustomRoleConfig config = createConfig(1L, CustomRoleStatus.DRAFT, 1, 0);
-
+        CustomRoleConfig config = createConfig(ROLE_ID, CustomRoleStatus.DRAFT, 1, 0);
 
         CustomRoleRequest request = new CustomRoleRequest();
 
         request.setRoleName("HR Manager");
         request.setRoleCode("FINANCE_MANAGER");
 
+        when(roleRepository.findByIdAndTenantId(ROLE_ID, TENANT_ID.toString())).thenReturn(Optional.of(role));
 
-        when(roleRepository.findByIdAndTenantId(1L, TENANT_ID)).thenReturn(Optional.of(role));
+        when(configRepository.findByRoleIdAndTenantId(ROLE_ID, TENANT_ID.toString())).thenReturn(Optional.of(config));
 
+        when(roleRepository.existsByRoleCodeIgnoreCaseAndTenantId("FINANCE_MANAGER", TENANT_ID.toString())).thenReturn(true);
 
-        when(configRepository.findByRoleIdAndTenantId(1L, TENANT_ID)).thenReturn(Optional.of(config));
-
-
-        when(roleRepository.existsByRoleCodeIgnoreCaseAndTenantId("FINANCE_MANAGER", TENANT_ID)).thenReturn(true);
-
-
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> customRoleService.update(1L, request));
-
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> customRoleService.update(ROLE_ID, request));
 
         assertEquals("Role code already exists", exception.getMessage());
 
-
         verify(versionRepository, never()).save(any());
     }
-
 
     // =========================================================
     // PUBLISH
@@ -521,53 +456,39 @@ class CustomRoleServiceImplTest {
     @Test
     void publish_shouldPublishDraftVersion() {
 
-        Role role = createRole(1L, "HR Manager", "HR_MANAGER");
+        Role role = createRole(ROLE_ID, "HR Manager", "HR_MANAGER");
 
-
-        CustomRoleConfig config = createConfig(1L, CustomRoleStatus.DRAFT, 1, 0);
-
+        CustomRoleConfig config = createConfig(ROLE_ID, CustomRoleStatus.DRAFT, 1, 0);
 
         CustomRoleVersion version = createVersion(1);
 
         version.setStatus(CustomRoleStatus.DRAFT);
+
         version.setPermissionSnapshot("[1,2,3]");
 
+        when(roleRepository.findByIdAndTenantId(ROLE_ID, TENANT_ID.toString())).thenReturn(Optional.of(role));
 
-        when(roleRepository.findByIdAndTenantId(1L, TENANT_ID)).thenReturn(Optional.of(role));
+        when(configRepository.findByRoleIdAndTenantId(ROLE_ID, TENANT_ID.toString())).thenReturn(Optional.of(config));
 
-
-        when(configRepository.findByRoleIdAndTenantId(1L, TENANT_ID)).thenReturn(Optional.of(config));
-
-
-        when(versionRepository.findByRoleIdAndTenantIdAndVersionNumber(1L, TENANT_ID, 1)).thenReturn(Optional.of(version));
-
+        when(versionRepository.findByRoleIdAndTenantIdAndVersionNumber(ROLE_ID, TENANT_ID.toString(), 1)).thenReturn(Optional.of(version));
 
         when(versionRepository.save(any(CustomRoleVersion.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-
         when(configRepository.save(any(CustomRoleConfig.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
 
         when(roleRepository.save(any(Role.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-
-        CustomRoleResponse response = customRoleService.publish(1L, "Initial publication");
-
+        CustomRoleResponse response = customRoleService.publish(ROLE_ID, "Initial publication");
 
         assertEquals(CustomRoleStatus.PUBLISHED, response.getStatus());
 
-
         assertEquals(1, response.getPublishedVersion());
-
 
         assertEquals(CustomRoleStatus.PUBLISHED, version.getStatus());
 
-
         assertEquals("ACTIVE", role.getStatus());
 
-
         assertEquals(List.of(1L, 2L, 3L), response.getPermissionIds());
-
 
         verify(versionRepository).save(version);
 
@@ -576,86 +497,63 @@ class CustomRoleServiceImplTest {
         verify(roleRepository).save(role);
     }
 
-
     @Test
     void publish_shouldRejectArchivedRole() {
 
-        Role role = createRole(1L, "HR Manager", "HR_MANAGER");
+        Role role = createRole(ROLE_ID, "HR Manager", "HR_MANAGER");
 
+        CustomRoleConfig config = createConfig(ROLE_ID, CustomRoleStatus.ARCHIVED, 1, 0);
 
-        CustomRoleConfig config = createConfig(1L, CustomRoleStatus.ARCHIVED, 1, 0);
+        when(roleRepository.findByIdAndTenantId(ROLE_ID, TENANT_ID.toString())).thenReturn(Optional.of(role));
 
+        when(configRepository.findByRoleIdAndTenantId(ROLE_ID, TENANT_ID.toString())).thenReturn(Optional.of(config));
 
-        when(roleRepository.findByIdAndTenantId(1L, TENANT_ID)).thenReturn(Optional.of(role));
-
-
-        when(configRepository.findByRoleIdAndTenantId(1L, TENANT_ID)).thenReturn(Optional.of(config));
-
-
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> customRoleService.publish(1L, null));
-
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> customRoleService.publish(ROLE_ID, null));
 
         assertEquals("Archived custom role cannot be published", exception.getMessage());
     }
 
-
     @Test
     void publish_shouldRejectMissingDraftVersion() {
 
-        Role role = createRole(1L, "HR Manager", "HR_MANAGER");
+        Role role = createRole(ROLE_ID, "HR Manager", "HR_MANAGER");
 
+        CustomRoleConfig config = createConfig(ROLE_ID, CustomRoleStatus.DRAFT, 1, 0);
 
-        CustomRoleConfig config = createConfig(1L, CustomRoleStatus.DRAFT, 1, 0);
+        when(roleRepository.findByIdAndTenantId(ROLE_ID, TENANT_ID.toString())).thenReturn(Optional.of(role));
 
+        when(configRepository.findByRoleIdAndTenantId(ROLE_ID, TENANT_ID.toString())).thenReturn(Optional.of(config));
 
-        when(roleRepository.findByIdAndTenantId(1L, TENANT_ID)).thenReturn(Optional.of(role));
+        when(versionRepository.findByRoleIdAndTenantIdAndVersionNumber(ROLE_ID, TENANT_ID.toString(), 1)).thenReturn(Optional.empty());
 
-
-        when(configRepository.findByRoleIdAndTenantId(1L, TENANT_ID)).thenReturn(Optional.of(config));
-
-
-        when(versionRepository.findByRoleIdAndTenantIdAndVersionNumber(1L, TENANT_ID, 1)).thenReturn(Optional.empty());
-
-
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> customRoleService.publish(1L, null));
-
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> customRoleService.publish(ROLE_ID, null));
 
         assertEquals("Draft version not found", exception.getMessage());
     }
 
-
     @Test
     void publish_shouldRejectAlreadyPublishedVersion() {
 
-        Role role = createRole(1L, "HR Manager", "HR_MANAGER");
+        Role role = createRole(ROLE_ID, "HR Manager", "HR_MANAGER");
 
-
-        CustomRoleConfig config = createConfig(1L, CustomRoleStatus.PUBLISHED, 1, 1);
-
+        CustomRoleConfig config = createConfig(ROLE_ID, CustomRoleStatus.PUBLISHED, 1, 1);
 
         CustomRoleVersion version = createVersion(1);
 
         version.setStatus(CustomRoleStatus.PUBLISHED);
 
+        when(roleRepository.findByIdAndTenantId(ROLE_ID, TENANT_ID.toString())).thenReturn(Optional.of(role));
 
-        when(roleRepository.findByIdAndTenantId(1L, TENANT_ID)).thenReturn(Optional.of(role));
+        when(configRepository.findByRoleIdAndTenantId(ROLE_ID, TENANT_ID.toString())).thenReturn(Optional.of(config));
 
+        when(versionRepository.findByRoleIdAndTenantIdAndVersionNumber(ROLE_ID, TENANT_ID.toString(), 1)).thenReturn(Optional.of(version));
 
-        when(configRepository.findByRoleIdAndTenantId(1L, TENANT_ID)).thenReturn(Optional.of(config));
-
-
-        when(versionRepository.findByRoleIdAndTenantIdAndVersionNumber(1L, TENANT_ID, 1)).thenReturn(Optional.of(version));
-
-
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> customRoleService.publish(1L, null));
-
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> customRoleService.publish(ROLE_ID, null));
 
         assertEquals("Only a draft version can be published", exception.getMessage());
 
-
         verify(versionRepository, never()).save(any());
     }
-
 
     // =========================================================
     // ARCHIVE
@@ -664,53 +562,38 @@ class CustomRoleServiceImplTest {
     @Test
     void archive_shouldArchiveRole() {
 
-        Role role = createRole(1L, "HR Manager", "HR_MANAGER");
+        Role role = createRole(ROLE_ID, "HR Manager", "HR_MANAGER");
 
-
-        CustomRoleConfig config = createConfig(1L, CustomRoleStatus.PUBLISHED, 1, 1);
-
+        CustomRoleConfig config = createConfig(ROLE_ID, CustomRoleStatus.PUBLISHED, 1, 1);
 
         CustomRoleVersion version = createVersion(1);
 
         version.setPermissionSnapshot("[1,2]");
 
+        when(roleRepository.findByIdAndTenantId(ROLE_ID, TENANT_ID.toString())).thenReturn(Optional.of(role));
 
-        when(roleRepository.findByIdAndTenantId(1L, TENANT_ID)).thenReturn(Optional.of(role));
+        when(configRepository.findByRoleIdAndTenantId(ROLE_ID, TENANT_ID.toString())).thenReturn(Optional.of(config));
 
-
-        when(configRepository.findByRoleIdAndTenantId(1L, TENANT_ID)).thenReturn(Optional.of(config));
-
-
-        when(versionRepository.findByRoleIdAndTenantIdAndVersionNumber(1L, TENANT_ID, 1)).thenReturn(Optional.of(version));
-
+        when(versionRepository.findByRoleIdAndTenantIdAndVersionNumber(ROLE_ID, TENANT_ID.toString(), 1)).thenReturn(Optional.of(version));
 
         when(configRepository.save(any(CustomRoleConfig.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-
         when(roleRepository.save(any(Role.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-
-        CustomRoleResponse response = customRoleService.archive(1L);
-
+        CustomRoleResponse response = customRoleService.archive(ROLE_ID);
 
         assertEquals(CustomRoleStatus.ARCHIVED, response.getStatus());
 
-
         assertEquals("ARCHIVED", role.getStatus());
-
 
         assertTrue(role.getIsDeleted());
 
-
         assertEquals(CustomRoleStatus.ARCHIVED, config.getStatus());
-
 
         verify(configRepository).save(config);
 
-
         verify(roleRepository).save(role);
     }
-
 
     // =========================================================
     // GET VERSIONS
@@ -719,16 +602,13 @@ class CustomRoleServiceImplTest {
     @Test
     void getVersions_shouldReturnVersionsDescending() {
 
-        Role role = createRole(1L, "HR Manager", "HR_MANAGER");
+        Role role = createRole(ROLE_ID, "HR Manager", "HR_MANAGER");
 
-
-        CustomRoleConfig config = createConfig(1L, CustomRoleStatus.PUBLISHED, 2, 1);
-
+        CustomRoleConfig config = createConfig(ROLE_ID, CustomRoleStatus.PUBLISHED, 2, 1);
 
         CustomRoleVersion version2 = createVersion(2);
 
         version2.setPermissionSnapshot("[1,2,3]");
-
 
         CustomRoleVersion version1 = createVersion(1);
 
@@ -736,61 +616,44 @@ class CustomRoleServiceImplTest {
 
         version1.setPermissionSnapshot("[1,2]");
 
+        when(roleRepository.findByIdAndTenantId(ROLE_ID, TENANT_ID.toString())).thenReturn(Optional.of(role));
 
-        when(roleRepository.findByIdAndTenantId(1L, TENANT_ID)).thenReturn(Optional.of(role));
+        when(configRepository.findByRoleIdAndTenantId(ROLE_ID, TENANT_ID.toString())).thenReturn(Optional.of(config));
 
+        when(versionRepository.findAllByRoleIdAndTenantIdOrderByVersionNumberDesc(ROLE_ID, TENANT_ID.toString())).thenReturn(List.of(version2, version1));
 
-        when(configRepository.findByRoleIdAndTenantId(1L, TENANT_ID)).thenReturn(Optional.of(config));
-
-
-        when(versionRepository.findAllByRoleIdAndTenantIdOrderByVersionNumberDesc(1L, TENANT_ID)).thenReturn(List.of(version2, version1));
-
-
-        List<CustomRoleResponse> result = customRoleService.getVersions(1L);
-
+        List<CustomRoleResponse> result = customRoleService.getVersions(ROLE_ID);
 
         assertEquals(2, result.size());
 
-
         assertEquals(2, result.get(0).getVersionNumber());
-
 
         assertEquals(1, result.get(1).getVersionNumber());
 
-
         assertEquals(List.of(1L, 2L, 3L), result.get(0).getPermissionIds());
-
 
         assertEquals(List.of(1L, 2L), result.get(1).getPermissionIds());
     }
 
-
     @Test
     void getVersions_shouldReturnEmptyListWhenNoVersions() {
 
-        Role role = createRole(1L, "HR Manager", "HR_MANAGER");
+        Role role = createRole(ROLE_ID, "HR Manager", "HR_MANAGER");
 
+        CustomRoleConfig config = createConfig(ROLE_ID, CustomRoleStatus.DRAFT, 1, 0);
 
-        CustomRoleConfig config = createConfig(1L, CustomRoleStatus.DRAFT, 1, 0);
+        when(roleRepository.findByIdAndTenantId(ROLE_ID, TENANT_ID.toString())).thenReturn(Optional.of(role));
 
+        when(configRepository.findByRoleIdAndTenantId(ROLE_ID, TENANT_ID.toString())).thenReturn(Optional.of(config));
 
-        when(roleRepository.findByIdAndTenantId(1L, TENANT_ID)).thenReturn(Optional.of(role));
+        when(versionRepository.findAllByRoleIdAndTenantIdOrderByVersionNumberDesc(ROLE_ID, TENANT_ID.toString())).thenReturn(List.of());
 
-
-        when(configRepository.findByRoleIdAndTenantId(1L, TENANT_ID)).thenReturn(Optional.of(config));
-
-
-        when(versionRepository.findAllByRoleIdAndTenantIdOrderByVersionNumberDesc(1L, TENANT_ID)).thenReturn(List.of());
-
-
-        List<CustomRoleResponse> result = customRoleService.getVersions(1L);
-
+        List<CustomRoleResponse> result = customRoleService.getVersions(ROLE_ID);
 
         assertNotNull(result);
 
         assertTrue(result.isEmpty());
     }
-
 
     // =========================================================
     // REVERT
@@ -799,11 +662,9 @@ class CustomRoleServiceImplTest {
     @Test
     void revert_shouldCreateNewDraftFromHistoricalVersion() {
 
-        Role role = createRole(1L, "HR Manager", "HR_MANAGER");
+        Role role = createRole(ROLE_ID, "HR Manager", "HR_MANAGER");
 
-
-        CustomRoleConfig config = createConfig(1L, CustomRoleStatus.PUBLISHED, 2, 1);
-
+        CustomRoleConfig config = createConfig(ROLE_ID, CustomRoleStatus.PUBLISHED, 2, 1);
 
         CustomRoleVersion oldVersion = createVersion(1);
 
@@ -811,86 +672,62 @@ class CustomRoleServiceImplTest {
 
         oldVersion.setPermissionSnapshot("[1,2]");
 
-
         CustomRoleVersion latestVersion = createVersion(2);
 
+        when(roleRepository.findByIdAndTenantId(ROLE_ID, TENANT_ID.toString())).thenReturn(Optional.of(role));
 
-        when(roleRepository.findByIdAndTenantId(1L, TENANT_ID)).thenReturn(Optional.of(role));
+        when(configRepository.findByRoleIdAndTenantId(ROLE_ID, TENANT_ID.toString())).thenReturn(Optional.of(config));
 
+        when(versionRepository.findByRoleIdAndTenantIdAndVersionNumber(ROLE_ID, TENANT_ID.toString(), 1)).thenReturn(Optional.of(oldVersion));
 
-        when(configRepository.findByRoleIdAndTenantId(1L, TENANT_ID)).thenReturn(Optional.of(config));
-
-
-        when(versionRepository.findByRoleIdAndTenantIdAndVersionNumber(1L, TENANT_ID, 1)).thenReturn(Optional.of(oldVersion));
-
-
-        when(versionRepository.findTopByRoleIdAndTenantIdOrderByVersionNumberDesc(1L, TENANT_ID)).thenReturn(Optional.of(latestVersion));
-
+        when(versionRepository.findTopByRoleIdAndTenantIdOrderByVersionNumberDesc(ROLE_ID, TENANT_ID.toString())).thenReturn(Optional.of(latestVersion));
 
         when(versionRepository.save(any(CustomRoleVersion.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-
         when(configRepository.save(any(CustomRoleConfig.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-
-        CustomRoleResponse response = customRoleService.revert(1L, 1);
-
+        CustomRoleResponse response = customRoleService.revert(ROLE_ID, 1);
 
         assertEquals(CustomRoleStatus.DRAFT, response.getStatus());
 
-
         assertEquals(3, response.getDraftVersion());
-
 
         assertEquals(List.of(1L, 2L), response.getPermissionIds());
 
-
         ArgumentCaptor<CustomRoleVersion> captor = ArgumentCaptor.forClass(CustomRoleVersion.class);
-
 
         verify(versionRepository).save(captor.capture());
 
-
         CustomRoleVersion savedVersion = captor.getValue();
 
+        assertEquals(ROLE_ID, savedVersion.getRoleId());
 
         assertEquals(3, savedVersion.getVersionNumber());
 
-
         assertEquals(CustomRoleStatus.DRAFT, savedVersion.getStatus());
-
 
         assertEquals("[1,2]", savedVersion.getPermissionSnapshot());
     }
 
-
     @Test
     void revert_shouldRejectUnknownVersion() {
 
-        Role role = createRole(1L, "HR Manager", "HR_MANAGER");
+        Role role = createRole(ROLE_ID, "HR Manager", "HR_MANAGER");
 
+        CustomRoleConfig config = createConfig(ROLE_ID, CustomRoleStatus.PUBLISHED, 1, 1);
 
-        CustomRoleConfig config = createConfig(1L, CustomRoleStatus.PUBLISHED, 1, 1);
+        when(roleRepository.findByIdAndTenantId(ROLE_ID, TENANT_ID.toString())).thenReturn(Optional.of(role));
 
+        when(configRepository.findByRoleIdAndTenantId(ROLE_ID, TENANT_ID.toString())).thenReturn(Optional.of(config));
 
-        when(roleRepository.findByIdAndTenantId(1L, TENANT_ID)).thenReturn(Optional.of(role));
+        when(versionRepository.findByRoleIdAndTenantIdAndVersionNumber(ROLE_ID, TENANT_ID.toString(), 99)).thenReturn(Optional.empty());
 
-
-        when(configRepository.findByRoleIdAndTenantId(1L, TENANT_ID)).thenReturn(Optional.of(config));
-
-
-        when(versionRepository.findByRoleIdAndTenantIdAndVersionNumber(1L, TENANT_ID, 99)).thenReturn(Optional.empty());
-
-
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> customRoleService.revert(1L, 99));
-
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> customRoleService.revert(ROLE_ID, 99));
 
         assertEquals("Version not found", exception.getMessage());
 
-
         verify(versionRepository, never()).save(any());
     }
-
 
     // =========================================================
     // IMPACT
@@ -899,29 +736,22 @@ class CustomRoleServiceImplTest {
     @Test
     void getImpact_shouldReturnPendingIntegrationResponse() {
 
-        Role role = createRole(1L, "HR Manager", "HR_MANAGER");
+        Role role = createRole(ROLE_ID, "HR Manager", "HR_MANAGER");
 
+        when(roleRepository.findByIdAndTenantId(ROLE_ID, TENANT_ID.toString())).thenReturn(Optional.of(role));
 
-        when(roleRepository.findByIdAndTenantId(1L, TENANT_ID)).thenReturn(Optional.of(role));
-
-
-        Object result = customRoleService.getImpact(1L);
-
+        Object result = customRoleService.getImpact(ROLE_ID);
 
         assertNotNull(result);
 
         assertTrue(result instanceof Map);
 
-
         Map<?, ?> impact = (Map<?, ?>) result;
 
-
-        assertEquals(1L, impact.get("roleId"));
-
+        assertEquals(ROLE_ID, impact.get("roleId"));
 
         assertEquals("Impact analysis integration is pending", impact.get("message"));
     }
-
 
     // =========================================================
     // LIMITS
@@ -930,29 +760,22 @@ class CustomRoleServiceImplTest {
     @Test
     void getLimits_shouldReturnCurrentRoleCount() {
 
-        when(configRepository.countByTenantIdAndStatusNot(TENANT_ID, CustomRoleStatus.ARCHIVED)).thenReturn(5L);
-
+        when(configRepository.countByTenantIdAndStatusNot(TENANT_ID.toString(), CustomRoleStatus.ARCHIVED)).thenReturn(5L);
 
         Object result = customRoleService.getLimits();
-
 
         assertNotNull(result);
 
         assertTrue(result instanceof Map);
 
-
         Map<?, ?> limits = (Map<?, ?>) result;
 
-
-        assertEquals(TENANT_ID, limits.get("tenantId"));
-
+        assertEquals(TENANT_ID.toString(), limits.get("tenantId"));
 
         assertEquals(5L, limits.get("currentCustomRoles"));
 
-
         assertEquals("LICENSE_INTEGRATION_PENDING", limits.get("limit"));
     }
-
 
     // =========================================================
     // TENANT CONTEXT
@@ -963,29 +786,24 @@ class CustomRoleServiceImplTest {
 
         tenantContextMock.when(TenantContext::getTenantId).thenReturn(null);
 
-
         CustomRoleRequest request = new CustomRoleRequest();
 
         request.setRoleName("HR Manager");
 
-
         IllegalStateException exception = assertThrows(IllegalStateException.class, () -> customRoleService.create(request));
 
-
         assertEquals("Tenant context is not available", exception.getMessage());
-
 
         verifyNoInteractions(roleRepository);
         verifyNoInteractions(configRepository);
         verifyNoInteractions(versionRepository);
     }
 
-
     // =========================================================
     // HELPER METHODS
     // =========================================================
 
-    private Role createRole(Long id, String roleName, String roleCode) {
+    private Role createRole(UUID id, String roleName, String roleCode) {
 
         Role role = new Role();
 
@@ -1003,19 +821,24 @@ class CustomRoleServiceImplTest {
 
         role.setIsDeleted(false);
 
-        role.setTenantId(UUID.fromString(TENANT_ID));
+        role.setTenantId(TENANT_ID);
 
         return role;
     }
 
-
-    private CustomRoleConfig createConfig(Long roleId, CustomRoleStatus status, int draftVersion, int publishedVersion) {
+    private CustomRoleConfig createConfig(UUID roleId, CustomRoleStatus status, int draftVersion, int publishedVersion) {
 
         CustomRoleConfig config = new CustomRoleConfig();
 
         config.setRoleId(roleId);
 
-        config.setTenantId(TENANT_ID);
+        /*
+         * If your CustomRoleConfig currently has
+         * String tenantId, use TENANT_ID.toString().
+         *
+         * If it has UUID tenantId, use TENANT_ID.
+         */
+        config.setTenantId(TENANT_ID.toString());
 
         config.setDraftVersion(draftVersion);
 
@@ -1026,14 +849,19 @@ class CustomRoleServiceImplTest {
         return config;
     }
 
-
     private CustomRoleVersion createVersion(int versionNumber) {
 
         CustomRoleVersion version = new CustomRoleVersion();
 
-        version.setRoleId(1L);
+        version.setRoleId(ROLE_ID);
 
-        version.setTenantId(TENANT_ID);
+        /*
+         * If your CustomRoleVersion currently has
+         * String tenantId, use TENANT_ID.toString().
+         *
+         * If it has UUID tenantId, use TENANT_ID.
+         */
+        version.setTenantId(TENANT_ID.toString());
 
         version.setVersionNumber(versionNumber);
 

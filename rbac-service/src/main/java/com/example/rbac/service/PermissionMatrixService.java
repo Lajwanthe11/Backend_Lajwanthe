@@ -29,16 +29,19 @@ public class PermissionMatrixService {
                         RoleRepository roleRepository,
                         PermissionRepository permissionRepository,
                         RolePermissionRepository rolePermissionRepository) {
+
                 this.roleRepository = roleRepository;
                 this.permissionRepository = permissionRepository;
                 this.rolePermissionRepository = rolePermissionRepository;
         }
 
-        public PermissionMatrixResponse getMatrix(String tenantId) {
+        public PermissionMatrixResponse getMatrix(UUID tenantId) {
 
-                List<Role> roles = roleRepository.findByTenantIdAndIsDeletedFalse(tenantId);
+                List<Role> roles = roleRepository
+                                .findByTenantIdAndIsDeletedFalse(tenantId);
 
-                List<Permission> permissions = permissionRepository.findAll()
+                List<Permission> permissions = permissionRepository
+                                .findAll()
                                 .stream()
                                 .filter(Permission::isActive)
                                 .sorted(
@@ -66,12 +69,9 @@ public class PermissionMatrixService {
                                         .findByRole_IdInAndActiveTrue(roleIds)
                                         .forEach(rolePermission -> {
 
-                                                UUID roleId = rolePermission
-                                                                .getRole()
-                                                                .getId();
+                                                UUID roleId = rolePermission.getRole().getId();
 
-                                                UUID permissionId = rolePermission
-                                                                .getPermission()
+                                                UUID permissionId = rolePermission.getPermission()
                                                                 .getPermissionId();
 
                                                 roleGrants
@@ -83,11 +83,11 @@ public class PermissionMatrixService {
                 }
 
                 List<PermissionMatrixResponse.RoleColumn> roleColumns = roles.stream()
-                                .map(role -> PermissionMatrixResponse.RoleColumn.builder()
+                                .map(role -> PermissionMatrixResponse.RoleColumn
+                                                .builder()
                                                 .roleId(role.getId())
                                                 .roleName(role.getRoleName())
                                                 .roleCode(role.getRoleCode())
-                                                .version(role.getVersion())
                                                 .build())
                                 .toList();
 
@@ -116,11 +116,14 @@ public class PermissionMatrixService {
 
         public List<PermissionMatrixResponse.PermissionGroupRow> getGroupedPermissions(UUID roleId) {
 
-                Role role = roleRepository.findById(roleId)
-                                .orElseThrow(() -> new IllegalArgumentException(
-                                                "Role not found"));
+                Role role = roleRepository
+                                .findById(roleId)
+                                .orElseThrow(
+                                                () -> new IllegalArgumentException(
+                                                                "Role not found"));
 
-                List<Permission> permissions = permissionRepository.findAll()
+                List<Permission> permissions = permissionRepository
+                                .findAll()
                                 .stream()
                                 .filter(Permission::isActive)
                                 .sorted(
@@ -141,9 +144,10 @@ public class PermissionMatrixService {
                                 .stream()
                                 .collect(
                                                 Collectors.toMap(
-                                                                rp -> rp.getPermission()
+                                                                rolePermission -> rolePermission
+                                                                                .getPermission()
                                                                                 .getPermissionId(),
-                                                                rp -> true,
+                                                                rolePermission -> true,
                                                                 (existing, replacement) -> replacement));
 
                 Map<PermissionGroup, List<Permission>> grouped = permissions.stream()
@@ -248,15 +252,12 @@ public class PermissionMatrixService {
                 return PermissionMatrixResponse.PermissionRow
                                 .builder()
                                 .permId(
-                                                permission
-                                                                .getPermissionId()
+                                                permission.getPermissionId()
                                                                 .toString())
                                 .permCode(
-                                                permission
-                                                                .getPermissionCode())
+                                                permission.getPermissionCode())
                                 .displayName(
-                                                permission
-                                                                .getDisplayName())
+                                                permission.getDisplayName())
                                 .roleGrants(grants)
                                 .system(permission.isSystem())
                                 .build();

@@ -20,11 +20,4 @@ public class RoleHistoryDto {
         this.oldValue = oldValue;
         this.newValue = newValue;
     }
-
-    public String getChangedByName() { return changedByName; }
-    public Instant getChangedAt() { return changedAt; }
-    public String getChangeType() { return changeType; }
-    public String getFieldName() { return fieldName; }
-    public String getOldValue() { return oldValue; }
-    public String getNewValue() { return newValue; }
 }

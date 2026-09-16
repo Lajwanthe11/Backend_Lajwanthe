@@ -1,4 +1,4 @@
-package com.example.rbac.service.impl;
+package com.example.rbac.service;
 
 import com.example.rbac.dto.CsvImportResponse;
 import com.example.rbac.entity.Role;

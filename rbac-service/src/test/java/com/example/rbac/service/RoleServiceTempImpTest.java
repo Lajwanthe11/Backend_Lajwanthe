@@ -10,6 +10,7 @@ import com.example.rbac.entity.Role;
 import com.example.rbac.entity.RoleHistory;
 import com.example.rbac.entity.RoleTemplate;
 import com.example.rbac.enums.RoleType;
+import com.example.rbac.exception.RoleNotFoundException;
 import com.example.rbac.repository.PermissionRepository;
 import com.example.rbac.repository.RoleHistoryRepository;
 import com.example.rbac.repository.RoleRepository;

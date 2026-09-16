@@ -6,6 +6,7 @@ import com.example.rbac.enums.CustomRoleStatus;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "custom_role_config", uniqueConstraints = {@UniqueConstraint(name = "uk_custom_role_config_role_tenant", columnNames = {"role_id", "tenant_id"})})
@@ -14,10 +15,12 @@ public class CustomRoleConfig {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "config_id")
-    private Long configId;
+   // private Long configId;
+    private UUID configId;
 
     @Column(name = "role_id", nullable = false)
-    private Long roleId;
+    //private Long roleId;
+    private UUID roleId;
 
     @Column(name = "tenant_id", nullable = false, length = 100)
     private String tenantId;
@@ -47,19 +50,19 @@ public class CustomRoleConfig {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    public Long getConfigId() {
+    public UUID getConfigId() {
         return configId;
     }
 
-    public void setConfigId(Long configId) {
+    public void setConfigId(UUID configId) {
         this.configId = configId;
     }
 
-    public Long getRoleId() {
+    public UUID getRoleId() {
         return roleId;
     }
 
-    public void setRoleId(Long roleId) {
+    public void setRoleId(UUID roleId) {
         this.roleId = roleId;
     }
 
