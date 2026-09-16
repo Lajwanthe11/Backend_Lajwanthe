@@ -5,6 +5,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
+import java.util.UUID;
+
 @Component
 public class CurrentUserContextImpl implements CurrentUserContext {
 
@@ -21,9 +23,9 @@ public class CurrentUserContextImpl implements CurrentUserContext {
     }
 
     @Override
-    public String getTenantId() {
+    public UUID getTenantId() {
         JwtUserPrincipal principal = getPrincipal();
-        return principal != null ? principal.getTenantId() : null;
+        return principal != null ? UUID.fromString(principal.getTenantId()) : null;
     }
 
     @Override
