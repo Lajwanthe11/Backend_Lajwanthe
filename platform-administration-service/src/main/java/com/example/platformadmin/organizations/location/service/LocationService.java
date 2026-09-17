@@ -4,6 +4,8 @@ import com.example.common.abstracts.AbstractService;
 import com.example.platformadmin.organizations.location.dto.LocationRequestDto;
 import com.example.platformadmin.organizations.location.dto.LocationResponseDto;
 import com.example.platformadmin.organizations.location.entity.LocationEntity;
+import com.example.platformadmin.organizations.location.exception.LocationAlreadyExistsException;
+import com.example.platformadmin.organizations.location.exception.LocationNotFoundException;
 import com.example.platformadmin.organizations.location.repository.LocationRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -45,8 +47,6 @@ public class LocationService extends AbstractService<
         entity.setStatus(dto.getStatus());
         entity.setLatitude(dto.getLatitude());
         entity.setLongitude(dto.getLongitude());
-        entity.setLocationCode(dto.getLocationCode());
-        entity.setLocationName(dto.getLocationName());
 
         entity.setActive(
                 dto.getActive() != null
@@ -79,8 +79,6 @@ public class LocationService extends AbstractService<
         dto.setStatus(entity.getStatus());
         dto.setLatitude(entity.getLatitude());
         dto.setLongitude(entity.getLongitude());
-        dto.setLocationCode(entity.getLocationCode());
-        dto.setLocationName(entity.getLocationName());
         dto.setCreatedAt(entity.getCreatedAt());
         dto.setUpdatedAt(entity.getUpdatedAt());
 
@@ -107,11 +105,21 @@ public class LocationService extends AbstractService<
         entity.setStatus(dto.getStatus());
         entity.setLatitude(dto.getLatitude());
         entity.setLongitude(dto.getLongitude());
-        entity.setLocationCode(dto.getLocationCode());
-        entity.setLocationName(dto.getLocationName());
 
         if (dto.getActive() != null) {
             entity.setActive(dto.getActive());
+        }
+    }
+
+    @Override
+    protected void beforeCreate(
+            LocationEntity entity,
+            LocationRequestDto dto) {
+
+        if (locationRepository.existsByCode(dto.getCode())) {
+            throw new LocationAlreadyExistsException(
+                    "Location code already exists: " + dto.getCode()
+            );
         }
     }
 
@@ -126,19 +134,35 @@ public class LocationService extends AbstractService<
 
     public List<LocationResponseDto> getByCompanyId(Long companyId) {
 
-        return locationRepository
+        List<LocationResponseDto> locations = locationRepository
                 .findByCompanyId(companyId)
                 .stream()
                 .map(this::toDto)
                 .toList();
+
+        if (locations.isEmpty()) {
+            throw new LocationNotFoundException(
+                    "No locations found for company ID: " + companyId
+            );
+        }
+
+        return locations;
     }
 
     public List<LocationResponseDto> getByBranchId(Long branchId) {
 
-        return locationRepository
+        List<LocationResponseDto> locations = locationRepository
                 .findByBranchId(branchId)
                 .stream()
                 .map(this::toDto)
                 .toList();
+
+        if (locations.isEmpty()) {
+            throw new LocationNotFoundException(
+                    "No locations found for branch ID: " + branchId
+            );
+        }
+
+        return locations;
     }
 }

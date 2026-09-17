@@ -4,8 +4,10 @@ import com.example.common.abstracts.AbstractService;
 import com.example.platformadmin.organizations.branches.dto.BranchRequestDTO;
 import com.example.platformadmin.organizations.branches.dto.BranchResponseDTO;
 import com.example.platformadmin.organizations.branches.entity.BranchEntity;
+import com.example.platformadmin.organizations.branches.exception.BranchAlreadyExistsException;
 import com.example.platformadmin.organizations.branches.repository.BranchRepository;
 import org.springframework.stereotype.Service;
+import com.example.platformadmin.organizations.branches.exception.BranchNotFoundException;
 
 @Service
 public class BranchService extends AbstractService<
@@ -70,7 +72,7 @@ public class BranchService extends AbstractService<
             BranchRequestDTO dto) {
 
         if (branchRepository.existsByBranchCode(dto.getBranchCode())) {
-            throw new IllegalArgumentException(
+            throw new BranchAlreadyExistsException(
                     "Branch code already exists: " + dto.getBranchCode()
             );
         }
@@ -84,7 +86,7 @@ public class BranchService extends AbstractService<
         branchRepository.findByBranchCode(dto.getBranchCode())
                 .ifPresent(existingBranch -> {
                     if (!existingBranch.getId().equals(entity.getId())) {
-                        throw new IllegalArgumentException(
+                        throw new BranchAlreadyExistsException(
                                 "Branch code already exists: "
                                         + dto.getBranchCode()
                         );
