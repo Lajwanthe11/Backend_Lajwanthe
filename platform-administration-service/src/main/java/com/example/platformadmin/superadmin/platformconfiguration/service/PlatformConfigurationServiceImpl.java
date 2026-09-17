@@ -1,5 +1,6 @@
 package com.example.platformadmin.superadmin.platformconfiguration.service;
 
+import com.example.common.security.user.JwtUserPrincipal;
 import com.example.platformadmin.superadmin.platformconfiguration.dto.request.PlatformConfigurationCreateRequest;
 import com.example.platformadmin.superadmin.platformconfiguration.dto.request.PlatformConfigurationStatusUpdateRequest;
 import com.example.platformadmin.superadmin.platformconfiguration.dto.request.PlatformConfigurationUpdateRequest;
@@ -20,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -454,9 +456,9 @@ public class PlatformConfigurationServiceImpl implements PlatformConfigurationSe
 		config.setVersion(config.getVersion() != null ? config.getVersion() + 1 : 2);
 
 		PlatformConfiguration restored = repository.save(config);
-		recordSnapshot(restored, "RESTORE_DEFAULTS", "SYSTEM_RESTORE");
+		recordSnapshot(restored, "RESTORE_DEFAULTS", getCurrentUsername());
 		log.info("Platform configuration defaults restored successfully: id={}, version={}, updatedBy='{}'",
-				restored.getId(), restored.getVersion(), "SYSTEM_RESTORE");
+				restored.getId(), restored.getVersion(), getCurrentUsername());
 		//logAudit(getCurrentUsername(),"CONFIGURATION_RESTORED_TO_DEFAULTS", "Completed");
 		return toResponse(restored);
 	}
@@ -763,16 +765,34 @@ public class PlatformConfigurationServiceImpl implements PlatformConfigurationSe
 	 * @return current authenticated username or "admin"
 	 */
 	private String getCurrentUsername() {
-		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-		if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
-			String name = auth.getName();
-			if (name != null && !name.isBlank()) {
-				log.debug("Resolved user from SecurityContextHolder: '{}'", name.trim());
-				return name.trim();
-			}
-		}
-		log.debug("No authenticated user in SecurityContext, falling back to: 'admin'");
-		return "admin";
+	    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+	    if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
+	        Object principal = auth.getPrincipal();
+	        // 1. Reconstructed JWT Principal from CommonJwtAuthenticationFilter
+	        if (principal instanceof JwtUserPrincipal jwtUser) {
+	            String username = jwtUser.getUsername();
+	            if (username != null && !username.isBlank()) {
+	                log.debug("Resolved authenticated user from JwtUserPrincipal: '{}'", username);
+	                return username.trim();
+	            }
+	        }
+	        // 2. Standard Spring UserDetails
+	        if (principal instanceof UserDetails userDetails) {
+	            String username = userDetails.getUsername();
+	            if (username != null && !username.isBlank()) {
+	                log.debug("Resolved authenticated user from UserDetails: '{}'", username);
+	                return username.trim();
+	            }
+	        }
+	        // 3. String principal or Authentication name
+	        String name = auth.getName();
+	        if (name != null && !name.isBlank()) {
+	            log.debug("Resolved authenticated user from Authentication.getName(): '{}'", name.trim());
+	            return name.trim();
+	        }
+	    }
+	    log.debug("No authenticated user in SecurityContext, falling back to: 'admin'");
+	    return "admin";
 	}
 
 	private String resolveUser(String requestUser, String fallback) {
