@@ -8,10 +8,10 @@ spring:
     name: auth-service
 
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/microservice_db}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/microservices_db}
     driver-class-name: org.postgresql.Driver
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
-    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:root}
     hikari:
       minimum-idle: ${DB_POOL_MIN_IDLE:5}
       maximum-pool-size: ${DB_POOL_MAX_SIZE:20}
@@ -58,19 +58,19 @@ app:
   security:
     common-jwt-filter:
       enabled: false
+
   tenant:
     default-tenant: ${DEFAULT_TENANT_ID:default}
     header-name: ${TENANT_HEADER_NAME:X-Tenant-ID}
+
   jwt:
-    # 256-bit+ HMAC-SHA key in Base64 or standard string (minimum 32 characters)
-    # IMPORTANT: This secret MUST match the JWT_SECRET in base-service
     secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
-    expiration-ms: ${JWT_EXPIRATION_MS:86400000}         # 24 hours
-    refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}  # 7 days
+    expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+    refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}
+
   oauth2:
     authorized-redirect-uris: ${APP_OAUTH2_AUTHORIZED_REDIRECT_URIS:http://localhost:3000/oauth2/redirect,http://localhost:8081/api/auth/oauth2/success}
 
-# Springdoc OpenAPI / Swagger UI
 springdoc:
   api-docs:
     path: /v3/api-docs

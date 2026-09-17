@@ -1,0 +1,65 @@
+server:
+  port: ${SERVER_PORT:8084}
+
+spring:
+  application:
+    name: device-management-service
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/device_management_db}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: ${DDL_AUTO:update}
+    show-sql: ${SHOW_SQL:false}
+    properties:
+      hibernate:
+        format_sql: true
+        default_schema: ${DB_SCHEMA:public}
+
+  jackson:
+    default-property-inclusion: NON_NULL
+    serialization:
+      write-dates-as-timestamps: false
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+
+  security:
+    common-jwt-filter:
+      enabled: ${COMMON_JWT_FILTER_ENABLED:true}
+
+  tenant:
+    header-name: ${TENANT_HEADER_NAME:X-Tenant-ID}
+    default-tenant: ${DEFAULT_TENANT_ID:default}
+
+  device-management:
+    default-trust-status: ${DEVICE_DEFAULT_TRUST_STATUS:UNTRUSTED}
+    max-devices-per-user: ${DEVICE_MAX_PER_USER:5}
+    terminate-sessions-on-block: ${DEVICE_TERMINATE_SESSIONS_ON_BLOCK:true}
+    terminate-sessions-on-remove: ${DEVICE_TERMINATE_SESSIONS_ON_REMOVE:true}
+    audit-logging-enabled: ${DEVICE_AUDIT_LOGGING_ENABLED:true}
+
+session:
+  service:
+    url: ${SESSION_SERVICE_URL:http://localhost:8083}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  level:
+    com.example.devicemanagement: ${LOG_LEVEL:INFO}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
