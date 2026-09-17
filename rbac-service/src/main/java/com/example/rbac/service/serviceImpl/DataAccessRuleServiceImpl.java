@@ -1,4 +1,4 @@
-package com.example.rbac.service;
+package com.example.rbac.service.serviceImpl;
 
 import com.example.rbac.dto.*;
 import com.example.rbac.entity.DataAccessRule;
@@ -197,7 +197,8 @@ public class DataAccessRuleServiceImpl implements DataAccessRuleService {
 
         for (Map.Entry<String, List<DataAccessRule>> entry : grouped.entrySet()) {
             List<DataAccessRule> groupRules = entry.getValue();
-            if (groupRules.isEmpty()) continue;
+            if (groupRules.isEmpty())
+                continue;
 
             DataAccessRule sample = groupRules.get(0);
             long rowCount = groupRules.stream().filter(r -> r.getRuleType() == RuleType.ROW_LEVEL).count();
@@ -214,8 +215,7 @@ public class DataAccessRuleServiceImpl implements DataAccessRuleService {
                     groupRules.size(),
                     rowCount,
                     fieldCount,
-                    ruleResponses
-            ));
+                    ruleResponses));
         }
 
         return reports;
@@ -243,7 +243,8 @@ public class DataAccessRuleServiceImpl implements DataAccessRuleService {
         if (request.ruleType() == RuleType.FIELD_LEVEL) {
             if ((request.allowedFields() == null || request.allowedFields().length == 0)
                     && (request.deniedFields() == null || request.deniedFields().length == 0)) {
-                throw new InvalidDataAccessRuleException("Allowed or denied fields must be provided for FIELD_LEVEL rule");
+                throw new InvalidDataAccessRuleException(
+                        "Allowed or denied fields must be provided for FIELD_LEVEL rule");
             }
         }
 
@@ -251,7 +252,8 @@ public class DataAccessRuleServiceImpl implements DataAccessRuleService {
             for (String denied : request.deniedFields()) {
                 for (String allowed : request.allowedFields()) {
                     if (denied.equalsIgnoreCase(allowed)) {
-                        throw new InvalidDataAccessRuleException("A field cannot be both allowed and denied: " + allowed);
+                        throw new InvalidDataAccessRuleException(
+                                "A field cannot be both allowed and denied: " + allowed);
                     }
                 }
             }
@@ -273,8 +275,7 @@ public class DataAccessRuleServiceImpl implements DataAccessRuleService {
                 rule.getActive(),
                 rule.getPriority(),
                 rule.getCreatedBy(),
-                rule.getCreatedAt()
-        );
+                rule.getCreatedAt());
     }
 
     private UUID getCurrentTenantId() {

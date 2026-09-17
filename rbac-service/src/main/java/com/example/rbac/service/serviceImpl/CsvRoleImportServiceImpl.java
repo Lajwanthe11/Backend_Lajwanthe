@@ -82,7 +82,7 @@ public class CsvRoleImportServiceImpl implements CsvRoleImportService {
                     validateDates(effectiveDate, expiryDate);
                     userAssignmentSupportService.validateAssignable(tenantId, employeeId);
                     Role role = roleLookupService.getAssignableRoleByCode(tenantId, roleCode);
-                    UUID roleId = role.getRoleId();
+                    UUID roleId = role.getId();
 
                     if (userRoleRepository.existsByTenantIdAndUserIdAndRoleIdAndActiveTrue(
                             tenantId, employeeId, roleId)) {

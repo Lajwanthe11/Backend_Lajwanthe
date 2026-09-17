@@ -1,10 +1,11 @@
-package com.example.platformadmin.superadmin.feature_management_service.dto.response;
+package com.platformadmin.superadmin.feature_management_service.dto.response;
 
 import lombok.Data;
 
 import java.time.LocalDateTime;
 
 import java.util.UUID;
+
 @Data
 public class FeatureAssignmentResponse {
 
@@ -33,6 +34,5 @@ public class FeatureAssignmentResponse {
     private UUID createdBy;
 
     private UUID updatedBy;
-
 
 }

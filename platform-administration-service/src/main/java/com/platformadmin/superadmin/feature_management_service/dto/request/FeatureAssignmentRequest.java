@@ -1,9 +1,10 @@
-package com.example.platformadmin.superadmin.feature_management_service.dto.request;
+package com.platformadmin.superadmin.feature_management_service.dto.request;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.util.UUID;
+
 @Data
 public class FeatureAssignmentRequest {
 

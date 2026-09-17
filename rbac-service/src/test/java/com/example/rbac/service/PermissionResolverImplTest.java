@@ -27,370 +27,355 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.example.common.tenant.TenantContext;
+import com.example.rbac.service.serviceImpl.PermissionResolverImpl;
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 @ExtendWith(MockitoExtension.class)
 class PermissionResolverImplTest {
 
-    private static final String USER_ID =
-            "550e8400-e29b-41d4-a716-446655440000";
+        private static final String USER_ID = "550e8400-e29b-41d4-a716-446655440000";
 
-    private static final String ADMIN_ID =
-            "550e8400-e29b-41d4-a716-446655440001";
+        private static final String ADMIN_ID = "550e8400-e29b-41d4-a716-446655440001";
 
-    private static final String TENANT_1 =
-            "550e8400-e29b-41d4-a716-446655440010";
+        private static final String TENANT_1 = "550e8400-e29b-41d4-a716-446655440010";
 
-    private static final String TENANT_2 =
-            "550e8400-e29b-41d4-a716-446655440011";
+        private static final String TENANT_2 = "550e8400-e29b-41d4-a716-446655440011";
 
-    @Mock
-    private JdbcTemplate jdbcTemplate;
+        @Mock
+        private JdbcTemplate jdbcTemplate;
 
-    @Mock
-    private RedisTemplate<String, String> redisTemplate;
+        @Mock
+        private RedisTemplate<String, String> redisTemplate;
 
-    @Mock
-    private SetOperations<String, String> setOperations;
+        @Mock
+        private SetOperations<String, String> setOperations;
 
-    private SimpleMeterRegistry meterRegistry;
+        private SimpleMeterRegistry meterRegistry;
 
-    private PermissionResolverImpl permissionResolver;
+        private PermissionResolverImpl permissionResolver;
 
-    @BeforeEach
-    void setUp() {
+        @BeforeEach
+        void setUp() {
 
-        meterRegistry = new SimpleMeterRegistry();
+                meterRegistry = new SimpleMeterRegistry();
 
-        permissionResolver = new PermissionResolverImpl(
-                jdbcTemplate,
-                redisTemplate,
-                meterRegistry);
+                permissionResolver = new PermissionResolverImpl(
+                                jdbcTemplate,
+                                redisTemplate,
+                                meterRegistry);
 
-        when(redisTemplate.opsForSet())
-                .thenReturn(setOperations);
-    }
+                when(redisTemplate.opsForSet())
+                                .thenReturn(setOperations);
+        }
 
-    @AfterEach
-    void tearDown() {
-        TenantContext.clear();
-        meterRegistry.close();
-    }
+        @AfterEach
+        void tearDown() {
+                TenantContext.clear();
+                meterRegistry.close();
+        }
 
-    @Test
-    void resolvePermissions_cacheHit_returnsCachedPermissions() {
+        @Test
+        void resolvePermissions_cacheHit_returnsCachedPermissions() {
 
-        Set<String> cachedPermissions = Set.of(
-                "USER_READ",
-                "USER_CREATE");
+                Set<String> cachedPermissions = Set.of(
+                                "USER_READ",
+                                "USER_CREATE");
 
-        when(setOperations.members(
-                "perms:" + TENANT_1 + ":" + USER_ID))
-                .thenReturn(cachedPermissions);
+                when(setOperations.members(
+                                "perms:" + TENANT_1 + ":" + USER_ID))
+                                .thenReturn(cachedPermissions);
 
-        Set<String> result =
-                permissionResolver.resolvePermissions(
-                        USER_ID,
-                        TENANT_1);
-
-        assertEquals(cachedPermissions, result);
-
-        verify(jdbcTemplate, never()).queryForObject(
-                anyString(),
-                eq(Integer.class),
-                eq(UUID.fromString(USER_ID)),
-                eq(UUID.fromString(TENANT_1)));
-    }
-
-    @Test
-    void resolvePermissions_cacheMiss_returnsDatabasePermissions() {
-
-        when(setOperations.members(
-                "perms:" + TENANT_1 + ":" + USER_ID))
-                .thenReturn(Set.of());
-
-        when(jdbcTemplate.queryForObject(
-                anyString(),
-                eq(Integer.class),
-                eq(UUID.fromString(USER_ID)),
-                eq(UUID.fromString(TENANT_1))))
-                .thenReturn(0);
-
-        when(jdbcTemplate.query(
-                anyString(),
-                org.mockito.ArgumentMatchers.<RowMapper<String>>any(),
-                eq(UUID.fromString(USER_ID)),
-                eq(UUID.fromString(TENANT_1))))
-                .thenReturn(List.of(
-                        "USER_READ",
-                        "USER_CREATE"));
-
-        Set<String> result =
-                permissionResolver.resolvePermissions(
-                        USER_ID,
-                        TENANT_1);
-
-        assertEquals(
-                Set.of("USER_READ", "USER_CREATE"),
-                result);
-    }
-
-    @Test
-    void resolvePermissions_superAdmin_returnsWildcardPermission() {
-
-        when(setOperations.members(
-                "perms:" + TENANT_1 + ":" + ADMIN_ID))
-                .thenReturn(Set.of());
-
-        when(jdbcTemplate.queryForObject(
-                anyString(),
-                eq(Integer.class),
-                eq(UUID.fromString(ADMIN_ID)),
-                eq(UUID.fromString(TENANT_1))))
-                .thenReturn(1);
-
-        Set<String> result =
-                permissionResolver.resolvePermissions(
-                        ADMIN_ID,
-                        TENANT_1);
-
-        assertEquals(Set.of("*"), result);
-
-        verify(jdbcTemplate, never()).query(
-                anyString(),
-                org.mockito.ArgumentMatchers.<RowMapper<String>>any(),
-                eq(UUID.fromString(ADMIN_ID)),
-                eq(UUID.fromString(TENANT_1)));
-    }
-
-    @Test
-    void resolvePermissions_redisFailure_fallsBackToDatabase() {
-
-        when(setOperations.members(
-                "perms:" + TENANT_1 + ":" + USER_ID))
-                .thenThrow(
-                        new RuntimeException("Redis unavailable"));
-
-        when(jdbcTemplate.queryForObject(
-                anyString(),
-                eq(Integer.class),
-                eq(UUID.fromString(USER_ID)),
-                eq(UUID.fromString(TENANT_1))))
-                .thenReturn(0);
-
-        when(jdbcTemplate.query(
-                anyString(),
-                org.mockito.ArgumentMatchers.<RowMapper<String>>any(),
-                eq(UUID.fromString(USER_ID)),
-                eq(UUID.fromString(TENANT_1))))
-                .thenReturn(List.of("USER_READ"));
-
-        Set<String> result =
-                permissionResolver.resolvePermissions(
-                        USER_ID,
-                        TENANT_1);
-
-        assertEquals(Set.of("USER_READ"), result);
-
-        assertEquals(
-                1.0,
-                meterRegistry
-                        .counter("redis.cache.failures")
-                        .count());
-    }
-
-    @Test
-    void resolvePermissions_databaseFailure_throwsServiceUnavailable() {
-
-        when(setOperations.members(
-                "perms:" + TENANT_1 + ":" + USER_ID))
-                .thenReturn(Set.of());
-
-        when(jdbcTemplate.queryForObject(
-                anyString(),
-                eq(Integer.class),
-                eq(UUID.fromString(USER_ID)),
-                eq(UUID.fromString(TENANT_1))))
-                .thenThrow(
-                        new RuntimeException(
-                                "Database unavailable"));
-
-        ResponseStatusException exception =
-                assertThrows(
-                        ResponseStatusException.class,
-                        () -> permissionResolver.resolvePermissions(
+                Set<String> result = permissionResolver.resolvePermissions(
                                 USER_ID,
-                                TENANT_1));
+                                TENANT_1);
 
-        assertTrue(
-                exception.getStatusCode()
-                        .is5xxServerError());
-    }
+                assertEquals(cachedPermissions, result);
 
-    @Test
-    void resolvePermissions_databaseResult_isStoredInRedisWithTtl() {
+                verify(jdbcTemplate, never()).queryForObject(
+                                anyString(),
+                                eq(Integer.class),
+                                eq(UUID.fromString(USER_ID)),
+                                eq(UUID.fromString(TENANT_1)));
+        }
 
-        when(setOperations.members(
-                "perms:" + TENANT_1 + ":" + USER_ID))
-                .thenReturn(Set.of());
+        @Test
+        void resolvePermissions_cacheMiss_returnsDatabasePermissions() {
 
-        when(jdbcTemplate.queryForObject(
-                anyString(),
-                eq(Integer.class),
-                eq(UUID.fromString(USER_ID)),
-                eq(UUID.fromString(TENANT_1))))
-                .thenReturn(0);
+                when(setOperations.members(
+                                "perms:" + TENANT_1 + ":" + USER_ID))
+                                .thenReturn(Set.of());
 
-        when(jdbcTemplate.query(
-                anyString(),
-                org.mockito.ArgumentMatchers.<RowMapper<String>>any(),
-                eq(UUID.fromString(USER_ID)),
-                eq(UUID.fromString(TENANT_1))))
-                .thenReturn(List.of("USER_READ"));
+                when(jdbcTemplate.queryForObject(
+                                anyString(),
+                                eq(Integer.class),
+                                eq(UUID.fromString(USER_ID)),
+                                eq(UUID.fromString(TENANT_1))))
+                                .thenReturn(0);
 
-        Set<String> result =
-                permissionResolver.resolvePermissions(
-                        USER_ID,
-                        TENANT_1);
+                when(jdbcTemplate.query(
+                                anyString(),
+                                org.mockito.ArgumentMatchers.<RowMapper<String>>any(),
+                                eq(UUID.fromString(USER_ID)),
+                                eq(UUID.fromString(TENANT_1))))
+                                .thenReturn(List.of(
+                                                "USER_READ",
+                                                "USER_CREATE"));
 
-        assertEquals(Set.of("USER_READ"), result);
+                Set<String> result = permissionResolver.resolvePermissions(
+                                USER_ID,
+                                TENANT_1);
 
-        verify(setOperations).add(
-                "perms:" + TENANT_1 + ":" + USER_ID,
-                "USER_READ");
+                assertEquals(
+                                Set.of("USER_READ", "USER_CREATE"),
+                                result);
+        }
 
-        verify(redisTemplate).expire(
-                eq("perms:" + TENANT_1 + ":" + USER_ID),
-                eq(Duration.ofMinutes(15)));
-    }
+        @Test
+        void resolvePermissions_superAdmin_returnsWildcardPermission() {
 
-    @Test
-    void resolvePermissions_emptyDatabaseResult_returnsEmptySetAndCachesResult() {
+                when(setOperations.members(
+                                "perms:" + TENANT_1 + ":" + ADMIN_ID))
+                                .thenReturn(Set.of());
 
-        when(setOperations.members(
-                "perms:" + TENANT_1 + ":" + USER_ID))
-                .thenReturn(Set.of());
+                when(jdbcTemplate.queryForObject(
+                                anyString(),
+                                eq(Integer.class),
+                                eq(UUID.fromString(ADMIN_ID)),
+                                eq(UUID.fromString(TENANT_1))))
+                                .thenReturn(1);
 
-        when(jdbcTemplate.queryForObject(
-                anyString(),
-                eq(Integer.class),
-                eq(UUID.fromString(USER_ID)),
-                eq(UUID.fromString(TENANT_1))))
-                .thenReturn(0);
+                Set<String> result = permissionResolver.resolvePermissions(
+                                ADMIN_ID,
+                                TENANT_1);
 
-        when(jdbcTemplate.query(
-                anyString(),
-                org.mockito.ArgumentMatchers.<RowMapper<String>>any(),
-                eq(UUID.fromString(USER_ID)),
-                eq(UUID.fromString(TENANT_1))))
-                .thenReturn(List.of());
+                assertEquals(Set.of("*"), result);
 
-        Set<String> result =
-                permissionResolver.resolvePermissions(
-                        USER_ID,
-                        TENANT_1);
+                verify(jdbcTemplate, never()).query(
+                                anyString(),
+                                org.mockito.ArgumentMatchers.<RowMapper<String>>any(),
+                                eq(UUID.fromString(ADMIN_ID)),
+                                eq(UUID.fromString(TENANT_1)));
+        }
 
-        assertTrue(result.isEmpty());
+        @Test
+        void resolvePermissions_redisFailure_fallsBackToDatabase() {
 
-        verify(setOperations).add(
-                "perms:" + TENANT_1 + ":" + USER_ID,
-                "__NO_PERMISSIONS__");
+                when(setOperations.members(
+                                "perms:" + TENANT_1 + ":" + USER_ID))
+                                .thenThrow(
+                                                new RuntimeException("Redis unavailable"));
 
-        verify(redisTemplate).expire(
-                eq("perms:" + TENANT_1 + ":" + USER_ID),
-                eq(Duration.ofMinutes(15)));
-    }
+                when(jdbcTemplate.queryForObject(
+                                anyString(),
+                                eq(Integer.class),
+                                eq(UUID.fromString(USER_ID)),
+                                eq(UUID.fromString(TENANT_1))))
+                                .thenReturn(0);
 
-    @Test
-    void resolvePermissions_emptyCacheMarker_returnsEmptySet() {
+                when(jdbcTemplate.query(
+                                anyString(),
+                                org.mockito.ArgumentMatchers.<RowMapper<String>>any(),
+                                eq(UUID.fromString(USER_ID)),
+                                eq(UUID.fromString(TENANT_1))))
+                                .thenReturn(List.of("USER_READ"));
 
-        when(setOperations.members(
-                "perms:" + TENANT_1 + ":" + USER_ID))
-                .thenReturn(Set.of("__NO_PERMISSIONS__"));
+                Set<String> result = permissionResolver.resolvePermissions(
+                                USER_ID,
+                                TENANT_1);
 
-        Set<String> result =
-                permissionResolver.resolvePermissions(
-                        USER_ID,
-                        TENANT_1);
+                assertEquals(Set.of("USER_READ"), result);
 
-        assertTrue(result.isEmpty());
+                assertEquals(
+                                1.0,
+                                meterRegistry
+                                                .counter("redis.cache.failures")
+                                                .count());
+        }
 
-        verify(jdbcTemplate, never()).queryForObject(
-                anyString(),
-                eq(Integer.class),
-                eq(UUID.fromString(USER_ID)),
-                eq(UUID.fromString(TENANT_1)));
-    }
+        @Test
+        void resolvePermissions_databaseFailure_throwsServiceUnavailable() {
 
-    @Test
-    void hasPermission_permissionExists_returnsTrue() {
+                when(setOperations.members(
+                                "perms:" + TENANT_1 + ":" + USER_ID))
+                                .thenReturn(Set.of());
 
-        TenantContext.setTenantId(TENANT_1);
+                when(jdbcTemplate.queryForObject(
+                                anyString(),
+                                eq(Integer.class),
+                                eq(UUID.fromString(USER_ID)),
+                                eq(UUID.fromString(TENANT_1))))
+                                .thenThrow(
+                                                new RuntimeException(
+                                                                "Database unavailable"));
 
-        when(setOperations.members(
-                "perms:" + TENANT_1 + ":" + USER_ID))
-                .thenReturn(Set.of("USER_READ"));
+                ResponseStatusException exception = assertThrows(
+                                ResponseStatusException.class,
+                                () -> permissionResolver.resolvePermissions(
+                                                USER_ID,
+                                                TENANT_1));
 
-        boolean result =
-                permissionResolver.hasPermission(
-                        USER_ID,
-                        "USER_READ");
+                assertTrue(
+                                exception.getStatusCode()
+                                                .is5xxServerError());
+        }
 
-        assertTrue(result);
-    }
+        @Test
+        void resolvePermissions_databaseResult_isStoredInRedisWithTtl() {
 
-    @Test
-    void hasPermission_permissionDoesNotExist_returnsFalse() {
+                when(setOperations.members(
+                                "perms:" + TENANT_1 + ":" + USER_ID))
+                                .thenReturn(Set.of());
 
-        TenantContext.setTenantId(TENANT_1);
+                when(jdbcTemplate.queryForObject(
+                                anyString(),
+                                eq(Integer.class),
+                                eq(UUID.fromString(USER_ID)),
+                                eq(UUID.fromString(TENANT_1))))
+                                .thenReturn(0);
 
-        when(setOperations.members(
-                "perms:" + TENANT_1 + ":" + USER_ID))
-                .thenReturn(Set.of("USER_READ"));
+                when(jdbcTemplate.query(
+                                anyString(),
+                                org.mockito.ArgumentMatchers.<RowMapper<String>>any(),
+                                eq(UUID.fromString(USER_ID)),
+                                eq(UUID.fromString(TENANT_1))))
+                                .thenReturn(List.of("USER_READ"));
 
-        boolean result =
-                permissionResolver.hasPermission(
-                        USER_ID,
-                        "USER_DELETE");
+                Set<String> result = permissionResolver.resolvePermissions(
+                                USER_ID,
+                                TENANT_1);
 
-        assertTrue(!result);
-    }
+                assertEquals(Set.of("USER_READ"), result);
 
-    @Test
-    void hasPermission_superAdmin_returnsTrue() {
+                verify(setOperations).add(
+                                "perms:" + TENANT_1 + ":" + USER_ID,
+                                "USER_READ");
 
-        TenantContext.setTenantId(TENANT_1);
+                verify(redisTemplate).expire(
+                                eq("perms:" + TENANT_1 + ":" + USER_ID),
+                                eq(Duration.ofMinutes(15)));
+        }
 
-        when(setOperations.members(
-                "perms:" + TENANT_1 + ":" + ADMIN_ID))
-                .thenReturn(Set.of("*"));
+        @Test
+        void resolvePermissions_emptyDatabaseResult_returnsEmptySetAndCachesResult() {
 
-        boolean result =
-                permissionResolver.hasPermission(
-                        ADMIN_ID,
-                        "ANY_PERMISSION");
+                when(setOperations.members(
+                                "perms:" + TENANT_1 + ":" + USER_ID))
+                                .thenReturn(Set.of());
 
-        assertTrue(result);
-    }
+                when(jdbcTemplate.queryForObject(
+                                anyString(),
+                                eq(Integer.class),
+                                eq(UUID.fromString(USER_ID)),
+                                eq(UUID.fromString(TENANT_1))))
+                                .thenReturn(0);
 
-    @Test
-    void hasPermission_usesCurrentTenant() {
+                when(jdbcTemplate.query(
+                                anyString(),
+                                org.mockito.ArgumentMatchers.<RowMapper<String>>any(),
+                                eq(UUID.fromString(USER_ID)),
+                                eq(UUID.fromString(TENANT_1))))
+                                .thenReturn(List.of());
 
-        TenantContext.setTenantId(TENANT_2);
+                Set<String> result = permissionResolver.resolvePermissions(
+                                USER_ID,
+                                TENANT_1);
 
-        when(setOperations.members(
-                "perms:" + TENANT_2 + ":" + USER_ID))
-                .thenReturn(Set.of("USER_READ"));
+                assertTrue(result.isEmpty());
 
-        boolean result =
-                permissionResolver.hasPermission(
-                        USER_ID,
-                        "USER_READ");
+                verify(setOperations).add(
+                                "perms:" + TENANT_1 + ":" + USER_ID,
+                                "__NO_PERMISSIONS__");
 
-        assertTrue(result);
+                verify(redisTemplate).expire(
+                                eq("perms:" + TENANT_1 + ":" + USER_ID),
+                                eq(Duration.ofMinutes(15)));
+        }
 
-        verify(setOperations).members(
-                "perms:" + TENANT_2 + ":" + USER_ID);
-    }
+        @Test
+        void resolvePermissions_emptyCacheMarker_returnsEmptySet() {
+
+                when(setOperations.members(
+                                "perms:" + TENANT_1 + ":" + USER_ID))
+                                .thenReturn(Set.of("__NO_PERMISSIONS__"));
+
+                Set<String> result = permissionResolver.resolvePermissions(
+                                USER_ID,
+                                TENANT_1);
+
+                assertTrue(result.isEmpty());
+
+                verify(jdbcTemplate, never()).queryForObject(
+                                anyString(),
+                                eq(Integer.class),
+                                eq(UUID.fromString(USER_ID)),
+                                eq(UUID.fromString(TENANT_1)));
+        }
+
+        @Test
+        void hasPermission_permissionExists_returnsTrue() {
+
+                TenantContext.setTenantId(TENANT_1);
+
+                when(setOperations.members(
+                                "perms:" + TENANT_1 + ":" + USER_ID))
+                                .thenReturn(Set.of("USER_READ"));
+
+                boolean result = permissionResolver.hasPermission(
+                                USER_ID,
+                                "USER_READ");
+
+                assertTrue(result);
+        }
+
+        @Test
+        void hasPermission_permissionDoesNotExist_returnsFalse() {
+
+                TenantContext.setTenantId(TENANT_1);
+
+                when(setOperations.members(
+                                "perms:" + TENANT_1 + ":" + USER_ID))
+                                .thenReturn(Set.of("USER_READ"));
+
+                boolean result = permissionResolver.hasPermission(
+                                USER_ID,
+                                "USER_DELETE");
+
+                assertTrue(!result);
+        }
+
+        @Test
+        void hasPermission_superAdmin_returnsTrue() {
+
+                TenantContext.setTenantId(TENANT_1);
+
+                when(setOperations.members(
+                                "perms:" + TENANT_1 + ":" + ADMIN_ID))
+                                .thenReturn(Set.of("*"));
+
+                boolean result = permissionResolver.hasPermission(
+                                ADMIN_ID,
+                                "ANY_PERMISSION");
+
+                assertTrue(result);
+        }
+
+        @Test
+        void hasPermission_usesCurrentTenant() {
+
+                TenantContext.setTenantId(TENANT_2);
+
+                when(setOperations.members(
+                                "perms:" + TENANT_2 + ":" + USER_ID))
+                                .thenReturn(Set.of("USER_READ"));
+
+                boolean result = permissionResolver.hasPermission(
+                                USER_ID,
+                                "USER_READ");
+
+                assertTrue(result);
+
+                verify(setOperations).members(
+                                "perms:" + TENANT_2 + ":" + USER_ID);
+        }
 }

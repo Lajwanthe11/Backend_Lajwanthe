@@ -8,10 +8,11 @@ spring:
     name: platform-administration-service
 
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/microservice_db}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/cloud_platform}
     driver-class-name: org.postgresql.Driver
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
-    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:password}
+
     hikari:
       minimum-idle: ${DB_POOL_MIN_IDLE:5}
       maximum-pool-size: ${DB_POOL_MAX_SIZE:20}
@@ -33,17 +34,15 @@ spring:
           lob:
             non_contextual_creation: true
 
-# Application Configuration
 app:
   tenant:
     default-tenant: ${DEFAULT_TENANT_ID:default}
     header-name: ${TENANT_HEADER_NAME:X-Tenant-ID}
-  jwt:
-    # Must match the JWT_SECRET used in auth-service
-    secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
-    expiration-ms: ${JWT_EXPIRATION_MS:86400000}          # 24 hours
 
-# Springdoc OpenAPI / Swagger UI
+  jwt:
+    secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+    expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+
 springdoc:
   api-docs:
     path: /v3/api-docs

@@ -36,7 +36,7 @@ public class PermissionMatrixService {
 
         public PermissionMatrixResponse getMatrix(String tenantId) {
 
-                List<Role> roles = roleRepository.findByTenantIdAndIsDeletedFalse(tenantId);
+                List<Role> roles = roleRepository.findByTenantIdAndIsDeletedFalse(UUID.fromString(tenantId));
 
                 List<Permission> permissions = permissionRepository.findAll()
                                 .stream()

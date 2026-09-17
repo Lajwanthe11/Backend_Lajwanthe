@@ -1,7 +1,7 @@
-package com.example.rbac.security;
+package com.example.rbac.sprint2.security;
 
 import com.example.rbac.service.PermissionAuthorizationService;
-import com.example.rbac.service.PermissionDeniedException;
+import com.example.rbac.exception.PermissionDeniedException;
 import com.example.rbac.service.PermissionResolver;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -124,41 +124,57 @@ class PermissionBypassTest {
     private com.example.rbac.config.RequirePermission
     getRequirePermission(String permission) {
 
-        return PermissionBypassTest.class
-                .getDeclaredMethod("dummyMethod", String.class)
-                .getAnnotation(
-                        com.example.rbac.config.RequirePermission.class
-                );
+        try {
+            return PermissionBypassTest.class
+                    .getDeclaredMethod("dummyMethod", String.class)
+                    .getAnnotation(
+                            com.example.rbac.config.RequirePermission.class
+                    );
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private com.example.rbac.config.RequirePermission
     getRequireAllPermission(String first, String second) {
 
-        return PermissionBypassTest.class
-                .getDeclaredMethod("requireAllDummy")
-                .getAnnotation(
-                        com.example.rbac.config.RequirePermission.class
-                );
+        try {
+            return PermissionBypassTest.class
+                    .getDeclaredMethod("requireAllDummy")
+                    .getAnnotation(
+                            com.example.rbac.config.RequirePermission.class
+                    );
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private com.example.rbac.config.RequirePermission
     getRequireAnyPermission(String first, String second) {
 
-        return PermissionBypassTest.class
-                .getDeclaredMethod("requireAnyDummy")
-                .getAnnotation(
-                        com.example.rbac.config.RequirePermission.class
-                );
+        try {
+            return PermissionBypassTest.class
+                    .getDeclaredMethod("requireAnyDummy")
+                    .getAnnotation(
+                            com.example.rbac.config.RequirePermission.class
+                    );
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private com.example.rbac.config.RequirePermission
     getEmptyPermission() {
 
-        return PermissionBypassTest.class
-                .getDeclaredMethod("emptyDummy")
-                .getAnnotation(
-                        com.example.rbac.config.RequirePermission.class
-                );
+        try {
+            return PermissionBypassTest.class
+                    .getDeclaredMethod("emptyDummy")
+                    .getAnnotation(
+                            com.example.rbac.config.RequirePermission.class
+                    );
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @com.example.rbac.config.RequirePermission("USER_CREATE")
