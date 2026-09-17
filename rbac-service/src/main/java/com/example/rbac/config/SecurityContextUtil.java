@@ -6,12 +6,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
 
-/**
- * Single source of truth for "who is making this request". Every permission
- * check in {@link PermissionAuthorizationAspect} goes through this class - a
- * client-supplied userId/tenantId in the request body/params/headers is
- * never used for authorization decisions.
- */
 @Component
 public class SecurityContextUtil {
 

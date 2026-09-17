@@ -10,27 +10,22 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
-/**
- * {@code POST /api/v1/rbac/access/validate} - "Validate if a specific user
- * has access to a resource (internal)".
- * <p>
- * Service-to-service endpoint: it evaluates access for whichever
- * {@code userId} is passed in the request body, NOT the caller's own JWT
- * identity. To keep this from becoming a way for an arbitrary end user to
- * probe other users' permissions, it is itself gated behind an
- * {@code INTERNAL_SERVICE} permission - only a trusted service account
- * should hold that.
- */
+// Internal service-to-service endpoint to check if a given user has a specific permission.
 @RestController
 @RequestMapping("/api/v1/rbac")
 public class AccessValidationController {
 
+    // Resolves permissions for any userId passed in the request (not just the
+    // caller).
     private final PermissionResolver permissionResolver;
 
+    // Injects PermissionResolver dependency via constructor.
     public AccessValidationController(PermissionResolver permissionResolver) {
         this.permissionResolver = permissionResolver;
     }
 
+    // POST /api/v1/rbac/access/validate — checks if the given userId has the
+    // requested permission. Requires INTERNAL_SERVICE permission.
     @RequirePermission("INTERNAL_SERVICE")
     @PostMapping("/access/validate")
     public Map<String, Object> validate(@RequestBody AccessValidationRequest request) {

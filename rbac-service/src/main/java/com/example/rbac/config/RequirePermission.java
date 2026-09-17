@@ -9,12 +9,12 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface RequirePermission {
 
-    /** Shorthand for a set of required permissions (treated as requireAll). */
+    // Shorthand for a set of required permissions (treated as requireAll).
     String[] value() default {};
 
-    /** Every permission listed here must be present on the user. */
+    // Every permission listed here must be present on the user.
     String[] requireAll() default {};
 
-    /** At least one permission listed here must be present on the user. */
+    // At least one permission listed here must be present on the user.
     String[] requireAny() default {};
 }
