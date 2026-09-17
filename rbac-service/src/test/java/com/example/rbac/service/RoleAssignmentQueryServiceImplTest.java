@@ -1,4 +1,4 @@
-package com.example.rbac.service.impl;
+package com.example.rbac.service;
 
 import com.example.rbac.dto.DepartmentRoleDistribution;
 import com.example.rbac.dto.ExpiringRoleAssignment;
@@ -10,6 +10,7 @@ import com.example.rbac.exception.RoleAssignmentValidationException;
 import com.example.rbac.repository.RoleRepository;
 import com.example.rbac.repository.UserRoleRepository;
 import com.example.rbac.service.UserAssignmentSupportService;
+import com.example.rbac.service.serviceImpl.RoleAssignmentQueryServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -51,12 +52,12 @@ class RoleAssignmentQueryServiceImplTest {
         roleId = UUID.randomUUID();
 
         role = new Role();
-        role.setRoleId(roleId);
+        role.setId(roleId);
         role.setTenantId(tenantId);
         role.setRoleCode("HR_MANAGER");
         role.setRoleName("HR Manager");
         role.setRoleType(RoleType.SYSTEM);
-        role.setActive(true);
+        role.isActive(true);
     }
 
     @Test
