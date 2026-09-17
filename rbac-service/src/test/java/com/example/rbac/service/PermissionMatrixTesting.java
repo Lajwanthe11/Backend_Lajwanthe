@@ -1,30 +1,36 @@
 package com.example.rbac.service;
 
-import com.example.rbac.dto.PermissionMatrixResponse;
-import com.example.rbac.entity.Permission;
-import com.example.rbac.entity.PermissionGroup;
-import com.example.rbac.entity.Role;
-import com.example.rbac.entity.RolePermission;
-import com.example.rbac.repository.PermissionRepository;
-import com.example.rbac.repository.RolePermissionRepository;
-import com.example.rbac.repository.RoleRepository;
-import com.example.rbac.service.PermissionMatrixService;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import com.example.rbac.dto.PermissionMatrixResponse;
+import com.example.rbac.entity.Permission;
+import com.example.rbac.entity.PermissionGroup;
+import com.example.rbac.entity.Role;
+import com.example.rbac.entity.RolePermission;
+import com.example.rbac.enums.RoleType;
+import com.example.rbac.repository.PermissionRepository;
+import com.example.rbac.repository.RolePermissionRepository;
+import com.example.rbac.repository.RoleRepository;
 
 @ExtendWith(MockitoExtension.class)
 class PermissionMatrixTesting {
@@ -40,119 +46,106 @@ class PermissionMatrixTesting {
 
     private PermissionMatrixService matrixService;
 
+    private UUID tenantId;
+
     @BeforeEach
     void setUp() {
+        tenantId = UUID.randomUUID();
 
-        matrixService =
-                new PermissionMatrixService(
-                        roleRepository,
-                        permissionRepository,
-                        rolePermissionRepository
-                );
+        matrixService = new PermissionMatrixService(
+                roleRepository,
+                permissionRepository,
+                rolePermissionRepository
+        );
     }
 
-    // =========================================================
-    // Full Matrix
-    // =========================================================
-
+    /**
+     * Verifies that the service builds a complete matrix containing
+     * the tenant's roles, permission groups, permissions, and
+     * role-specific grant status.
+     */
     @Test
     void shouldBuildCompletePermissionMatrix() {
 
+        UUID adminRoleId = UUID.randomUUID();
+        UUID employeeRoleId = UUID.randomUUID();
+
         Role admin = mockRole(
-                1L,
+                adminRoleId,
                 "Super Admin",
                 "SUPER_ADMIN",
                 5L
         );
 
         Role employee = mockRole(
-                2L,
+                employeeRoleId,
                 "Employee",
                 "EMPLOYEE",
                 3L
         );
 
-        PermissionGroup group =
-                mockGroup(
-                        UUID.randomUUID(),
-                        "User Management Permissions",
-                        1
-                );
+        PermissionGroup group = mockGroup(
+                UUID.randomUUID(),
+                "User Management Permissions",
+                1
+        );
 
-        Permission createUser =
-                mockPermission(
-                        UUID.randomUUID(),
-                        "USER_CREATE",
-                        "Create Users",
-                        true,
-                        true,
-                        group
-                );
+        Permission createUser = mockPermission(
+                UUID.randomUUID(),
+                "USER_CREATE",
+                "Create Users",
+                true,
+                true,
+                group
+        );
 
-        Permission readUser =
-                mockPermission(
-                        UUID.randomUUID(),
-                        "USER_READ",
-                        "View Users",
-                        true,
-                        true,
-                        group
-                );
+        Permission readUser = mockPermission(
+                UUID.randomUUID(),
+                "USER_READ",
+                "View Users",
+                true,
+                true,
+                group
+        );
 
         RolePermission adminGrant =
-                mockRolePermission(
-                        admin,
-                        createUser
-                );
+                mockRolePermission(admin, createUser);
 
         RolePermission employeeGrant =
-                mockRolePermission(
-                        employee,
-                        readUser
-                );
+                mockRolePermission(employee, readUser);
 
         when(
-                roleRepository
-                        .findByTenantIdAndIsDeletedFalse(
-                                "tenant-001"
-                        )
+                roleRepository.findByTenantIdAndIsDeletedFalse(tenantId)
         ).thenReturn(
                 List.of(admin, employee)
         );
 
         when(permissionRepository.findAll())
                 .thenReturn(
-                        List.of(
-                                createUser,
-                                readUser
-                        )
+                        List.of(createUser, readUser)
                 );
 
         when(
-                rolePermissionRepository
-                        .findByRole_IdInAndActiveTrue(
-                                List.of(1L, 2L)
-                        )
-        ).thenReturn(
-                List.of(
-                        adminGrant,
-                        employeeGrant
+                rolePermissionRepository.findByRole_IdInAndActiveTrue(
+                        List.of(adminRoleId, employeeRoleId)
                 )
+        ).thenReturn(
+                List.of(adminGrant, employeeGrant)
         );
 
         PermissionMatrixResponse result =
-                matrixService.getMatrix("tenant-001");
+                matrixService.getMatrix(tenantId);
 
         assertNotNull(result);
 
-        // Roles
+        // Verify the roles included in the matrix.
         assertEquals(
                 2,
                 result.getRoles().size()
         );
 
         assertEquals(
-                1L,
+                adminRoleId,
                 result.getRoles()
                         .get(0)
                         .getRoleId()
@@ -166,13 +159,13 @@ class PermissionMatrixTesting {
         );
 
         assertEquals(
-                2L,
+                employeeRoleId,
                 result.getRoles()
                         .get(1)
                         .getRoleId()
         );
 
-        // Permission groups
+        // Verify the permission group structure.
         assertEquals(
                 1,
                 result.getPermissionGroups().size()
@@ -196,7 +189,7 @@ class PermissionMatrixTesting {
                 groupRow.getPermissions().size()
         );
 
-        // First permission
+        // USER_CREATE should be granted only to the admin role.
         PermissionMatrixResponse.PermissionRow createRow =
                 groupRow.getPermissions().get(0);
 
@@ -206,18 +199,16 @@ class PermissionMatrixTesting {
         );
 
         assertTrue(
-                createRow
-                        .getRoleGrants()
-                        .get("1")
+                createRow.getRoleGrants()
+                        .get(adminRoleId.toString())
         );
 
         assertFalse(
-                createRow
-                        .getRoleGrants()
-                        .get("2")
+                createRow.getRoleGrants()
+                        .get(employeeRoleId.toString())
         );
 
-        // Second permission
+        // USER_READ should be granted only to the employee role.
         PermissionMatrixResponse.PermissionRow readRow =
                 groupRow.getPermissions().get(1);
 
@@ -227,84 +218,90 @@ class PermissionMatrixTesting {
         );
 
         assertFalse(
-                readRow
-                        .getRoleGrants()
-                        .get("1")
+                readRow.getRoleGrants()
+                        .get(adminRoleId.toString())
         );
 
         assertTrue(
-                readRow
-                        .getRoleGrants()
-                        .get("2")
+                readRow.getRoleGrants()
+                        .get(employeeRoleId.toString())
         );
+
+        verify(roleRepository)
+                .findByTenantIdAndIsDeletedFalse(tenantId);
+
+        verify(permissionRepository)
+                .findAll();
+
+        verify(rolePermissionRepository)
+                .findByRole_IdInAndActiveTrue(
+                        List.of(adminRoleId, employeeRoleId)
+                );
     }
 
-    // =========================================================
-    // Inactive permissions
-    // =========================================================
-
+    /**
+     * Verifies that inactive permissions are not exposed
+     * in the permission matrix.
+     */
     @Test
     void shouldExcludeInactivePermissionsFromMatrix() {
 
-        Role role =
-                mockRole(
-                        1L,
-                        "Employee",
-                        "EMPLOYEE",
-                        1L
-                );
+        UUID roleId = UUID.randomUUID();
 
-        PermissionGroup group =
-                mockGroup(
-                        UUID.randomUUID(),
-                        "User Management",
-                        1
-                );
+        Role role = mockRole(
+                roleId,
+                "Employee",
+                "EMPLOYEE",
+                1L
+        );
 
-        Permission active =
-                mockPermission(
-                        UUID.randomUUID(),
-                        "USER_READ",
-                        "View Users",
-                        true,
-                        true,
-                        group
-                );
+        PermissionGroup group = mockGroup(
+                UUID.randomUUID(),
+                "User Management",
+                1
+        );
 
-        Permission inactive =
-                mockPermission(
-                        UUID.randomUUID(),
-                        "USER_DELETE",
-                        "Delete Users",
-                        false,
-                        true,
-                        group
-                );
+        Permission active = mockPermission(
+                UUID.randomUUID(),
+                "USER_READ",
+                "View Users",
+                true,
+                true,
+                group
+        );
+
+        Permission inactive = mockPermission(
+                UUID.randomUUID(),
+                "USER_DELETE",
+                "Delete Users",
+                false,
+                true,
+                group
+        );
 
         when(
-                roleRepository
-                        .findByTenantIdAndIsDeletedFalse(
-                                "tenant-001"
-                        )
-        ).thenReturn(List.of(role));
+                roleRepository.findByTenantIdAndIsDeletedFalse(tenantId)
+        ).thenReturn(
+                List.of(role)
+        );
 
         when(permissionRepository.findAll())
                 .thenReturn(
-                        List.of(
-                                active,
-                                inactive
-                        )
+                        List.of(active, inactive)
                 );
 
         when(
-                rolePermissionRepository
-                        .findByRole_IdInAndActiveTrue(
-                                List.of(1L)
-                        )
-        ).thenReturn(List.of());
+                rolePermissionRepository.findByRole_IdInAndActiveTrue(
+                        List.of(roleId)
+                )
+        ).thenReturn(
+                List.of()
+        );
 
         PermissionMatrixResponse result =
-                matrixService.getMatrix("tenant-001");
+                matrixService.getMatrix(tenantId);
+
+        assertNotNull(result);
 
         assertEquals(
                 1,
@@ -329,50 +326,52 @@ class PermissionMatrixTesting {
         );
     }
 
-    // =========================================================
-    // Permission without group
-    // =========================================================
-
+    /**
+     * Verifies that permissions which are not associated with
+     * a permission group are not included in grouped output.
+     */
     @Test
     void shouldExcludePermissionWithoutGroup() {
 
-        Role role =
-                mockRole(
-                        1L,
-                        "Employee",
-                        "EMPLOYEE",
-                        1L
-                );
+        UUID roleId = UUID.randomUUID();
 
-        Permission permission =
-                mockPermission(
-                        UUID.randomUUID(),
-                        "USER_READ",
-                        "View Users",
-                        true,
-                        true,
-                        null
-                );
+        Role role = mockRole(
+                roleId,
+                "Employee",
+                "EMPLOYEE",
+                1L
+        );
+
+        Permission permission = mockPermission(
+                UUID.randomUUID(),
+                "USER_READ",
+                "View Users",
+                true,
+                true,
+                null
+        );
 
         when(
-                roleRepository
-                        .findByTenantIdAndIsDeletedFalse(
-                                "tenant-001"
-                        )
-        ).thenReturn(List.of(role));
+                roleRepository.findByTenantIdAndIsDeletedFalse(tenantId)
+        ).thenReturn(
+                List.of(role)
+        );
 
         when(permissionRepository.findAll())
-                .thenReturn(List.of(permission));
+                .thenReturn(
+                        List.of(permission)
+                );
 
         when(
-                rolePermissionRepository
-                        .findByRole_IdInAndActiveTrue(
-                                List.of(1L)
-                        )
-        ).thenReturn(List.of());
+                rolePermissionRepository.findByRole_IdInAndActiveTrue(
+                        List.of(roleId)
+                )
+        ).thenReturn(
+                List.of()
+        );
 
         PermissionMatrixResponse result =
-                matrixService.getMatrix("tenant-001");
+                matrixService.getMatrix(tenantId);
 
         assertNotNull(result);
 
@@ -381,42 +380,41 @@ class PermissionMatrixTesting {
         );
     }
 
-    // =========================================================
-    // Empty roles
-    // =========================================================
-
+    /**
+     * Verifies that an empty tenant role list is handled without
+     * attempting to query role-permission mappings.
+     */
     @Test
     void shouldHandleEmptyRoles() {
 
-        PermissionGroup group =
-                mockGroup(
-                        UUID.randomUUID(),
-                        "User Management",
-                        1
-                );
+        PermissionGroup group = mockGroup(
+                UUID.randomUUID(),
+                "User Management",
+                1
+        );
 
-        Permission permission =
-                mockPermission(
-                        UUID.randomUUID(),
-                        "USER_READ",
-                        "View Users",
-                        true,
-                        true,
-                        group
-                );
+        Permission permission = mockPermission(
+                UUID.randomUUID(),
+                "USER_READ",
+                "View Users",
+                true,
+                true,
+                group
+        );
 
         when(
-                roleRepository
-                        .findByTenantIdAndIsDeletedFalse(
-                                "tenant-001"
-                        )
-        ).thenReturn(List.of());
+                roleRepository.findByTenantIdAndIsDeletedFalse(tenantId)
+        ).thenReturn(
+                List.of()
+        );
 
         when(permissionRepository.findAll())
-                .thenReturn(List.of(permission));
+                .thenReturn(
+                        List.of(permission)
+                );
 
         PermissionMatrixResponse result =
-                matrixService.getMatrix("tenant-001");
+                matrixService.getMatrix(tenantId);
 
         assertNotNull(result);
 
@@ -424,86 +422,74 @@ class PermissionMatrixTesting {
                 result.getRoles().isEmpty()
         );
 
-        /*
-         * Service intentionally does not call the role-permission
-         * repository when there are no role IDs.
-         */
         verify(
                 rolePermissionRepository,
                 never()
         ).findByRole_IdInAndActiveTrue(anyList());
     }
 
-    // =========================================================
-    // Group and permission ordering
-    // =========================================================
-
+    /**
+     * Verifies that permissions are ordered by their display
+     * name when they belong to the same permission group.
+     */
     @Test
     void shouldOrderPermissionsByGroupOrderThenDisplayName() {
 
-        Role role =
-                mockRole(
-                        1L,
-                        "Employee",
-                        "EMPLOYEE",
-                        1L
-                );
+        UUID roleId = UUID.randomUUID();
 
-        PermissionGroup group =
-                mockGroup(
-                        UUID.randomUUID(),
-                        "User Management",
-                        1
-                );
+        Role role = mockRole(
+                roleId,
+                "Employee",
+                "EMPLOYEE",
+                1L
+        );
 
-        Permission zPermission =
-                mockPermission(
-                        UUID.randomUUID(),
-                        "USER_Z",
-                        "Z Permission",
-                        true,
-                        true,
-                        group
-                );
+        PermissionGroup group = mockGroup(
+                UUID.randomUUID(),
+                "User Management",
+                1
+        );
 
-        Permission aPermission =
-                mockPermission(
-                        UUID.randomUUID(),
-                        "USER_A",
-                        "A Permission",
-                        true,
-                        true,
-                        group
-                );
+        Permission zPermission = mockPermission(
+                UUID.randomUUID(),
+                "USER_Z",
+                "Z Permission",
+                true,
+                true,
+                group
+        );
+
+        Permission aPermission = mockPermission(
+                UUID.randomUUID(),
+                "USER_A",
+                "A Permission",
+                true,
+                true,
+                group
+        );
 
         when(
-                roleRepository
-                        .findByTenantIdAndIsDeletedFalse(
-                                "tenant-001"
-                        )
-        ).thenReturn(List.of(role));
+                roleRepository.findByTenantIdAndIsDeletedFalse(tenantId)
+        ).thenReturn(
+                List.of(role)
+        );
 
-        /*
-         * Deliberately return Z before A.
-         * The service should sort them by displayName.
-         */
+        // Deliberately return Z before A to verify service-side sorting.
         when(permissionRepository.findAll())
                 .thenReturn(
-                        List.of(
-                                zPermission,
-                                aPermission
-                        )
+                        List.of(zPermission, aPermission)
                 );
 
         when(
-                rolePermissionRepository
-                        .findByRole_IdInAndActiveTrue(
-                                List.of(1L)
-                        )
-        ).thenReturn(List.of());
+                rolePermissionRepository.findByRole_IdInAndActiveTrue(
+                        List.of(roleId)
+                )
+        ).thenReturn(
+                List.of()
+        );
 
         PermissionMatrixResponse result =
-                matrixService.getMatrix("tenant-001");
+                matrixService.getMatrix(tenantId);
 
         List<PermissionMatrixResponse.PermissionRow> rows =
                 result.getPermissionGroups()
@@ -521,70 +507,63 @@ class PermissionMatrixTesting {
         );
     }
 
-    // =========================================================
-    // Role-specific grouped permissions
-    // =========================================================
-
+    /**
+     * Verifies grouped permissions for one role, including
+     * both granted and ungranted permissions.
+     */
     @Test
     void shouldGetGroupedPermissionsForRole() {
 
-        Long roleId = 10L;
+        UUID roleId = UUID.randomUUID();
 
-        Role role =
-                mockRole(
-                        roleId,
-                        "HR Manager",
-                        "HR_MANAGER",
-                        4L
-                );
+        Role role = mockRole(
+                roleId,
+                "HR Manager",
+                "HR_MANAGER",
+                4L
+        );
 
-        PermissionGroup group =
-                mockGroup(
-                        UUID.randomUUID(),
-                        "User Management",
-                        1
-                );
+        PermissionGroup group = mockGroup(
+                UUID.randomUUID(),
+                "User Management",
+                1
+        );
 
-        Permission granted =
-                mockPermission(
-                        UUID.randomUUID(),
-                        "USER_READ",
-                        "View Users",
-                        true,
-                        true,
-                        group
-                );
+        Permission granted = mockPermission(
+                UUID.randomUUID(),
+                "USER_READ",
+                "View Users",
+                true,
+                true,
+                group
+        );
 
-        Permission notGranted =
-                mockPermission(
-                        UUID.randomUUID(),
-                        "USER_UPDATE",
-                        "Edit Users",
-                        true,
-                        true,
-                        group
-                );
+        Permission notGranted = mockPermission(
+                UUID.randomUUID(),
+                "USER_UPDATE",
+                "Edit Users",
+                true,
+                true,
+                group
+        );
 
         RolePermission rolePermission =
-                mockRolePermission(
-                        role,
-                        granted
-                );
+                mockRolePermission(role, granted);
 
         when(roleRepository.findById(roleId))
-                .thenReturn(Optional.of(role));
+                .thenReturn(
+                        Optional.of(role)
+                );
 
         when(permissionRepository.findAll())
                 .thenReturn(
-                        List.of(
-                                granted,
-                                notGranted
-                        )
+                        List.of(granted, notGranted)
                 );
 
         when(
-                rolePermissionRepository
-                        .findByRole_IdAndActiveTrue(roleId)
+                rolePermissionRepository.findByRole_IdAndActiveTrue(
+                        roleId
+                )
         ).thenReturn(
                 List.of(rolePermission)
         );
@@ -593,7 +572,11 @@ class PermissionMatrixTesting {
                 matrixService.getGroupedPermissions(roleId);
 
         assertNotNull(result);
-        assertEquals(1, result.size());
+
+        assertEquals(
+                1,
+                result.size()
+        );
 
         assertEquals(
                 "User Management",
@@ -628,23 +611,23 @@ class PermissionMatrixTesting {
         );
     }
 
-    // =========================================================
-    // Role not found
-    // =========================================================
-
+    /**
+     * Verifies that the service rejects a request when the
+     * requested role does not exist.
+     */
     @Test
     void shouldThrowWhenRoleDoesNotExist() {
 
-        Long roleId = 999L;
+        UUID roleId = UUID.randomUUID();
 
         when(roleRepository.findById(roleId))
-                .thenReturn(Optional.empty());
+                .thenReturn(
+                        Optional.empty()
+                );
 
         assertThrows(
                 IllegalArgumentException.class,
-                () ->
-                        matrixService
-                                .getGroupedPermissions(roleId)
+                () -> matrixService.getGroupedPermissions(roleId)
         );
 
         verify(roleRepository)
@@ -652,11 +635,11 @@ class PermissionMatrixTesting {
     }
 
     // =========================================================
-    // Test Helpers
+    // Test helpers
     // =========================================================
 
     private Role mockRole(
-            Long id,
+            UUID id,
             String name,
             String code,
             Long version

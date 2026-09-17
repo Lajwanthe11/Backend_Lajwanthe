@@ -28,6 +28,7 @@ class SecurityEventLoggerTesting {
     @InjectMocks
     private SecurityEventLogger securityEventLogger;
 
+    // Access denied event creation
     @Test
     void logAccessDenied_shouldSaveSecurityEvent() {
 
@@ -60,11 +61,13 @@ class SecurityEventLoggerTesting {
         assertNotNull(event.getTimestamp());
     }
 
+    // Timestamp validation
     @Test
     void logAccessDenied_shouldCreateTimestamp() {
 
         Instant before = Instant.now();
 
+        // Each denied request should produce its own security event.
         securityEventLogger.logAccessDenied(
                 "user-123",
                 "tenant-001",
@@ -98,6 +101,7 @@ class SecurityEventLoggerTesting {
                 "127.0.0.1"
         );
 
+        // Ensure a single access-denied request produces exactly one repository save.
         verify(repository, times(1))
                 .save(any(SecurityEvent.class));
     }

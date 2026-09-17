@@ -1,9 +1,12 @@
 package com.example.rbac.security;
 
+import com.example.rbac.config.RequirePermission;
 import com.example.rbac.service.PermissionAuthorizationService;
 import com.example.rbac.service.PermissionDeniedException;
 import com.example.rbac.service.PermissionResolver;
+
 import org.junit.jupiter.api.Test;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -23,17 +26,22 @@ class PermissionBypassTesting {
     @Test
     void userWithoutRequiredPermission_shouldBeDenied() {
 
-        when(permissionResolver.hasPermission(
-                "user-readonly-1",
-                "USER_CREATE"
-        )).thenReturn(false);
+        when(
+                permissionResolver.hasPermission(
+                        "user-readonly-1",
+                        "USER_CREATE"
+                )
+        ).thenReturn(false);
 
-        var annotation = getRequirePermission("USER_CREATE");
+        RequirePermission annotation =
+                getRequirePermission();
 
         PermissionDeniedException exception =
                 assertThrows(
                         PermissionDeniedException.class,
-                        () -> authorizationService.authorize(annotation)
+                        () ->
+                                authorizationService
+                                        .authorize(annotation)
                 );
 
         assertEquals(
@@ -45,41 +53,50 @@ class PermissionBypassTesting {
     @Test
     void userWithRequiredPermission_shouldBeAllowed() {
 
-        when(permissionResolver.hasPermission(
-                "user-admin-1",
-                "USER_CREATE"
-        )).thenReturn(true);
+        when(
+                permissionResolver.hasPermission(
+                        "user-admin-1",
+                        "USER_CREATE"
+                )
+        ).thenReturn(true);
 
-        var annotation = getRequirePermission("USER_CREATE");
+        RequirePermission annotation =
+                getRequirePermission();
 
         assertDoesNotThrow(
-                () -> authorizationService.authorize(annotation)
+                () ->
+                        authorizationService
+                                .authorize(annotation)
         );
     }
 
     @Test
     void requireAll_whenOnePermissionMissing_shouldDeny() {
 
-        when(permissionResolver.hasPermission(
-                "user-hr-1",
-                "USER_READ"
-        )).thenReturn(true);
+        when(
+                permissionResolver.hasPermission(
+                        "user-hr-1",
+                        "USER_READ"
+                )
+        ).thenReturn(true);
 
-        when(permissionResolver.hasPermission(
-                "user-hr-1",
-                "USER_UPDATE"
-        )).thenReturn(false);
+        when(
+                permissionResolver.hasPermission(
+                        "user-hr-1",
+                        "USER_UPDATE"
+                )
+        ).thenReturn(false);
 
-        var annotation = getRequireAllPermission(
-                "USER_READ",
-                "USER_UPDATE"
-        );
+        RequirePermission annotation =
+                getRequireAllPermission();
 
         PermissionDeniedException exception =
                 assertThrows(
                         PermissionDeniedException.class,
-                        () -> authorizationService.authorize(annotation)
-                );
+                        () ->
+                                authorizationService
+                                        .authorize(annotation)
+        );
 
         assertEquals(
                 "USER_UPDATE",
@@ -90,94 +107,152 @@ class PermissionBypassTesting {
     @Test
     void requireAny_whenOnePermissionExists_shouldAllow() {
 
-        when(permissionResolver.hasPermission(
-                "user-readonly-1",
-                "REPORT_VIEW"
-        )).thenReturn(true);
+        when(
+                permissionResolver.hasPermission(
+                        "user-readonly-1",
+                        "REPORT_VIEW"
+                )
+        ).thenReturn(true);
 
-        when(permissionResolver.hasPermission(
-                "user-readonly-1",
-                "REPORT_EXPORT"
-        )).thenReturn(false);
+        when(
+                permissionResolver.hasPermission(
+                        "user-readonly-1",
+                        "REPORT_EXPORT"
+                )
+        ).thenReturn(false);
 
-        var annotation = getRequireAnyPermission(
-                "REPORT_VIEW",
-                "REPORT_EXPORT"
-        );
+        RequirePermission annotation =
+                getRequireAnyPermission();
 
         assertDoesNotThrow(
-                () -> authorizationService.authorize(annotation)
+                () ->
+                        authorizationService
+                                .authorize(annotation)
         );
     }
 
     @Test
     void emptyPermissionAnnotation_shouldFailClosed() {
 
-        var annotation = getEmptyPermission();
+        RequirePermission annotation =
+                getEmptyPermission();
 
         assertThrows(
                 PermissionDeniedException.class,
-                () -> authorizationService.authorize(annotation)
+                () ->
+                        authorizationService
+                                .authorize(annotation)
         );
     }
 
-    private com.example.rbac.config.RequirePermission
-    getRequirePermission(String permission) {
+    private RequirePermission getRequirePermission() {
 
-        return PermissionBypassTest.class
-                .getDeclaredMethod("dummyMethod", String.class)
-                .getAnnotation(
-                        com.example.rbac.config.RequirePermission.class
-                );
+        try {
+
+            return PermissionBypassTesting.class
+                    .getDeclaredMethod(
+                            "dummyMethod",
+                            String.class
+                    )
+                    .getAnnotation(
+                            RequirePermission.class
+                    );
+
+        } catch (NoSuchMethodException e) {
+
+            throw new AssertionError(
+                    "dummyMethod not found",
+                    e
+            );
+        }
     }
 
-    private com.example.rbac.config.RequirePermission
-    getRequireAllPermission(String first, String second) {
+    private RequirePermission getRequireAllPermission() {
 
-        return PermissionBypassTest.class
-                .getDeclaredMethod("requireAllDummy")
-                .getAnnotation(
-                        com.example.rbac.config.RequirePermission.class
-                );
+        try {
+
+            return PermissionBypassTesting.class
+                    .getDeclaredMethod(
+                            "requireAllDummy"
+                    )
+                    .getAnnotation(
+                            RequirePermission.class
+                    );
+
+        } catch (NoSuchMethodException e) {
+
+            throw new AssertionError(
+                    "requireAllDummy not found",
+                    e
+            );
+        }
     }
 
-    private com.example.rbac.config.RequirePermission
-    getRequireAnyPermission(String first, String second) {
+    private RequirePermission getRequireAnyPermission() {
 
-        return PermissionBypassTest.class
-                .getDeclaredMethod("requireAnyDummy")
-                .getAnnotation(
-                        com.example.rbac.config.RequirePermission.class
-                );
+        try {
+
+            return PermissionBypassTesting.class
+                    .getDeclaredMethod(
+                            "requireAnyDummy"
+                    )
+                    .getAnnotation(
+                            RequirePermission.class
+                    );
+
+        } catch (NoSuchMethodException e) {
+
+            throw new AssertionError(
+                    "requireAnyDummy not found",
+                    e
+            );
+        }
     }
 
-    private com.example.rbac.config.RequirePermission
-    getEmptyPermission() {
+    private RequirePermission getEmptyPermission() {
 
-        return PermissionBypassTest.class
-                .getDeclaredMethod("emptyDummy")
-                .getAnnotation(
-                        com.example.rbac.config.RequirePermission.class
-                );
+        try {
+
+            return PermissionBypassTesting.class
+                    .getDeclaredMethod(
+                            "emptyDummy"
+                    )
+                    .getAnnotation(
+                            RequirePermission.class
+                    );
+
+        } catch (NoSuchMethodException e) {
+
+            throw new AssertionError(
+                    "emptyDummy not found",
+                    e
+            );
+        }
     }
 
-    @com.example.rbac.config.RequirePermission("USER_CREATE")
+    @RequirePermission("USER_CREATE")
     private void dummyMethod(String value) {
     }
 
-    @com.example.rbac.config.RequirePermission(
-            requireAll = {"USER_READ", "USER_UPDATE"}
+    @RequirePermission(
+            requireAll = {
+                    "USER_READ",
+                    "USER_UPDATE"
+            }
     )
     private void requireAllDummy() {
     }
 
-    @com.example.rbac.config.RequirePermission(
-            requireAny = {"REPORT_VIEW", "REPORT_EXPORT"}
+    @RequirePermission(
+            requireAny = {
+                    "REPORT_VIEW",
+                    "REPORT_EXPORT"
+            }
     )
     private void requireAnyDummy() {
     }
 
-    @com.example.rbac.config.RequirePermission
+    @RequirePermission
     private void emptyDummy() {
     }
 }
