@@ -13,7 +13,7 @@ import java.util.List;
  * TODO: replace with a real RestClient-based implementation once the User
  * Management team confirms their Eureka service ID and API contract.
  */
-@Component
+@Component("superAdminUserClientStub")
 public class UserManagementClientStub implements UserManagementClient {
 
     @Override

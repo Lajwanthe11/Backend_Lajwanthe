@@ -1,5 +1,6 @@
 package com.example.platformadmin.superadmin.platform_settings_service.controller;
 
+import com.example.platformadmin.superadmin.platform_settings_service.dto.request.CreatePlatformSettingsRequest;
 import com.example.platformadmin.superadmin.platform_settings_service.dto.request.UpdatePlatformSettingsRequest;
 import com.example.platformadmin.superadmin.platform_settings_service.dto.request.UpdateSettingStatusRequest;
 import com.example.platformadmin.superadmin.platform_settings_service.dto.response.ErrorResponse;
@@ -19,6 +20,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -31,16 +33,43 @@ import java.util.List;
 @RequiredArgsConstructor
 @Tag(name = "Platform Settings Controller", description = "APIs for managing global platform-wide settings")
 @SecurityRequirement(name = "bearerAuth")
+@PreAuthorize("hasRole('ADMIN')")
 public class PlatformSettingsController {
 
     private final PlatformSettingsService service;
+
+    // ---------------------------------------------------------
+    // CREATE PLATFORM SETTING
+    // ---------------------------------------------------------
+
+    @PostMapping
+    @Operation(summary = "Create platform setting",
+            description = "Creates a new global platform setting after server-side validation. " +
+                    "The setting is stored as VALIDATED and becomes effective after activation.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Platform setting created successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid platform setting values",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Missing or invalid access token",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "User is not authorized to create platform settings",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity<PlatformSettingsResponse> createSetting(
+            @Valid @RequestBody CreatePlatformSettingsRequest request) {
+
+        log.info("Received request to create platform setting. settingName={}", request.getSettingName());
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(service.createSetting(request));
+    }
 
     // ---------------------------------------------------------
     // GET ALL SETTINGS WITH OPTIONAL FILTERS
     // ---------------------------------------------------------
 
     @GetMapping
-//    @PreAuthorize("hasRole('SUPER_ADMIN')")
     @Operation(summary = "Get all platform settings",
             description = "Retrieves the current platform-wide global settings.")
     @ApiResponses({
@@ -68,7 +97,6 @@ public class PlatformSettingsController {
     // ---------------------------------------------------------
 
     @GetMapping("/{key}")
-//    @PreAuthorize("hasRole('SUPER_ADMIN')")
     @Operation(summary = "Get platform settings by key",
             description = "Retrieves a specific platform settings configuration using its unique setting key. " +
                     "For the global platform configuration, use GLOBAL_SETTINGS.")
@@ -95,7 +123,6 @@ public class PlatformSettingsController {
     // ---------------------------------------------------------
 
     @PutMapping("/{key}")
-//    @PreAuthorize("hasRole('SUPER_ADMIN')")
     @Operation(summary = "Update platform settings",
             description = "Updates Global Settings after server-side validation. " +
                     "The validated configuration is versioned and audited. It becomes effective after activation.")
@@ -125,7 +152,6 @@ public class PlatformSettingsController {
     // ---------------------------------------------------------
 
     @PatchMapping("/{key}/status")
-//    @PreAuthorize("hasRole('SUPER_ADMIN')")
     @Operation(summary = "Update platform setting status",
             description = "Activates or deactivates Global Settings. Activation validates " +
                     "the current configuration, propagates it, and records an audit event.")
@@ -156,7 +182,6 @@ public class PlatformSettingsController {
     // ---------------------------------------------------------
 
     @PostMapping("/reset")
-//    @PreAuthorize("hasRole('SUPER_ADMIN')")
     @Operation(summary = "Restore platform settings to defaults",
             description = "Restores Global Settings to the approved defaults, validates and activates " +
                     "the restored configuration, propagates it, and records an audit event.")
@@ -184,7 +209,6 @@ public class PlatformSettingsController {
     // ---------------------------------------------------------
 
     @GetMapping("/{key}/history")
-//    @PreAuthorize("hasRole('SUPER_ADMIN')")
     @Operation(summary = "Get platform setting history",
             description = "Retrieves version history snapshots for a specific platform setting, newest version first.")
     @ApiResponses({
@@ -210,7 +234,6 @@ public class PlatformSettingsController {
     // ---------------------------------------------------------
 
     @GetMapping(value = "/export", produces = "text/csv")
-//    @PreAuthorize("hasRole('SUPER_ADMIN')")
     @Operation(summary = "Export platform settings",
             description = "Exports the platform settings matching the optional Search and Filter criteria as CSV.")
     @ApiResponses({
