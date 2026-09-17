@@ -1,7 +1,7 @@
 package com.example.rbac.controller;
 
-import com.example.rbac.service.PermissionGroupNotFoundException;
-import com.example.rbac.service.PermissionNotFoundException;
+import com.example.rbac.exception.PermissionGroupNotFoundException;
+import com.example.rbac.exception.PermissionNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
