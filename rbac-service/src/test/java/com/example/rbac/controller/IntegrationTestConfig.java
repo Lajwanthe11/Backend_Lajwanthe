@@ -10,6 +10,9 @@ import org.springframework.data.redis.core.RedisTemplate;
 
 import static org.mockito.Mockito.mock;
 
+//These tests verify that denied events are saved, timestamp is created, exactly one event is saved per call, different
+//users are recorded separately, tenantId and requested permission are stored, event type is ACCESS_DENIED, and no extra save occurs.
+
 @TestConfiguration
 public class IntegrationTestConfig {
 

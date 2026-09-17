@@ -12,6 +12,9 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 
 import java.util.Map;
 
+//  Scans controller endpoints when the application starts and reports endpoints that have neither
+//@RequirePermission nor @PublicEndpoint.
+
 @Component
 public class UnannotatedEndpointScanner {
 
@@ -33,13 +36,15 @@ public class UnannotatedEndpointScanner {
         for (Map.Entry<RequestMappingInfo, HandlerMethod> entry : handlerMethods.entrySet()) {
             HandlerMethod handlerMethod = entry.getValue();
 
-            boolean hasPermission =
-                    AnnotatedElementUtils.findMergedAnnotation(handlerMethod.getMethod(), RequirePermission.class) != null
-                    || AnnotatedElementUtils.findMergedAnnotation(handlerMethod.getBeanType(), RequirePermission.class) != null;
+            boolean hasPermission = AnnotatedElementUtils.findMergedAnnotation(handlerMethod.getMethod(),
+                    RequirePermission.class) != null
+                    || AnnotatedElementUtils.findMergedAnnotation(handlerMethod.getBeanType(),
+                            RequirePermission.class) != null;
 
-            boolean isPublic =
-                    AnnotatedElementUtils.findMergedAnnotation(handlerMethod.getMethod(), PublicEndpoint.class) != null
-                    || AnnotatedElementUtils.findMergedAnnotation(handlerMethod.getBeanType(), PublicEndpoint.class) != null;
+            boolean isPublic = AnnotatedElementUtils.findMergedAnnotation(handlerMethod.getMethod(),
+                    PublicEndpoint.class) != null
+                    || AnnotatedElementUtils.findMergedAnnotation(handlerMethod.getBeanType(),
+                            PublicEndpoint.class) != null;
 
             if (hasPermission) {
                 // Good — permission-protected endpoint.
@@ -65,8 +70,8 @@ public class UnannotatedEndpointScanner {
             // by PermissionAuthorizationAspect (deny-by-default policy).
             unprotected++;
             log.error("[RBAC-STARTUP-ERROR] Endpoint {} on {}.{} has NEITHER @RequirePermission NOR "
-                            + "@PublicEndpoint. It will be BLOCKED at runtime (fail-closed policy). "
-                            + "Add one of these annotations to fix.",
+                    + "@PublicEndpoint. It will be BLOCKED at runtime (fail-closed policy). "
+                    + "Add one of these annotations to fix.",
                     entry.getKey(),
                     handlerMethod.getBeanType().getSimpleName(),
                     handlerMethod.getMethod().getName());

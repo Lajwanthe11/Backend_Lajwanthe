@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+//Converts raw permissions into frontend-friendly module and feature flags.
 @Service
 public class FeatureVisibilityMapper {
 

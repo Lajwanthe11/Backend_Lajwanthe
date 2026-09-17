@@ -13,6 +13,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+// The tests verify HTTP 200, token key, usage hint, custom user/tenant claims, default values, valid signed JWT, issue
+//time, approximately one-hour expiry, subject matching userId, and both response keys. It uses MockMvc standalone
+//setup and injects a test secret.
+
 class DevTokenControllerTesting {
 
         private static final String TEST_SECRET = "test-secret-key-at-least-32-chars-long!!";

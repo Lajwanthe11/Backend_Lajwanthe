@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Map;
 import java.util.Set;
 
-// Returns the current user's permissions and module access for UI rendering.
+// Returns the current user’s permissions plus module/feature visibility information for the frontend..
 @RestController
 @RequestMapping("/api/v1/auth/me")
 public class UiPermissionController {
@@ -34,7 +34,8 @@ public class UiPermissionController {
         this.featureVisibilityMapper = featureVisibilityMapper;
     }
 
-    // GET /api/v1/auth/me/permissions — returns all permissions of the current user as a UI response.
+    // GET /api/v1/auth/me/permissions — returns all permissions of the current user
+    // as a UI response.
     @GetMapping("/permissions")
     public UiPermissionResponse getMyPermissions() {
         AuthenticatedUser user = securityContextUtil.currentUser();
@@ -42,7 +43,8 @@ public class UiPermissionController {
         return featureVisibilityMapper.buildResponse(permissions);
     }
 
-    // GET /api/v1/auth/me/modules — returns only the module-level access map for the current user.
+    // GET /api/v1/auth/me/modules — returns only the module-level access map for
+    // the current user.
     @GetMapping("/modules")
     public Map<String, ModuleAccess> getMyModules() {
         return getMyPermissions().modules();

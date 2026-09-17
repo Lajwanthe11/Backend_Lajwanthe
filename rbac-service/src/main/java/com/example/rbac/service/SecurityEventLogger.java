@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 
+// Every denied authorization should create one audit/security event in this implementation.
 @Service
 public class SecurityEventLogger {
 

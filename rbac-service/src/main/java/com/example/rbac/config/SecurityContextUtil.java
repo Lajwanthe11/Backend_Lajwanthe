@@ -6,6 +6,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
 
+// Reads the authenticated user from Spring Security’s SecurityContext. If the principal is a JWT, it
+//reads userId and tenantId from JWT claims.
+
 @Component
 public class SecurityContextUtil {
 

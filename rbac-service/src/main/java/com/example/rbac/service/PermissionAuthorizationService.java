@@ -9,6 +9,8 @@ import com.example.rbac.exception.PermissionDeniedException;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+// This is the core decision-maker. It gets the current user, resolves permissions, merges required
+//permissions, handles requireAll/requireAny, supports * as a super-admin wildcard, and fails closed.
 @Service
 public class PermissionAuthorizationService {
 

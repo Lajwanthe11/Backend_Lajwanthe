@@ -40,6 +40,7 @@ class PermissionAuthorizationIntegrationTest {
                                 .build();
         }
 
+        // user-hr-1 can call POST /api/v1/users -> 200.
         @Test
         void userWithPermissionCanCreateUser() throws Exception {
                 mockMvc.perform(post("/api/v1/users")
@@ -49,6 +50,8 @@ class PermissionAuthorizationIntegrationTest {
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.status").value("created"));
         }
+        // readonly user lacks USER_CREATE -> 403 and response does not reveal
+        // USER_CREATE.
 
         @Test
         void userWithoutPermissionGetsGeneric403AndNoLeakedPermissionDetail() throws Exception {
@@ -65,6 +68,8 @@ class PermissionAuthorizationIntegrationTest {
                                 .andExpect(content().string(org.hamcrest.Matchers.not(
                                                 org.hamcrest.Matchers.containsString("USER_CREATE"))));
         }
+        // Read-only user can GET a user, but PUT requiring more permissions is
+        // forbidden.
 
         @Test
         void requireAllRejectsWhenOnlyOnePermissionPresent() throws Exception {
@@ -80,6 +85,7 @@ class PermissionAuthorizationIntegrationTest {
                                 .content("{}"))
                                 .andExpect(status().isForbidden());
         }
+        // A user with REPORT_VIEW can call the report endpoint that uses any-of logic.
 
         @Test
         void requireAnyAllowsWithJustOneMatchingPermission() throws Exception {
@@ -88,12 +94,15 @@ class PermissionAuthorizationIntegrationTest {
                                                 .jwt(jwtFor("user-readonly-1", "tenant-1"))))
                                 .andExpect(status().isOk());
         }
+        // No JWT -> 401 before the permission check.
 
         @Test
         void unauthenticatedRequestIsRejectedBeforeReachingPermissionCheck() throws Exception {
                 mockMvc.perform(post("/api/v1/users").contentType("application/json").content("{}"))
                                 .andExpect(status().isUnauthorized());
         }
+
+        // nternal service caller can validate the target user’s
 
         @Test
         void internalAccessValidateChecksTargetUserNotCaller() throws Exception {
@@ -107,6 +116,9 @@ class PermissionAuthorizationIntegrationTest {
                                 .andExpect(jsonPath("$.allowed").value(true));
         }
 
+        // Normal admin user without INTERNAL_SERVICE cannot use the internal validation
+        // endpoint.
+
         @Test
         void internalAccessValidateRejectsNonServiceCallers() throws Exception {
                 mockMvc.perform(post("/api/v1/rbac/access/validate")
@@ -116,6 +128,9 @@ class PermissionAuthorizationIntegrationTest {
                                 .content("{\"userId\":\"user-hr-1\",\"permissionCode\":\"USER_CREATE\"}"))
                                 .andExpect(status().isForbidden());
         }
+
+        // Admin response contains USER_DELETE, SECURITY module access, and
+        // SECURITY_EVENTS menu item.
 
         @Test
         void uiPermissionApiReflectsCurrentUserPermissions() throws Exception {
