@@ -5,6 +5,7 @@ import com.example.platformadmin.organizations.company.dto.CompanyRequestDto;
 import com.example.platformadmin.organizations.company.dto.CompanyResponseDto;
 import com.example.platformadmin.organizations.company.entity.Company;
 import com.example.platformadmin.organizations.company.exception.CompanyConflictException;
+import com.example.platformadmin.organizations.company.exception.CompanyNotFoundException;
 import com.example.platformadmin.organizations.company.mapper.CompanyMapper;
 import com.example.platformadmin.organizations.company.repository.CompanyRepository;
 import com.example.platformadmin.organizations.company.service.CompanyService;
@@ -68,9 +69,14 @@ public class CompanyServiceImpl
             throw new IllegalArgumentException("query must not exceed 100 characters");
         }
         String pattern = "%" + escapeLike(cleaned.toLowerCase(Locale.ROOT)) + "%";
-        return companyRepository.searchCompanies(pattern).stream()
+        List<CompanyResponseDto> results = companyRepository.searchCompanies(pattern).stream()
                 .map(mapper::toResponse)
                 .toList();
+        if (results.isEmpty()) {
+            throw new CompanyNotFoundException("Company not found with code: " + cleaned);
+        }
+
+        return results;
     }
 
     private void ensureCodeAvailable(String companyCode, Long currentId) {
