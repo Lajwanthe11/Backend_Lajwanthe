@@ -78,7 +78,7 @@ public class Role {
 
     // Template this role was created from, if any
     @Column(name = "created_from_template_id")
-    private String createdFromTemplateId;
+    private UUID createdFromTemplateId;
 
 
     @PrePersist
@@ -196,10 +196,10 @@ public class Role {
         this.clonedFromRoleId = clonedFromRoleId;
     }
 
-    public String getCreatedFromTemplateId() {
+    public UUID getCreatedFromTemplateId() {
         return createdFromTemplateId;
     }
-    public void setCreatedFromTemplateId(String createdFromTemplateId) {
+    public void setCreatedFromTemplateId(UUID createdFromTemplateId) {
         this.createdFromTemplateId = createdFromTemplateId;}
 
     public Long getVersion() {
@@ -215,5 +215,9 @@ public class Role {
 
     public boolean isActive() {
         return active;
+    }
+
+    public void setActive(boolean b) {
+
     }
 }

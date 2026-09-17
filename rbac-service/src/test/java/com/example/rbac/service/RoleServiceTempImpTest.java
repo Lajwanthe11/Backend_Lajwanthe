@@ -132,8 +132,6 @@ class RoleServiceTempImpTest {
                 .thenReturn(false);
         when(roleTemplateRepository.findById(String.valueOf(templateId)))
                 .thenReturn(java.util.Optional.of(template));
-        when(permissionRepository.findByPermissionCodeIn(any()))
-                .thenReturn(List.of(empView));
         when(roleRepository.save(any(Role.class)))
                 .thenAnswer(inv -> inv.getArgument(0));
 
@@ -291,9 +289,6 @@ class RoleServiceTempImpTest {
 
         when(roleRepository.findByIdAndTenantId(sourceId.toString(), tenantId))
                 .thenReturn(java.util.Optional.of(source));
-        when(roleRepository.existsByRoleCodeIgnoreCaseAndTenantIdAndIsDeletedFalse(
-                anyString(), eq(tenantId)))
-                .thenReturn(false);
         when(roleRepository.save(any(Role.class)))
                 .thenAnswer(inv -> {
                     Role r = inv.getArgument(0);

@@ -88,6 +88,19 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
 
         role.setIsDeleted(false);
 
+        if (dto.getTemplateId() != null) {
+            RoleTemplate template = roleTemplateRepository
+                    .findById(String.valueOf(dto.getTemplateId()))
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Template not found: " + dto.getTemplateId()));
+
+            role.setCreatedFromTemplateId(template.getId());
+            if (dto.getPermissionCodes() == null || dto.getPermissionCodes().isEmpty()) {
+                role.setPermissions(new HashSet<>(template.getPermissions()));
+            } else {
+                role.setPermissions(resolvePermissionsByCode(dto.getPermissionCodes()));
+            }
+        }
         return role;
     }
 
