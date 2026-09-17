@@ -1,4 +1,4 @@
-target/
+﻿target/
 !.mvn/wrapper/maven-wrapper.jar
 
 ### IntelliJ IDEA ###
@@ -23,4 +23,3 @@ out/
 ### OS files ###
 .DS_Store
 Thumbs.db
-/target/
