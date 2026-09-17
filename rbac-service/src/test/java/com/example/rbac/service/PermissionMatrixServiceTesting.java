@@ -1,6 +1,13 @@
 package com.example.rbac.service;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.UUID;
@@ -18,7 +25,6 @@ import com.example.rbac.entity.RolePermission;
 import com.example.rbac.repository.PermissionRepository;
 import com.example.rbac.repository.RolePermissionRepository;
 import com.example.rbac.repository.RoleRepository;
-import com.example.rbac.service.PermissionMatrixService;
 
 @ExtendWith(MockitoExtension.class)
 class PermissionMatrixServiceTesting {
@@ -38,16 +44,31 @@ class PermissionMatrixServiceTesting {
     @Test
     void getMatrix_shouldReturnRolesAndPermissions() {
 
+        // ---------------------------------------------------------
+        // Arrange
+        // Create tenant, role, permission and role-permission data.
+        // UUID types match the developer entity/repository definitions.
+        // ---------------------------------------------------------
+
+        UUID tenantId = UUID.randomUUID();
+        UUID roleId = UUID.randomUUID();
+        UUID permissionId = UUID.randomUUID();
+
         Role role = mock(Role.class);
 
-        when(role.getId()).thenReturn(1L);
-        when(role.getRoleName()).thenReturn("HR Manager");
-        when(role.getRoleCode()).thenReturn("HR_MANAGER");
-        when(role.getVersion()).thenReturn(1L);
+        when(role.getId())
+                .thenReturn(roleId);
+
+        when(role.getRoleName())
+                .thenReturn("HR Manager");
+
+        when(role.getRoleCode())
+                .thenReturn("HR_MANAGER");
+
+        when(role.getVersion())
+                .thenReturn(1L);
 
         Permission permission = mock(Permission.class);
-
-        UUID permissionId = UUID.randomUUID();
 
         when(permission.getPermissionId())
                 .thenReturn(permissionId);
@@ -71,7 +92,7 @@ class PermissionMatrixServiceTesting {
                 .thenReturn(permission);
 
         when(roleRepository
-                .findByTenantIdAndIsDeletedFalse("tenant-1"))
+                .findByTenantIdAndIsDeletedFalse(tenantId))
                 .thenReturn(List.of(role));
 
         when(permissionRepository.findAll())
@@ -79,12 +100,19 @@ class PermissionMatrixServiceTesting {
 
         when(rolePermissionRepository
                 .findByRole_IdInAndActiveTrue(
-                        List.of(1L)))
+                        List.of(roleId)))
                 .thenReturn(List.of(rolePermission));
 
+        // ---------------------------------------------------------
+        // Act
+        // ---------------------------------------------------------
+
         PermissionMatrixResponse result =
-                permissionMatrixService
-                        .getMatrix("tenant-1");
+                permissionMatrixService.getMatrix(tenantId);
+
+        // ---------------------------------------------------------
+        // Assert
+        // ---------------------------------------------------------
 
         assertNotNull(result);
 
@@ -92,57 +120,91 @@ class PermissionMatrixServiceTesting {
 
         assertEquals(
                 1,
-                result.getRoles().size());
+                result.getRoles().size()
+        );
 
         assertEquals(
-                1L,
+                roleId,
                 result.getRoles()
                         .get(0)
-                        .getRoleId());
+                        .getRoleId()
+        );
 
         assertEquals(
                 "HR Manager",
                 result.getRoles()
                         .get(0)
-                        .getRoleName());
+                        .getRoleName()
+        );
+
+        // ---------------------------------------------------------
+        // Verify repository interactions.
+        // ---------------------------------------------------------
 
         verify(roleRepository)
-                .findByTenantIdAndIsDeletedFalse(
-                        "tenant-1");
+                .findByTenantIdAndIsDeletedFalse(tenantId);
 
         verify(permissionRepository)
                 .findAll();
 
         verify(rolePermissionRepository)
                 .findByRole_IdInAndActiveTrue(
-                        List.of(1L));
+                        List.of(roleId)
+                );
     }
 
     @Test
     void getMatrix_shouldReturnEmptyRolesWhenTenantHasNoRoles() {
 
+        // ---------------------------------------------------------
+        // Arrange
+        // A tenant without any roles should produce an empty matrix.
+        // ---------------------------------------------------------
+
+        UUID tenantId = UUID.randomUUID();
+
         when(roleRepository
-                .findByTenantIdAndIsDeletedFalse("tenant-1"))
+                .findByTenantIdAndIsDeletedFalse(tenantId))
                 .thenReturn(List.of());
 
         when(permissionRepository.findAll())
                 .thenReturn(List.of());
 
+        // ---------------------------------------------------------
+        // Act
+        // ---------------------------------------------------------
+
         PermissionMatrixResponse result =
-                permissionMatrixService
-                        .getMatrix("tenant-1");
+                permissionMatrixService.getMatrix(tenantId);
+
+        // ---------------------------------------------------------
+        // Assert
+        // ---------------------------------------------------------
 
         assertNotNull(result);
 
-        assertTrue(
-                result.getRoles().isEmpty());
+        assertNotNull(result.getRoles());
 
+        assertTrue(
+                result.getRoles().isEmpty()
+        );
+
+        // No role IDs exist, so the role-permission repository
+        // should not be queried.
         verify(rolePermissionRepository, never())
                 .findByRole_IdInAndActiveTrue(anyList());
     }
 
     @Test
     void getMatrix_shouldIgnoreInactivePermissions() {
+
+        // ---------------------------------------------------------
+        // Arrange
+        // Verify that inactive permissions are not treated as
+        // active permissions when building the permission matrix.
+        // ---------------------------------------------------------
+
+        UUID tenantId = UUID.randomUUID();
 
         Permission activePermission =
                 mock(Permission.class);
@@ -157,21 +219,32 @@ class PermissionMatrixServiceTesting {
                 .thenReturn(false);
 
         when(roleRepository
-                .findByTenantIdAndIsDeletedFalse("tenant-1"))
+                .findByTenantIdAndIsDeletedFalse(tenantId))
                 .thenReturn(List.of());
 
         when(permissionRepository.findAll())
                 .thenReturn(
                         List.of(
                                 activePermission,
-                                inactivePermission));
+                                inactivePermission
+                        )
+                );
+
+        // ---------------------------------------------------------
+        // Act
+        // ---------------------------------------------------------
 
         PermissionMatrixResponse result =
-                permissionMatrixService
-                        .getMatrix("tenant-1");
+                permissionMatrixService.getMatrix(tenantId);
+
+        // ---------------------------------------------------------
+        // Assert
+        // ---------------------------------------------------------
 
         assertNotNull(result);
 
+        // The repository must be queried for permissions so that
+        // the service can apply its active/inactive filtering logic.
         verify(permissionRepository)
                 .findAll();
     }

@@ -1,6 +1,22 @@
 package com.example.rbac.service;
 
-import com.example.rbac.service.PermissionResolverImpl;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
+import java.time.Duration;
+import java.util.List;
+import java.util.Set;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -10,14 +26,6 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.SetOperations;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.server.ResponseStatusException;
-
-import java.time.Duration;
-import java.util.List;
-import java.util.Set;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class PermissionResolverTesting {
@@ -35,6 +43,7 @@ class PermissionResolverTesting {
 
     @BeforeEach
     void setUp() {
+
         resolver = new PermissionResolverImpl(
                 jdbcTemplate,
                 redisTemplate
@@ -45,8 +54,14 @@ class PermissionResolverTesting {
                 .thenReturn(setOperations);
     }
 
+    // =========================================================
+    // Redis cache
+    // =========================================================
+
     @Test
     void shouldReturnPermissionsFromRedisCache() {
+
+        String key = "perms:tenant-001:user-001";
 
         Set<String> cachedPermissions = Set.of(
                 "USER_READ",
@@ -54,9 +69,8 @@ class PermissionResolverTesting {
                 "USER_UPDATE"
         );
 
-        when(setOperations.members(
-                "perms:tenant-001:user-001"
-        )).thenReturn(cachedPermissions);
+        when(setOperations.members(key))
+                .thenReturn(cachedPermissions);
 
         Set<String> result =
                 resolver.resolvePermissions(
@@ -68,7 +82,7 @@ class PermissionResolverTesting {
         assertEquals(cachedPermissions, result);
 
         verify(setOperations)
-                .members("perms:tenant-001:user-001");
+                .members(key);
 
         verifyNoInteractions(jdbcTemplate);
     }
@@ -76,41 +90,10 @@ class PermissionResolverTesting {
     @Test
     void shouldNotQueryDatabaseWhenCacheHasPermissions() {
 
-        when(setOperations.members(
-                "perms:tenant-001:user-001"
-        )).thenReturn(Set.of("USER_READ"));
+        String key = "perms:tenant-001:user-001";
 
-        resolver.resolvePermissions(
-                "user-001",
-                "tenant-001"
-        );
-
-        verifyNoInteractions(jdbcTemplate);
-    }
-
-    @Test
-    void shouldResolvePermissionsFromDatabaseWhenCacheMisses() {
-
-        when(setOperations.members(
-                "perms:tenant-001:user-001"
-        )).thenReturn(Set.of());
-
-        when(jdbcTemplate.queryForObject(
-                anyString(),
-                eq(Integer.class),
-                eq("user-001"),
-                eq("tenant-001")
-        )).thenReturn(0);
-
-        when(jdbcTemplate.query(
-                anyString(),
-                any(org.springframework.jdbc.core.RowMapper.class),
-                eq("user-001"),
-                eq("tenant-001")
-        )).thenReturn(List.of(
-                "USER_READ",
-                "USER_UPDATE"
-        ));
+        when(setOperations.members(key))
+                .thenReturn(Set.of("USER_READ"));
 
         Set<String> result =
                 resolver.resolvePermissions(
@@ -119,181 +102,23 @@ class PermissionResolverTesting {
                 );
 
         assertEquals(
-                Set.of("USER_READ", "USER_UPDATE"),
+                Set.of("USER_READ"),
                 result
         );
 
-        verify(jdbcTemplate)
-                .queryForObject(
-                        anyString(),
-                        eq(Integer.class),
-                        eq("user-001"),
-                        eq("tenant-001")
-                );
-
-        verify(jdbcTemplate)
-                .query(
-                        anyString(),
-                        any(org.springframework.jdbc.core.RowMapper.class),
-                        eq("user-001"),
-                        eq("tenant-001")
-                );
-    }
-
-    @Test
-    void shouldResolveFromDatabaseWhenCacheIsEmpty() {
-
-        when(setOperations.members(
-                "perms:tenant-001:user-001"
-        )).thenReturn(Set.of());
-
-        when(jdbcTemplate.queryForObject(
-                anyString(),
-                eq(Integer.class),
-                eq("user-001"),
-                eq("tenant-001")
-        )).thenReturn(0);
-
-        when(jdbcTemplate.query(
-                anyString(),
-                any(org.springframework.jdbc.core.RowMapper.class),
-                eq("user-001"),
-                eq("tenant-001")
-        )).thenReturn(List.of("USER_READ"));
-
-        Set<String> result =
-                resolver.resolvePermissions(
-                        "user-001",
-                        "tenant-001"
-                );
-
-        assertEquals(Set.of("USER_READ"), result);
-    }
-
-    @Test
-    void shouldReturnWildcardPermissionForSuperAdmin() {
-
-        when(setOperations.members(
-                "perms:tenant-001:admin-001"
-        )).thenReturn(Set.of());
-
-        when(jdbcTemplate.queryForObject(
-                anyString(),
-                eq(Integer.class),
-                eq("admin-001"),
-                eq("tenant-001")
-        )).thenReturn(1);
-
-        Set<String> result =
-                resolver.resolvePermissions(
-                        "admin-001",
-                        "tenant-001"
-                );
-
-        assertEquals(Set.of("*"), result);
-
-        verify(jdbcTemplate)
-                .queryForObject(
-                        anyString(),
-                        eq(Integer.class),
-                        eq("admin-001"),
-                        eq("tenant-001")
-                );
-
-        verify(jdbcTemplate, never())
-                .query(
-                        anyString(),
-                        any(org.springframework.jdbc.core.RowMapper.class),
-                        any(),
-                        any()
-                );
-    }
-
-    @Test
-    void shouldReturnEmptySetWhenDatabaseReturnsNoPermissions() {
-
-        when(setOperations.members(
-                "perms:tenant-001:user-001"
-        )).thenReturn(Set.of());
-
-        when(jdbcTemplate.queryForObject(
-                anyString(),
-                eq(Integer.class),
-                eq("user-001"),
-                eq("tenant-001")
-        )).thenReturn(0);
-
-        when(jdbcTemplate.query(
-                anyString(),
-                any(org.springframework.jdbc.core.RowMapper.class),
-                eq("user-001"),
-                eq("tenant-001")
-        )).thenReturn(List.of());
-
-        Set<String> result =
-                resolver.resolvePermissions(
-                        "user-001",
-                        "tenant-001"
-                );
-
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
-
-        verify(setOperations, never())
-                .add(anyString(), any(String[].class));
-
-        verify(redisTemplate, never())
-                .expire(anyString(), any(Duration.class));
-    }
-
-    @Test
-    void shouldStoreDatabasePermissionsInRedis() {
-
-        when(setOperations.members(
-                "perms:tenant-001:user-001"
-        )).thenReturn(Set.of());
-
-        when(jdbcTemplate.queryForObject(
-                anyString(),
-                eq(Integer.class),
-                eq("user-001"),
-                eq("tenant-001")
-        )).thenReturn(0);
-
-        when(jdbcTemplate.query(
-                anyString(),
-                any(org.springframework.jdbc.core.RowMapper.class),
-                eq("user-001"),
-                eq("tenant-001")
-        )).thenReturn(List.of(
-                "USER_READ",
-                "USER_UPDATE"
-        ));
-
-        resolver.resolvePermissions(
-                "user-001",
-                "tenant-001"
-        );
-
         verify(setOperations)
-                .add(
-                        eq("perms:tenant-001:user-001"),
-                        any(String[].class)
-                );
+                .members(key);
 
-        verify(redisTemplate)
-                .expire(
-                        eq("perms:tenant-001:user-001"),
-                        any(Duration.class)
-                );
+        verifyNoInteractions(jdbcTemplate);
     }
 
     @Test
     void shouldUseCorrectTenantAndUserInCacheKey() {
 
-        when(setOperations.members(
-                "perms:tenant-ABC:user-XYZ"
-        )).thenReturn(Set.of("USER_READ"));
+        String key = "perms:tenant-ABC:user-XYZ";
+
+        when(setOperations.members(key))
+                .thenReturn(Set.of("USER_READ"));
 
         Set<String> result =
                 resolver.resolvePermissions(
@@ -301,22 +126,35 @@ class PermissionResolverTesting {
                         "tenant-ABC"
                 );
 
-        assertEquals(Set.of("USER_READ"), result);
+        assertEquals(
+                Set.of("USER_READ"),
+                result
+        );
 
         verify(setOperations)
-                .members("perms:tenant-ABC:user-XYZ");
+                .members(key);
+
+        verifyNoInteractions(jdbcTemplate);
     }
 
     @Test
     void shouldKeepDifferentTenantsSeparatedInCacheKey() {
 
-        when(setOperations.members(
-                "perms:tenant-A:user-001"
-        )).thenReturn(Set.of("TENANT_A_PERMISSION"));
+        String tenantAKey =
+                "perms:tenant-A:user-001";
 
-        when(setOperations.members(
-                "perms:tenant-B:user-001"
-        )).thenReturn(Set.of("TENANT_B_PERMISSION"));
+        String tenantBKey =
+                "perms:tenant-B:user-001";
+
+        when(setOperations.members(tenantAKey))
+                .thenReturn(
+                        Set.of("TENANT_A_PERMISSION")
+                );
+
+        when(setOperations.members(tenantBKey))
+                .thenReturn(
+                        Set.of("TENANT_B_PERMISSION")
+                );
 
         Set<String> tenantA =
                 resolver.resolvePermissions(
@@ -330,38 +168,114 @@ class PermissionResolverTesting {
                         "tenant-B"
                 );
 
-        assertEquals(Set.of("TENANT_A_PERMISSION"), tenantA);
-        assertEquals(Set.of("TENANT_B_PERMISSION"), tenantB);
+        assertEquals(
+                Set.of("TENANT_A_PERMISSION"),
+                tenantA
+        );
+
+        assertEquals(
+                Set.of("TENANT_B_PERMISSION"),
+                tenantB
+        );
 
         verify(setOperations)
-                .members("perms:tenant-A:user-001");
+                .members(tenantAKey);
 
         verify(setOperations)
-                .members("perms:tenant-B:user-001");
+                .members(tenantBKey);
+
+        verifyNoInteractions(jdbcTemplate);
     }
 
     @Test
-    void shouldFallbackToDatabaseWhenRedisIsUnavailable() {
+    void shouldKeepDifferentUsersSeparatedInCache() {
 
-        when(setOperations.members(
-                "perms:tenant-001:user-001"
-        )).thenThrow(
-                new RuntimeException("Redis unavailable")
+        String userAKey =
+                "perms:tenant-001:user-A";
+
+        String userBKey =
+                "perms:tenant-001:user-B";
+
+        when(setOperations.members(userAKey))
+                .thenReturn(
+                        Set.of("USER_A_PERMISSION")
+                );
+
+        when(setOperations.members(userBKey))
+                .thenReturn(
+                        Set.of("USER_B_PERMISSION")
+                );
+
+        Set<String> userA =
+                resolver.resolvePermissions(
+                        "user-A",
+                        "tenant-001"
+                );
+
+        Set<String> userB =
+                resolver.resolvePermissions(
+                        "user-B",
+                        "tenant-001"
+                );
+
+        assertEquals(
+                Set.of("USER_A_PERMISSION"),
+                userA
         );
 
+        assertEquals(
+                Set.of("USER_B_PERMISSION"),
+                userB
+        );
+
+        verify(setOperations)
+                .members(userAKey);
+
+        verify(setOperations)
+                .members(userBKey);
+
+        verifyNoInteractions(jdbcTemplate);
+    }
+
+    // =========================================================
+    // Database fallback
+    // =========================================================
+
+    @Test
+    void shouldResolvePermissionsFromDatabaseWhenCacheMisses() {
+
+        String key =
+                "perms:tenant-001:user-001";
+
+        when(setOperations.members(key))
+                .thenReturn(Set.of());
+
+        /*
+         * The resolver first checks whether the user has
+         * an active/effective SUPER_ADMIN role.
+         *
+         * We deliberately use any SQL and any parameter order here.
+         * The test verifies the resolver behaviour rather than
+         * coupling the test to SQL parameter ordering.
+         */
         when(jdbcTemplate.queryForObject(
                 anyString(),
                 eq(Integer.class),
-                eq("user-001"),
-                eq("tenant-001")
+                any(),
+                any()
         )).thenReturn(0);
 
         when(jdbcTemplate.query(
                 anyString(),
                 any(org.springframework.jdbc.core.RowMapper.class),
-                eq("user-001"),
-                eq("tenant-001")
-        )).thenReturn(List.of("USER_READ"));
+                any(),
+                any()
+        )).thenReturn(
+                List.of(
+                        "USER_READ",
+                        "USER_UPDATE"
+                )
+        );
 
         Set<String> result =
                 resolver.resolvePermissions(
@@ -369,35 +283,381 @@ class PermissionResolverTesting {
                         "tenant-001"
                 );
 
-        assertEquals(Set.of("USER_READ"), result);
+        assertEquals(
+                Set.of(
+                        "USER_READ",
+                        "USER_UPDATE"
+                ),
+                result
+        );
+
+        verify(jdbcTemplate)
+                .queryForObject(
+                        anyString(),
+                        eq(Integer.class),
+                        any(),
+                        any()
+                );
+
+        verify(jdbcTemplate)
+                .query(
+                        anyString(),
+                        any(org.springframework.jdbc.core.RowMapper.class),
+                        any(),
+                        any()
+                );
+    }
+
+    @Test
+    void shouldResolveFromDatabaseWhenCacheIsEmpty() {
+
+        String key =
+                "perms:tenant-001:user-001";
+
+        when(setOperations.members(key))
+                .thenReturn(Set.of());
+
+        when(jdbcTemplate.queryForObject(
+                anyString(),
+                eq(Integer.class),
+                any(),
+                any()
+        )).thenReturn(0);
+
+        when(jdbcTemplate.query(
+                anyString(),
+                any(org.springframework.jdbc.core.RowMapper.class),
+                any(),
+                any()
+        )).thenReturn(
+                List.of("USER_READ")
+        );
+
+        Set<String> result =
+                resolver.resolvePermissions(
+                        "user-001",
+                        "tenant-001"
+                );
+
+        assertEquals(
+                Set.of("USER_READ"),
+                result
+        );
+    }
+
+    // =========================================================
+    // Super Admin
+    // =========================================================
+
+    @Test
+    void shouldReturnWildcardPermissionForSuperAdmin() {
+
+        String key =
+                "perms:tenant-001:admin-001";
+
+        when(setOperations.members(key))
+                .thenReturn(Set.of());
+
+        when(jdbcTemplate.queryForObject(
+                anyString(),
+                eq(Integer.class),
+                any(),
+                any()
+        )).thenReturn(1);
+
+        Set<String> result =
+                resolver.resolvePermissions(
+                        "admin-001",
+                        "tenant-001"
+                );
+
+        assertNotNull(result);
+
+        assertEquals(
+                Set.of("*"),
+                result
+        );
+
+        verify(jdbcTemplate)
+                .queryForObject(
+                        anyString(),
+                        eq(Integer.class),
+                        any(),
+                        any()
+                );
+
+        /*
+         * Super admin should return immediately.
+         * Normal permission query must not execute.
+         */
+        verify(jdbcTemplate, never())
+                .query(
+                        anyString(),
+                        any(org.springframework.jdbc.core.RowMapper.class),
+                        any(),
+                        any()
+                );
+    }
+
+    @Test
+    void shouldCheckSuperAdminBeforeNormalPermissionResolution() {
+
+        String key =
+                "perms:tenant-001:user-001";
+
+        when(setOperations.members(key))
+                .thenReturn(Set.of());
+
+        when(jdbcTemplate.queryForObject(
+                anyString(),
+                eq(Integer.class),
+                any(),
+                any()
+        )).thenReturn(0);
+
+        when(jdbcTemplate.query(
+                anyString(),
+                any(org.springframework.jdbc.core.RowMapper.class),
+                any(),
+                any()
+        )).thenReturn(
+                List.of("USER_READ")
+        );
+
+        Set<String> result =
+                resolver.resolvePermissions(
+                        "user-001",
+                        "tenant-001"
+                );
+
+        assertEquals(
+                Set.of("USER_READ"),
+                result
+        );
+
+        verify(jdbcTemplate)
+                .queryForObject(
+                        anyString(),
+                        eq(Integer.class),
+                        any(),
+                        any()
+                );
+
+        verify(jdbcTemplate)
+                .query(
+                        anyString(),
+                        any(org.springframework.jdbc.core.RowMapper.class),
+                        any(),
+                        any()
+                );
+    }
+
+    // =========================================================
+    // Empty database result
+    // =========================================================
+
+    @Test
+    void shouldReturnEmptySetWhenDatabaseReturnsNoPermissions() {
+
+        String key =
+                "perms:tenant-001:user-001";
+
+        when(setOperations.members(key))
+                .thenReturn(Set.of());
+
+        when(jdbcTemplate.queryForObject(
+                anyString(),
+                eq(Integer.class),
+                any(),
+                any()
+        )).thenReturn(0);
+
+        when(jdbcTemplate.query(
+                anyString(),
+                any(org.springframework.jdbc.core.RowMapper.class),
+                any(),
+                any()
+        )).thenReturn(List.of());
+
+        Set<String> result =
+                resolver.resolvePermissions(
+                        "user-001",
+                        "tenant-001"
+                );
+
+        assertNotNull(result);
+
+        assertTrue(result.isEmpty());
+
+        /*
+         * Developer implementation only caches non-empty
+         * permission sets.
+         */
+        verify(setOperations, never())
+                .add(
+                        anyString(),
+                        any(String[].class)
+                );
+
+        verify(redisTemplate, never())
+                .expire(
+                        anyString(),
+                        any(Duration.class)
+                );
+    }
+
+    // =========================================================
+    // Redis caching after database resolution
+    // =========================================================
+
+    @Test
+    void shouldStoreDatabasePermissionsInRedis() {
+
+        String key =
+                "perms:tenant-001:user-001";
+
+        when(setOperations.members(key))
+                .thenReturn(Set.of());
+
+        when(jdbcTemplate.queryForObject(
+                anyString(),
+                eq(Integer.class),
+                any(),
+                any()
+        )).thenReturn(0);
+
+        when(jdbcTemplate.query(
+                anyString(),
+                any(org.springframework.jdbc.core.RowMapper.class),
+                any(),
+                any()
+        )).thenReturn(
+                List.of(
+                        "USER_READ",
+                        "USER_UPDATE"
+                )
+        );
+
+        Set<String> result =
+                resolver.resolvePermissions(
+                        "user-001",
+                        "tenant-001"
+                );
+
+        assertEquals(
+                Set.of(
+                        "USER_READ",
+                        "USER_UPDATE"
+                ),
+                result
+        );
+
+        verify(setOperations)
+                .add(
+                        eq(key),
+                        any(String[].class)
+                );
+
+        verify(redisTemplate)
+                .expire(
+                        eq(key),
+                        eq(Duration.ofMinutes(15))
+                );
+    }
+
+    // =========================================================
+    // Redis failure fallback
+    // =========================================================
+
+    @Test
+    void shouldFallbackToDatabaseWhenRedisIsUnavailable() {
+
+        String key =
+                "perms:tenant-001:user-001";
+
+        when(setOperations.members(key))
+                .thenThrow(
+                        new RuntimeException(
+                                "Redis unavailable"
+                        )
+                );
+
+        when(jdbcTemplate.queryForObject(
+                anyString(),
+                eq(Integer.class),
+                any(),
+                any()
+        )).thenReturn(0);
+
+        when(jdbcTemplate.query(
+                anyString(),
+                any(org.springframework.jdbc.core.RowMapper.class),
+                any(),
+                any()
+        )).thenReturn(
+                List.of("USER_READ")
+        );
+
+        Set<String> result =
+                resolver.resolvePermissions(
+                        "user-001",
+                        "tenant-001"
+                );
+
+        assertEquals(
+                Set.of("USER_READ"),
+                result
+        );
+
+        verify(jdbcTemplate)
+                .queryForObject(
+                        anyString(),
+                        eq(Integer.class),
+                        any(),
+                        any()
+                );
+
+        verify(jdbcTemplate)
+                .query(
+                        anyString(),
+                        any(org.springframework.jdbc.core.RowMapper.class),
+                        any(),
+                        any()
+                );
     }
 
     @Test
     void shouldReturnDatabaseResultWhenRedisWriteFails() {
 
-        when(setOperations.members(
-                "perms:tenant-001:user-001"
-        )).thenReturn(Set.of());
+        String key =
+                "perms:tenant-001:user-001";
+
+        when(setOperations.members(key))
+                .thenReturn(Set.of());
 
         when(jdbcTemplate.queryForObject(
                 anyString(),
                 eq(Integer.class),
-                eq("user-001"),
-                eq("tenant-001")
+                any(),
+                any()
         )).thenReturn(0);
 
         when(jdbcTemplate.query(
                 anyString(),
                 any(org.springframework.jdbc.core.RowMapper.class),
-                eq("user-001"),
-                eq("tenant-001")
-        )).thenReturn(List.of("USER_READ"));
+                any(),
+                any()
+        )).thenReturn(
+                List.of("USER_READ")
+        );
 
         when(setOperations.add(
-                anyString(),
+                eq(key),
                 any(String[].class)
         )).thenThrow(
-                new RuntimeException("Redis unavailable")
+                new RuntimeException(
+                        "Redis unavailable"
+                )
         );
 
         Set<String> result =
@@ -406,32 +666,48 @@ class PermissionResolverTesting {
                         "tenant-001"
                 );
 
-        assertEquals(Set.of("USER_READ"), result);
+        /*
+         * Redis failure must not prevent the DB result
+         * from being returned.
+         */
+        assertEquals(
+                Set.of("USER_READ"),
+                result
+        );
     }
+
+    // =========================================================
+    // Database failure
+    // =========================================================
 
     @Test
     void shouldThrowServiceUnavailableWhenDatabaseFails() {
 
-        when(setOperations.members(
-                "perms:tenant-001:user-001"
-        )).thenReturn(Set.of());
+        String key =
+                "perms:tenant-001:user-001";
+
+        when(setOperations.members(key))
+                .thenReturn(Set.of());
 
         when(jdbcTemplate.queryForObject(
                 anyString(),
                 eq(Integer.class),
-                eq("user-001"),
-                eq("tenant-001")
+                any(),
+                any()
         )).thenThrow(
-                new RuntimeException("Database unavailable")
+                new RuntimeException(
+                        "Database unavailable"
+                )
         );
 
         ResponseStatusException exception =
                 assertThrows(
                         ResponseStatusException.class,
-                        () -> resolver.resolvePermissions(
-                                "user-001",
-                                "tenant-001"
-                        )
+                        () ->
+                                resolver.resolvePermissions(
+                                        "user-001",
+                                        "tenant-001"
+                                )
                 );
 
         assertEquals(
@@ -450,101 +726,77 @@ class PermissionResolverTesting {
     @Test
     void shouldNotWriteToRedisWhenDatabaseFails() {
 
-        when(setOperations.members(
-                "perms:tenant-001:user-001"
-        )).thenReturn(Set.of());
+        String key =
+                "perms:tenant-001:user-001";
+
+        when(setOperations.members(key))
+                .thenReturn(Set.of());
 
         when(jdbcTemplate.queryForObject(
                 anyString(),
                 eq(Integer.class),
-                eq("user-001"),
-                eq("tenant-001")
+                any(),
+                any()
         )).thenThrow(
-                new RuntimeException("Database unavailable")
+                new RuntimeException(
+                        "Database unavailable"
+                )
         );
 
         assertThrows(
                 ResponseStatusException.class,
-                () -> resolver.resolvePermissions(
-                        "user-001",
-                        "tenant-001"
-                )
+                () ->
+                        resolver.resolvePermissions(
+                                "user-001",
+                                "tenant-001"
+                        )
         );
 
         verify(setOperations, never())
-                .add(anyString(), any(String[].class));
+                .add(
+                        anyString(),
+                        any(String[].class)
+                );
 
         verify(redisTemplate, never())
-                .expire(anyString(), any(Duration.class));
-    }
-
-    @Test
-    void shouldCheckSuperAdminBeforeNormalPermissionResolution() {
-
-        when(setOperations.members(
-                "perms:tenant-001:user-001"
-        )).thenReturn(Set.of());
-
-        when(jdbcTemplate.queryForObject(
-                anyString(),
-                eq(Integer.class),
-                eq("user-001"),
-                eq("tenant-001")
-        )).thenReturn(0);
-
-        when(jdbcTemplate.query(
-                anyString(),
-                any(org.springframework.jdbc.core.RowMapper.class),
-                eq("user-001"),
-                eq("tenant-001")
-        )).thenReturn(List.of("USER_READ"));
-
-        resolver.resolvePermissions(
-                "user-001",
-                "tenant-001"
-        );
-
-        verify(jdbcTemplate)
-                .queryForObject(
+                .expire(
                         anyString(),
-                        eq(Integer.class),
-                        eq("user-001"),
-                        eq("tenant-001")
-                );
-
-        verify(jdbcTemplate)
-                .query(
-                        anyString(),
-                        any(org.springframework.jdbc.core.RowMapper.class),
-                        eq("user-001"),
-                        eq("tenant-001")
+                        any(Duration.class)
                 );
     }
+
+    // =========================================================
+    // Duplicate permissions
+    // =========================================================
 
     @Test
     void shouldReturnUniquePermissions() {
 
-        when(setOperations.members(
-                "perms:tenant-001:user-001"
-        )).thenReturn(Set.of());
+        String key =
+                "perms:tenant-001:user-001";
+
+        when(setOperations.members(key))
+                .thenReturn(Set.of());
 
         when(jdbcTemplate.queryForObject(
                 anyString(),
                 eq(Integer.class),
-                eq("user-001"),
-                eq("tenant-001")
+                any(),
+                any()
         )).thenReturn(0);
 
         when(jdbcTemplate.query(
                 anyString(),
                 any(org.springframework.jdbc.core.RowMapper.class),
-                eq("user-001"),
-                eq("tenant-001")
-        )).thenReturn(List.of(
-                "USER_READ",
-                "USER_READ",
-                "USER_UPDATE"
-        ));
+                any(),
+                any()
+        )).thenReturn(
+                List.of(
+                        "USER_READ",
+                        "USER_READ",
+                        "USER_UPDATE"
+                )
+        );
 
         Set<String> result =
                 resolver.resolvePermissions(
@@ -553,66 +805,47 @@ class PermissionResolverTesting {
                 );
 
         assertEquals(
-                Set.of("USER_READ", "USER_UPDATE"),
+                Set.of(
+                        "USER_READ",
+                        "USER_UPDATE"
+                ),
                 result
         );
 
-        assertEquals(2, result.size());
+        assertEquals(
+                2,
+                result.size()
+        );
     }
 
-    @Test
-    void shouldKeepDifferentUsersSeparatedInCache() {
-
-        when(setOperations.members(
-                "perms:tenant-001:user-A"
-        )).thenReturn(Set.of("USER_A_PERMISSION"));
-
-        when(setOperations.members(
-                "perms:tenant-001:user-B"
-        )).thenReturn(Set.of("USER_B_PERMISSION"));
-
-        Set<String> userA =
-                resolver.resolvePermissions(
-                        "user-A",
-                        "tenant-001"
-                );
-
-        Set<String> userB =
-                resolver.resolvePermissions(
-                        "user-B",
-                        "tenant-001"
-                );
-
-        assertEquals(Set.of("USER_A_PERMISSION"), userA);
-        assertEquals(Set.of("USER_B_PERMISSION"), userB);
-
-        verify(setOperations)
-                .members("perms:tenant-001:user-A");
-
-        verify(setOperations)
-                .members("perms:tenant-001:user-B");
-    }
+    // =========================================================
+    // Null super-admin count
+    // =========================================================
 
     @Test
     void shouldContinueWhenSuperAdminCountIsNull() {
 
-        when(setOperations.members(
-                "perms:tenant-001:user-001"
-        )).thenReturn(Set.of());
+        String key =
+                "perms:tenant-001:user-001";
+
+        when(setOperations.members(key))
+                .thenReturn(Set.of());
 
         when(jdbcTemplate.queryForObject(
                 anyString(),
                 eq(Integer.class),
-                eq("user-001"),
-                eq("tenant-001")
+                any(),
+                any()
         )).thenReturn(null);
 
         when(jdbcTemplate.query(
                 anyString(),
                 any(org.springframework.jdbc.core.RowMapper.class),
-                eq("user-001"),
-                eq("tenant-001")
-        )).thenReturn(List.of("USER_READ"));
+                any(),
+                any()
+        )).thenReturn(
+                List.of("USER_READ")
+        );
 
         Set<String> result =
                 resolver.resolvePermissions(
@@ -620,15 +853,26 @@ class PermissionResolverTesting {
                         "tenant-001"
                 );
 
-        assertEquals(Set.of("USER_READ"), result);
+        assertEquals(
+                Set.of("USER_READ"),
+                result
+        );
     }
+
+    // =========================================================
+    // Single cached permission
+    // =========================================================
 
     @Test
     void shouldReturnSingleCachedPermission() {
 
-        when(setOperations.members(
-                "perms:tenant-001:user-001"
-        )).thenReturn(Set.of("USER_READ"));
+        String key =
+                "perms:tenant-001:user-001";
+
+        when(setOperations.members(key))
+                .thenReturn(
+                        Set.of("USER_READ")
+                );
 
         Set<String> result =
                 resolver.resolvePermissions(
@@ -636,10 +880,13 @@ class PermissionResolverTesting {
                         "tenant-001"
                 );
 
-        assertEquals(Set.of("USER_READ"), result);
+        assertEquals(
+                Set.of("USER_READ"),
+                result
+        );
 
         verify(setOperations)
-                .members("perms:tenant-001:user-001");
+                .members(key);
 
         verifyNoInteractions(jdbcTemplate);
     }

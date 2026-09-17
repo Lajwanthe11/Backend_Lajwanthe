@@ -15,6 +15,10 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import com.example.rbac.entity.RoleDepartmentMap;
 import com.example.rbac.repository.RoleDepartmentMapRepository;
 
+
+ //Repository-level tests for RoleDepartmentMapRepository.
+ //Verifies department mappings can be created, retrieved, and deleted
+ //correctly while ensuring mappings belonging to other roles are not affected.
 @DataJpaTest
 class DepartmentRepositoryTesting {
 
@@ -29,6 +33,8 @@ class DepartmentRepositoryTesting {
     private UUID department103;
     private UUID department201;
 
+     //Creates a predictable set of role-to-department mappings before
+     //each test so that every test starts with the same database state.
     @BeforeEach
     void setUp() {
 
@@ -59,10 +65,8 @@ class DepartmentRepositoryTesting {
         );
     }
 
-    // =========================================================
     // FIND
-    // =========================================================
-
+    // Verifies that all mappings belonging to the requested role are returned.
     @Test
     void findByUserRoleId_shouldReturnMappingsForRole() {
 
@@ -80,6 +84,7 @@ class DepartmentRepositoryTesting {
         );
     }
 
+    //Verifies that querying one role does not return mappings belonging to another role.
     @Test
     void findByUserRoleId_shouldNotReturnOtherRoleMappings() {
 
@@ -95,6 +100,7 @@ class DepartmentRepositoryTesting {
         );
     }
 
+    //Verifies that a role with no department mappings returns an empty result instead of null.
     @Test
     void findByUserRoleId_shouldReturnEmptyWhenNoMappingsExist() {
 
@@ -107,6 +113,8 @@ class DepartmentRepositoryTesting {
         assertTrue(result.isEmpty());
     }
 
+    //Verifies that the repository returns the expected department IDs
+    //for the selected role and excludes departments assigned to another role.
     @Test
     void findByUserRoleId_shouldReturnCorrectDepartmentIds() {
 
@@ -138,10 +146,9 @@ class DepartmentRepositoryTesting {
         );
     }
 
-    // =========================================================
-    // DELETE
-    // =========================================================
 
+    // DELETE
+    //Verifies that deleting mappings for one role does not remove mappings belonging to another role.
     @Test
     void deleteByUserRoleId_shouldDeleteOnlySelectedRoleMappings() {
 
@@ -166,6 +173,7 @@ class DepartmentRepositoryTesting {
         );
     }
 
+    //Verifies that deleting mappings for an unknown role does not modify existing mappings.
     @Test
     void deleteByUserRoleId_shouldDoNothingForUnknownRole() {
 
@@ -184,10 +192,9 @@ class DepartmentRepositoryTesting {
         );
     }
 
-    // =========================================================
+    
     // SAVE
-    // =========================================================
-
+    //Verifies that a new role-to-department mapping is persisted and can subsequently be retrieved.
     @Test
     void save_shouldPersistMapping() {
 
@@ -221,10 +228,9 @@ class DepartmentRepositoryTesting {
         );
     }
 
-    // =========================================================
+    
     // HELPER
-    // =========================================================
-
+    //Creates a RoleDepartmentMap test entity with the supplied role and department identifiers.
     private RoleDepartmentMap createMap(
             UUID userRoleId,
             UUID departmentId) {

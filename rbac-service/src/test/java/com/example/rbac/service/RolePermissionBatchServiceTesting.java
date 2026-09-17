@@ -1,11 +1,19 @@
 package com.example.rbac.service;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.util.List;
-import java.util.UUID;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,8 +28,6 @@ import com.example.rbac.dto.BatchPermissionUpdateResponse;
 import com.example.rbac.dto.PermissionGrantRequest;
 import com.example.rbac.entity.Role;
 import com.example.rbac.repository.RoleRepository;
-import com.example.rbac.service.RolePermissionBatchService;
-import com.example.rbac.service.RolePermissionService;
 
 @ExtendWith(MockitoExtension.class)
 class RolePermissionBatchServiceTesting {
@@ -44,27 +50,38 @@ class RolePermissionBatchServiceTesting {
     @InjectMocks
     private RolePermissionBatchService batchService;
 
-    private final Long roleId = 1L;
-    private final UUID permissionId1 = UUID.randomUUID();
-    private final UUID permissionId2 = UUID.randomUUID();
+    private UUID roleId;
+    private UUID permissionId1;
+    private UUID permissionId2;
+    private UUID changedBy;
 
     @BeforeEach
     void setUp() {
 
+        roleId = UUID.randomUUID();
+        permissionId1 = UUID.randomUUID();
+        permissionId2 = UUID.randomUUID();
+        changedBy = UUID.randomUUID();
+
         when(roleRepository.findById(roleId))
                 .thenReturn(Optional.of(role));
 
-        when(role.getVersion()).thenReturn(1L);
+        when(role.getVersion())
+                .thenReturn(1L);
     }
 
     @Test
     void updatePermissions_shouldProcessGrantAndRevoke() {
 
-        when(grantRequest.getGranted()).thenReturn(true);
+        when(grantRequest.getGranted())
+                .thenReturn(true);
+
         when(grantRequest.getPermissionId())
                 .thenReturn(permissionId1);
 
-        when(revokeRequest.getGranted()).thenReturn(false);
+        when(revokeRequest.getGranted())
+                .thenReturn(false);
+
         when(revokeRequest.getPermissionId())
                 .thenReturn(permissionId2);
 
@@ -74,34 +91,52 @@ class RolePermissionBatchServiceTesting {
         request.setExpectedVersion(1L);
 
         request.setPermissions(
-                List.of(grantRequest, revokeRequest));
+                List.of(
+                        grantRequest,
+                        revokeRequest
+                )
+        );
 
         BatchPermissionUpdateResponse response =
                 batchService.updatePermissions(
                         roleId,
                         request,
-                        "SYSTEM");
+                        changedBy
+                );
 
         assertNotNull(response);
-        assertEquals(roleId, response.getRoleId());
-        assertEquals(2, response.getUpdatedCount());
+
+        assertEquals(
+                roleId,
+                response.getRoleId()
+        );
+
+        assertEquals(
+                2,
+                response.getUpdatedCount()
+        );
+
         assertEquals(
                 "Permissions updated successfully",
-                response.getMessage());
+                response.getMessage()
+        );
 
         verify(rolePermissionService)
                 .grantPermission(
                         roleId,
                         permissionId1,
-                        "SYSTEM");
+                        changedBy
+                );
 
         verify(rolePermissionService)
                 .revokePermission(
                         roleId,
                         permissionId2,
-                        "SYSTEM");
+                        changedBy
+                );
 
-        verify(role).setUpdatedBy("SYSTEM");
+        verify(role)
+                .setUpdatedBy(changedBy);
 
         verify(roleRepository)
                 .saveAndFlush(role);
@@ -117,7 +152,10 @@ class RolePermissionBatchServiceTesting {
                 new BatchPermissionUpdateRequest();
 
         request.setExpectedVersion(1L);
-        request.setPermissions(List.of(grantRequest));
+
+        request.setPermissions(
+                List.of(grantRequest)
+        );
 
         IllegalArgumentException exception =
                 assertThrows(
@@ -125,48 +163,81 @@ class RolePermissionBatchServiceTesting {
                         () -> batchService.updatePermissions(
                                 roleId,
                                 request,
-                                "SYSTEM"));
+                                changedBy
+                        )
+                );
 
         assertEquals(
                 "Role not found",
-                exception.getMessage());
+                exception.getMessage()
+        );
 
         verify(rolePermissionService, never())
-                .grantPermission(anyLong(), any(), anyString());
+                .grantPermission(
+                        any(UUID.class),
+                        any(UUID.class),
+                        any(UUID.class)
+                );
+
+        verify(rolePermissionService, never())
+                .revokePermission(
+                        any(UUID.class),
+                        any(UUID.class),
+                        any(UUID.class)
+                );
+
+        verify(roleRepository, never())
+                .saveAndFlush(any(Role.class));
     }
 
     @Test
     void updatePermissions_shouldRejectVersionMismatch() {
 
-        when(role.getVersion()).thenReturn(2L);
+        when(role.getVersion())
+                .thenReturn(2L);
 
         BatchPermissionUpdateRequest request =
                 new BatchPermissionUpdateRequest();
 
         request.setExpectedVersion(1L);
-        request.setPermissions(List.of(grantRequest));
+
+        request.setPermissions(
+                List.of(grantRequest)
+        );
 
         assertThrows(
                 ObjectOptimisticLockingFailureException.class,
                 () -> batchService.updatePermissions(
                         roleId,
                         request,
-                        "SYSTEM"));
+                        changedBy
+                )
+        );
 
         verify(rolePermissionService, never())
-                .grantPermission(anyLong(), any(), anyString());
+                .grantPermission(
+                        any(UUID.class),
+                        any(UUID.class),
+                        any(UUID.class)
+                );
 
         verify(rolePermissionService, never())
-                .revokePermission(anyLong(), any(), anyString());
+                .revokePermission(
+                        any(UUID.class),
+                        any(UUID.class),
+                        any(UUID.class)
+                );
 
         verify(roleRepository, never())
-                .saveAndFlush(any());
+                .saveAndFlush(any(Role.class));
     }
 
     @Test
     void updatePermissions_shouldHandleOnlyGrant() {
 
-        when(grantRequest.getGranted()).thenReturn(true);
+        when(grantRequest.getGranted())
+                .thenReturn(true);
+
         when(grantRequest.getPermissionId())
                 .thenReturn(permissionId1);
 
@@ -174,33 +245,49 @@ class RolePermissionBatchServiceTesting {
                 new BatchPermissionUpdateRequest();
 
         request.setExpectedVersion(1L);
-        request.setPermissions(List.of(grantRequest));
+
+        request.setPermissions(
+                List.of(grantRequest)
+        );
 
         BatchPermissionUpdateResponse response =
                 batchService.updatePermissions(
                         roleId,
                         request,
-                        "SYSTEM");
+                        changedBy
+                );
 
-        assertEquals(1, response.getUpdatedCount());
+        assertNotNull(response);
+
+        assertEquals(
+                1,
+                response.getUpdatedCount()
+        );
 
         verify(rolePermissionService)
                 .grantPermission(
                         roleId,
                         permissionId1,
-                        "SYSTEM");
+                        changedBy
+                );
 
         verify(rolePermissionService, never())
                 .revokePermission(
-                        anyLong(),
-                        any(),
-                        anyString());
+                        any(UUID.class),
+                        any(UUID.class),
+                        any(UUID.class)
+                );
+
+        verify(roleRepository)
+                .saveAndFlush(role);
     }
 
     @Test
     void updatePermissions_shouldHandleOnlyRevoke() {
 
-        when(revokeRequest.getGranted()).thenReturn(false);
+        when(revokeRequest.getGranted())
+                .thenReturn(false);
+
         when(revokeRequest.getPermissionId())
                 .thenReturn(permissionId2);
 
@@ -208,26 +295,40 @@ class RolePermissionBatchServiceTesting {
                 new BatchPermissionUpdateRequest();
 
         request.setExpectedVersion(1L);
-        request.setPermissions(List.of(revokeRequest));
+
+        request.setPermissions(
+                List.of(revokeRequest)
+        );
 
         BatchPermissionUpdateResponse response =
                 batchService.updatePermissions(
                         roleId,
                         request,
-                        "SYSTEM");
+                        changedBy
+                );
 
-        assertEquals(1, response.getUpdatedCount());
+        assertNotNull(response);
+
+        assertEquals(
+                1,
+                response.getUpdatedCount()
+        );
 
         verify(rolePermissionService)
                 .revokePermission(
                         roleId,
                         permissionId2,
-                        "SYSTEM");
+                        changedBy
+                );
 
         verify(rolePermissionService, never())
                 .grantPermission(
-                        anyLong(),
-                        any(),
-                        anyString());
+                        any(UUID.class),
+                        any(UUID.class),
+                        any(UUID.class)
+                );
+
+        verify(roleRepository)
+                .saveAndFlush(role);
     }
 }

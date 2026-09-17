@@ -1,88 +1,108 @@
 package com.example.rbac.repository;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.Optional;
-
-import com.example.rbac.RbacApplication;
-import org.springframework.test.context.ContextConfiguration;
+import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 
 import com.example.rbac.entity.Role;
 import com.example.rbac.enums.RoleType;
-import com.example.rbac.repository.RoleRepository;
 
+ //Repository-level tests for RoleRepository.
+ //Verifies:tenant isolation,duplicate role-name detection,duplicate role-code detection,soft-delete handling,
+ //role lookup by ID and tenant,tenant-specific role retrieval, pagination,role searching, role counts
 @DataJpaTest
 class RoleRepositoryTesting {
 
     @Autowired
     private RoleRepository roleRepository;
 
+    private UUID tenantA;
+    private UUID tenantB;
+    private UUID tenantC;
+
+    /**
+     * Creates representative roles for multiple tenants and states.
+     *
+     * Test data includes custom/system roles, active/inactive roles,
+     * multiple tenants, and a soft-deleted role.
+     */
     @BeforeEach
     void setUp() {
 
         roleRepository.deleteAll();
 
+        tenantA = UUID.randomUUID();
+        tenantB = UUID.randomUUID();
+        tenantC = UUID.randomUUID();
+
+        // Active custom role for tenant A.
         roleRepository.save(
                 createRole(
                         "HR Manager",
                         "HR_MANAGER",
                         RoleType.CUSTOM,
                         "ACTIVE",
-                        "tenant-a",
+                        tenantA,
                         false
                 )
         );
 
+        // Active system role for tenant A.
         roleRepository.save(
                 createRole(
                         "Admin",
                         "ADMIN",
                         RoleType.SYSTEM,
                         "ACTIVE",
-                        "tenant-a",
+                        tenantA,
                         false
                 )
         );
 
+        // Inactive custom role for tenant A.
         roleRepository.save(
                 createRole(
                         "Finance Manager",
                         "FINANCE_MANAGER",
                         RoleType.CUSTOM,
                         "INACTIVE",
-                        "tenant-a",
+                        tenantA,
                         false
                 )
         );
 
+        // Role with the same display name as the tenant-A HR role,
+        // but belonging to a different tenant.
         roleRepository.save(
                 createRole(
                         "HR Manager",
                         "HR_MANAGER_B",
                         RoleType.CUSTOM,
                         "ACTIVE",
-                        "tenant-b",
+                        tenantB,
                         false
                 )
         );
 
+        // Soft-deleted role for tenant A.
         roleRepository.save(
                 createRole(
                         "Deleted Role",
                         "DELETED_ROLE",
                         RoleType.CUSTOM,
                         "ACTIVE",
-                        "tenant-a",
+                        tenantA,
                         true
                 )
         );
@@ -92,6 +112,10 @@ class RoleRepositoryTesting {
     // DUPLICATE NAME
     // =========================================================
 
+    /**
+     * Verifies that an existing role name is detected
+     * within the same tenant.
+     */
     @Test
     void existsByRoleName_shouldReturnTrueForSameTenant() {
 
@@ -99,11 +123,15 @@ class RoleRepositoryTesting {
                 roleRepository
                         .existsByRoleNameIgnoreCaseAndTenantIdAndIsDeletedFalse(
                                 "HR Manager",
-                                "tenant-a"
+                                tenantA
                         )
         );
     }
 
+    /**
+     * Verifies that role-name duplicate detection
+     * is case-insensitive.
+     */
     @Test
     void existsByRoleName_shouldBeCaseInsensitive() {
 
@@ -111,11 +139,15 @@ class RoleRepositoryTesting {
                 roleRepository
                         .existsByRoleNameIgnoreCaseAndTenantIdAndIsDeletedFalse(
                                 "hr manager",
-                                "tenant-a"
+                                tenantA
                         )
         );
     }
 
+    /**
+     * Verifies that a role from another tenant is not
+     * treated as a duplicate for the requested tenant.
+     */
     @Test
     void existsByRoleName_shouldReturnFalseForDifferentTenant() {
 
@@ -123,11 +155,15 @@ class RoleRepositoryTesting {
                 roleRepository
                         .existsByRoleNameIgnoreCaseAndTenantIdAndIsDeletedFalse(
                                 "HR Manager",
-                                "tenant-c"
+                                tenantC
                         )
         );
     }
 
+    /**
+     * Verifies that soft-deleted roles are excluded
+     * from duplicate role-name checks.
+     */
     @Test
     void existsByRoleName_shouldIgnoreDeletedRole() {
 
@@ -135,7 +171,7 @@ class RoleRepositoryTesting {
                 roleRepository
                         .existsByRoleNameIgnoreCaseAndTenantIdAndIsDeletedFalse(
                                 "Deleted Role",
-                                "tenant-a"
+                                tenantA
                         )
         );
     }
@@ -144,6 +180,10 @@ class RoleRepositoryTesting {
     // DUPLICATE CODE
     // =========================================================
 
+    /**
+     * Verifies that an existing role code is detected
+     * within the same tenant.
+     */
     @Test
     void existsByRoleCode_shouldReturnTrueForSameTenant() {
 
@@ -151,11 +191,15 @@ class RoleRepositoryTesting {
                 roleRepository
                         .existsByRoleCodeIgnoreCaseAndTenantIdAndIsDeletedFalse(
                                 "HR_MANAGER",
-                                "tenant-a"
+                                tenantA
                         )
         );
     }
 
+    /**
+     * Verifies that role-code duplicate detection
+     * is case-insensitive.
+     */
     @Test
     void existsByRoleCode_shouldBeCaseInsensitive() {
 
@@ -163,11 +207,15 @@ class RoleRepositoryTesting {
                 roleRepository
                         .existsByRoleCodeIgnoreCaseAndTenantIdAndIsDeletedFalse(
                                 "hr_manager",
-                                "tenant-a"
+                                tenantA
                         )
         );
     }
 
+    /**
+     * Verifies that the same role code in another tenant
+     * does not count as a duplicate for tenant A.
+     */
     @Test
     void existsByRoleCode_shouldReturnFalseForDifferentTenant() {
 
@@ -175,11 +223,15 @@ class RoleRepositoryTesting {
                 roleRepository
                         .existsByRoleCodeIgnoreCaseAndTenantIdAndIsDeletedFalse(
                                 "HR_MANAGER",
-                                "tenant-b"
+                                tenantB
                         )
         );
     }
 
+    /**
+     * Verifies that soft-deleted roles are excluded
+     * from duplicate role-code checks.
+     */
     @Test
     void existsByRoleCode_shouldIgnoreDeletedRole() {
 
@@ -187,7 +239,7 @@ class RoleRepositoryTesting {
                 roleRepository
                         .existsByRoleCodeIgnoreCaseAndTenantIdAndIsDeletedFalse(
                                 "DELETED_ROLE",
-                                "tenant-a"
+                                tenantA
                         )
         );
     }
@@ -196,6 +248,10 @@ class RoleRepositoryTesting {
     // FIND BY ID
     // =========================================================
 
+    /**
+     * Verifies that a role can be retrieved when both
+     * its ID and tenant ID match.
+     */
     @Test
     void findById_shouldReturnRoleForCorrectTenant() {
 
@@ -213,7 +269,7 @@ class RoleRepositoryTesting {
                 roleRepository
                         .findByIdAndTenantIdAndIsDeletedFalse(
                                 role.getId(),
-                                "tenant-a"
+                                tenantA
                         );
 
         assertTrue(result.isPresent());
@@ -224,6 +280,10 @@ class RoleRepositoryTesting {
         );
     }
 
+    /**
+     * Verifies tenant isolation by ensuring that a role
+     * cannot be retrieved with another tenant ID.
+     */
     @Test
     void findById_shouldNotReturnRoleForWrongTenant() {
 
@@ -241,7 +301,7 @@ class RoleRepositoryTesting {
                 roleRepository
                         .findByIdAndTenantIdAndIsDeletedFalse(
                                 role.getId(),
-                                "tenant-b"
+                                tenantB
                         );
 
         assertTrue(result.isEmpty());
@@ -251,13 +311,17 @@ class RoleRepositoryTesting {
     // GET ALL
     // =========================================================
 
+    /**
+     * Verifies that tenant-specific retrieval returns
+     * only non-deleted roles belonging to that tenant.
+     */
     @Test
     void findByTenant_shouldReturnOnlyNonDeletedTenantRoles() {
 
         List<Role> roles =
                 roleRepository
                         .findByTenantIdAndIsDeletedFalse(
-                                "tenant-a"
+                                tenantA
                         );
 
         assertEquals(3, roles.size());
@@ -270,24 +334,27 @@ class RoleRepositoryTesting {
         assertTrue(
                 roles.stream()
                         .allMatch(r ->
-                                "tenant-a".equals(
+                                tenantA.equals(
                                         r.getTenantId()))
         );
     }
 
+    /**
+     * Verifies that roles from another tenant are excluded.
+     */
     @Test
     void findByTenant_shouldNotReturnOtherTenantRoles() {
 
         List<Role> roles =
                 roleRepository
                         .findByTenantIdAndIsDeletedFalse(
-                                "tenant-a"
+                                tenantA
                         );
 
         assertTrue(
                 roles.stream()
                         .noneMatch(r ->
-                                "tenant-b".equals(
+                                tenantB.equals(
                                         r.getTenantId()))
         );
     }
@@ -296,6 +363,10 @@ class RoleRepositoryTesting {
     // PAGINATION
     // =========================================================
 
+    /**
+     * Verifies that tenant-specific role retrieval supports
+     * pagination and reports the correct total element count.
+     */
     @Test
     void findByTenantPaged_shouldReturnPage() {
 
@@ -305,7 +376,7 @@ class RoleRepositoryTesting {
         Page<Role> result =
                 roleRepository
                         .findByTenantIdAndIsDeletedFalse(
-                                "tenant-a",
+                                tenantA,
                                 pageable
                         );
 
@@ -326,12 +397,15 @@ class RoleRepositoryTesting {
     // SEARCH
     // =========================================================
 
+    /**
+     * Verifies that role search can match the role name.
+     */
     @Test
     void searchRoles_shouldFindByRoleName() {
 
         List<Role> result =
                 roleRepository.searchRoles(
-                        "tenant-a",
+                        tenantA,
                         "HR",
                         null,
                         null
@@ -345,12 +419,15 @@ class RoleRepositoryTesting {
         );
     }
 
+    /**
+     * Verifies that role search can match the role code.
+     */
     @Test
     void searchRoles_shouldFindByRoleCode() {
 
         List<Role> result =
                 roleRepository.searchRoles(
-                        "tenant-a",
+                        tenantA,
                         "FINANCE",
                         null,
                         null
@@ -364,12 +441,15 @@ class RoleRepositoryTesting {
         );
     }
 
+    /**
+     * Verifies that role search is case-insensitive.
+     */
     @Test
     void searchRoles_shouldBeCaseInsensitive() {
 
         List<Role> result =
                 roleRepository.searchRoles(
-                        "tenant-a",
+                        tenantA,
                         "hr manager",
                         null,
                         null
@@ -378,12 +458,15 @@ class RoleRepositoryTesting {
         assertEquals(1, result.size());
     }
 
+    /**
+     * Verifies that search results can be filtered by role type.
+     */
     @Test
     void searchRoles_shouldFilterByRoleType() {
 
         List<Role> result =
                 roleRepository.searchRoles(
-                        "tenant-a",
+                        tenantA,
                         null,
                         RoleType.SYSTEM,
                         null
@@ -397,12 +480,15 @@ class RoleRepositoryTesting {
         );
     }
 
+    /**
+     * Verifies that search results can be filtered by status.
+     */
     @Test
     void searchRoles_shouldFilterByStatus() {
 
         List<Role> result =
                 roleRepository.searchRoles(
-                        "tenant-a",
+                        tenantA,
                         null,
                         null,
                         "INACTIVE"
@@ -416,12 +502,15 @@ class RoleRepositoryTesting {
         );
     }
 
+    /**
+     * Verifies that all supplied search filters are applied together.
+     */
     @Test
     void searchRoles_shouldApplyAllFilters() {
 
         List<Role> result =
                 roleRepository.searchRoles(
-                        "tenant-a",
+                        tenantA,
                         "HR",
                         RoleType.CUSTOM,
                         "ACTIVE"
@@ -435,12 +524,16 @@ class RoleRepositoryTesting {
         );
     }
 
+    /**
+     * Verifies that search results remain isolated to
+     * the requested tenant.
+     */
     @Test
     void searchRoles_shouldNotReturnOtherTenantRoles() {
 
         List<Role> result =
                 roleRepository.searchRoles(
-                        "tenant-a",
+                        tenantA,
                         "HR",
                         null,
                         null
@@ -449,17 +542,20 @@ class RoleRepositoryTesting {
         assertTrue(
                 result.stream()
                         .allMatch(r ->
-                                "tenant-a".equals(
+                                tenantA.equals(
                                         r.getTenantId()))
         );
     }
 
+    /**
+     * Verifies that soft-deleted roles are excluded from search.
+     */
     @Test
     void searchRoles_shouldExcludeDeletedRoles() {
 
         List<Role> result =
                 roleRepository.searchRoles(
-                        "tenant-a",
+                        tenantA,
                         "Deleted",
                         null,
                         null
@@ -468,12 +564,16 @@ class RoleRepositoryTesting {
         assertTrue(result.isEmpty());
     }
 
+    /**
+     * Verifies that a search without optional filters
+     * returns all non-deleted roles for the tenant.
+     */
     @Test
     void searchRoles_withNoFilters_shouldReturnTenantRoles() {
 
         List<Role> result =
                 roleRepository.searchRoles(
-                        "tenant-a",
+                        tenantA,
                         null,
                         null,
                         null
@@ -486,51 +586,65 @@ class RoleRepositoryTesting {
     // COUNTS
     // =========================================================
 
+    /**
+     * Verifies the total number of non-deleted roles for a tenant.
+     */
     @Test
     void countByTenant_shouldReturnTotalActiveRoles() {
 
         long count =
                 roleRepository
                         .countByTenantIdAndIsDeletedFalse(
-                                "tenant-a"
+                                tenantA
                         );
 
         assertEquals(3, count);
     }
 
+    /**
+     * Verifies that system-role counts are tenant-specific
+     * and exclude deleted roles.
+     */
     @Test
     void countByTenantAndType_shouldCountSystemRoles() {
 
         long count =
                 roleRepository
                         .countByTenantIdAndRoleTypeAndIsDeletedFalse(
-                                "tenant-a",
+                                tenantA,
                                 RoleType.SYSTEM
                         );
 
         assertEquals(1, count);
     }
 
+    /**
+     * Verifies that custom-role counts are tenant-specific
+     * and exclude deleted roles.
+     */
     @Test
     void countByTenantAndType_shouldCountCustomRoles() {
 
         long count =
                 roleRepository
                         .countByTenantIdAndRoleTypeAndIsDeletedFalse(
-                                "tenant-a",
+                                tenantA,
                                 RoleType.CUSTOM
                         );
 
         assertEquals(2, count);
     }
 
+    /**
+     * Verifies that soft-deleted roles are not included in counts.
+     */
     @Test
     void counts_shouldNotIncludeDeletedRoles() {
 
         long count =
                 roleRepository
                         .countByTenantIdAndIsDeletedFalse(
-                                "tenant-a"
+                                tenantA
                         );
 
         assertEquals(3, count);
@@ -540,12 +654,15 @@ class RoleRepositoryTesting {
     // HELPER
     // =========================================================
 
+    /**
+     * Creates a Role entity for repository test setup.
+     */
     private Role createRole(
             String roleName,
             String roleCode,
             RoleType roleType,
             String status,
-            String tenantId,
+            UUID tenantId,
             boolean deleted) {
 
         Role role = new Role();

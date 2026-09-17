@@ -1,7 +1,17 @@
 package com.example.rbac.controller;
 
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.List;
 import java.util.UUID;
@@ -9,25 +19,18 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import com.example.rbac.controller.RolePermissionController;
 import com.example.rbac.dto.BatchPermissionUpdateResponse;
 import com.example.rbac.entity.RolePermission;
 import com.example.rbac.service.PermissionMatrixService;
 import com.example.rbac.service.RolePermissionBatchService;
 import com.example.rbac.service.RolePermissionService;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-
-@ExtendWith(SpringExtension.class)
+@ExtendWith(MockitoExtension.class)
 class RolePermissionControllerTesting {
 
     private MockMvc mockMvc;
@@ -38,12 +41,10 @@ class RolePermissionControllerTesting {
 
     private PermissionMatrixService permissionMatrixService;
 
-    private ObjectMapper objectMapper;
-
     private final Long roleId = 1L;
 
-    private final UUID permissionId =
-            UUID.randomUUID();
+    private final UUID permissionId = UUID.randomUUID();
+
 
     @BeforeEach
     void setUp() {
@@ -61,14 +62,18 @@ class RolePermissionControllerTesting {
                 new RolePermissionController(
                         rolePermissionService,
                         rolePermissionBatchService,
-                        permissionMatrixService);
+                        permissionMatrixService
+                );
 
         mockMvc = MockMvcBuilders
                 .standaloneSetup(controller)
                 .build();
-
-        objectMapper = new ObjectMapper();
     }
+
+
+    // ============================================================
+    // GET ROLE PERMISSIONS
+    // ============================================================
 
     @Test
     void getPermissions_shouldReturn200() throws Exception {
@@ -78,13 +83,21 @@ class RolePermissionControllerTesting {
                 .thenReturn(List.of());
 
         mockMvc.perform(
-                get("/api/v1/roles/{roleId}/permissions",
-                        roleId))
-                .andExpect(status().isOk());
+                get(
+                        "/api/v1/roles/{roleId}/permissions",
+                        roleId
+                )
+        )
+        .andExpect(status().isOk());
 
         verify(rolePermissionService)
                 .getPermissionsByRole(roleId);
     }
+
+
+    // ============================================================
+    // GRANT PERMISSION
+    // ============================================================
 
     @Test
     void grantPermission_shouldReturn201() throws Exception {
@@ -95,8 +108,8 @@ class RolePermissionControllerTesting {
         when(rolePermissionService.grantPermission(
                 eq(roleId),
                 eq(permissionId),
-                eq("SYSTEM")))
-                .thenReturn(rolePermission);
+                eq("SYSTEM")
+        )).thenReturn(rolePermission);
 
         String requestBody = """
                 {
@@ -106,18 +119,27 @@ class RolePermissionControllerTesting {
                 """.formatted(permissionId);
 
         mockMvc.perform(
-                post("/api/v1/roles/{roleId}/permissions",
-                        roleId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
-                .andExpect(status().isCreated());
+                post(
+                        "/api/v1/roles/{roleId}/permissions",
+                        roleId
+                )
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody)
+        )
+        .andExpect(status().isCreated());
 
         verify(rolePermissionService)
                 .grantPermission(
                         roleId,
                         permissionId,
-                        "SYSTEM");
+                        "SYSTEM"
+                );
     }
+
+
+    // ============================================================
+    // REVOKE THROUGH POST
+    // ============================================================
 
     @Test
     void grantPermissionWithGrantedFalse_shouldReturn204()
@@ -131,18 +153,27 @@ class RolePermissionControllerTesting {
                 """.formatted(permissionId);
 
         mockMvc.perform(
-                post("/api/v1/roles/{roleId}/permissions",
-                        roleId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
-                .andExpect(status().isNoContent());
+                post(
+                        "/api/v1/roles/{roleId}/permissions",
+                        roleId
+                )
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody)
+        )
+        .andExpect(status().isNoContent());
 
         verify(rolePermissionService)
                 .revokePermission(
                         roleId,
                         permissionId,
-                        "SYSTEM");
+                        "SYSTEM"
+                );
     }
+
+
+    // ============================================================
+    // DELETE PERMISSION
+    // ============================================================
 
     @Test
     void revokePermission_shouldReturn204()
@@ -152,15 +183,23 @@ class RolePermissionControllerTesting {
                 delete(
                         "/api/v1/roles/{roleId}/permissions/{permissionId}",
                         roleId,
-                        permissionId))
-                .andExpect(status().isNoContent());
+                        permissionId
+                )
+        )
+        .andExpect(status().isNoContent());
 
         verify(rolePermissionService)
                 .revokePermission(
                         roleId,
                         permissionId,
-                        "SYSTEM");
+                        "SYSTEM"
+                );
     }
+
+
+    // ============================================================
+    // BATCH UPDATE
+    // ============================================================
 
     @Test
     void updateBatch_shouldReturn200()
@@ -170,13 +209,14 @@ class RolePermissionControllerTesting {
                 new BatchPermissionUpdateResponse(
                         roleId,
                         2,
-                        "Permissions updated successfully");
+                        "Permissions updated successfully"
+                );
 
         when(rolePermissionBatchService.updatePermissions(
                 eq(roleId),
                 any(),
-                eq("SYSTEM")))
-                .thenReturn(response);
+                eq("SYSTEM")
+        )).thenReturn(response);
 
         String requestBody = """
                 {
@@ -191,28 +231,41 @@ class RolePermissionControllerTesting {
                 """.formatted(permissionId);
 
         mockMvc.perform(
-                put("/api/v1/roles/{roleId}/permissions/batch",
-                        roleId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
-                .andExpect(status().isOk())
-                .andExpect(
-                        jsonPath("$.roleId")
-                                .value(roleId))
-                .andExpect(
-                        jsonPath("$.updatedCount")
-                                .value(2))
-                .andExpect(
-                        jsonPath("$.message")
-                                .value(
-                                        "Permissions updated successfully"));
+                put(
+                        "/api/v1/roles/{roleId}/permissions/batch",
+                        roleId
+                )
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody)
+        )
+        .andExpect(status().isOk())
+        .andExpect(
+                jsonPath("$.roleId")
+                        .value(roleId)
+        )
+        .andExpect(
+                jsonPath("$.updatedCount")
+                        .value(2)
+        )
+        .andExpect(
+                jsonPath("$.message")
+                        .value(
+                                "Permissions updated successfully"
+                        )
+        );
 
         verify(rolePermissionBatchService)
                 .updatePermissions(
                         eq(roleId),
                         any(),
-                        eq("SYSTEM"));
+                        eq("SYSTEM")
+                );
     }
+
+
+    // ============================================================
+    // GROUPED PERMISSIONS
+    // ============================================================
 
     @Test
     void groupedPermissions_shouldReturn200()
@@ -225,29 +278,38 @@ class RolePermissionControllerTesting {
         mockMvc.perform(
                 get(
                         "/api/v1/roles/{roleId}/permissions/grouped",
-                        roleId))
-                .andExpect(status().isOk());
+                        roleId
+                )
+        )
+        .andExpect(status().isOk());
 
         verify(permissionMatrixService)
                 .getGroupedPermissions(roleId);
     }
 
+
+    // ============================================================
+    // INVALID ROLE ID
+    // ============================================================
+
     @Test
     void invalidRoleId_shouldReturn400Or404()
             throws Exception {
 
-        mockMvc.perform(
-                get(
-                        "/api/v1/roles/{roleId}/permissions",
-                        "invalid"))
-                .andExpect(
-                        result -> {
-                            int status =
-                                    result.getResponse()
-                                            .getStatus();
+        int responseStatus =
+                mockMvc.perform(
+                        get(
+                                "/api/v1/roles/{roleId}/permissions",
+                                "invalid"
+                        )
+                )
+                .andReturn()
+                .getResponse()
+                .getStatus();
 
-                            assert status == 400
-                                    || status == 404;
-                        });
+        assertTrue(
+                responseStatus == 400 ||
+                responseStatus == 404
+        );
     }
 }
