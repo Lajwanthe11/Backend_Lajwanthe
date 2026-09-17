@@ -22,6 +22,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/users/roles")
+// Handles bulk role changes and CSV-based role imports.
 public class BulkRoleAssignmentController {
 
     private final BulkRoleAssignmentService bulkRoleAssignmentService;
@@ -37,7 +38,7 @@ public class BulkRoleAssignmentController {
         this.csvRoleImportService = csvRoleImportService;
         this.securityContextUtil = securityContextUtil;
     }
-
+    // Assigns one role to multiple users in a single request.
     @RequirePermission("ROLE_ASSIGN")
     @PostMapping("/bulk-assign")
     public ResponseEntity<BulkOperationResponse> bulkAssign(
@@ -61,7 +62,7 @@ public class BulkRoleAssignmentController {
                 )
         );
     }
-
+    // Revokes the selected role from multiple users while preserving revoke audit details.
     @RequirePermission("ROLE_ASSIGN")
     @PostMapping("/bulk-revoke")
     public ResponseEntity<BulkOperationResponse> bulkRevoke(
@@ -85,7 +86,7 @@ public class BulkRoleAssignmentController {
                 )
         );
     }
-
+    // CSV import is kept separate from JSON bulk assignment because each row can succeed or fail independently.
     @RequirePermission("ROLE_ASSIGN")
     @PostMapping(
             value = "/import",

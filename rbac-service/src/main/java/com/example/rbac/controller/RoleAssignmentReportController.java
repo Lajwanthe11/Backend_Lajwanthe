@@ -26,6 +26,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/roles/assignments")
+// Exposes reporting, expiry views and export endpoints for role assignments.
 public class RoleAssignmentReportController {
 
     private final RoleAssignmentQueryService queryService;
@@ -44,7 +45,7 @@ public class RoleAssignmentReportController {
         this.expiryService = expiryService;
         this.securityContextUtil = securityContextUtil;
     }
-
+    // The same report data is reused for JSON, Excel and PDF so all formats stay consistent.
     @RequirePermission("ROLE_READ")
     @GetMapping("/report")
     public ResponseEntity<?> report(
@@ -96,7 +97,7 @@ public class RoleAssignmentReportController {
                     );
         };
     }
-
+    // Returns the current role distribution grouped by department.
     @RequirePermission("ROLE_READ")
     @GetMapping("/by-department")
     public ResponseEntity<List<DepartmentRoleDistribution>>
@@ -114,7 +115,7 @@ public class RoleAssignmentReportController {
                 )
         );
     }
-
+    // Optional filters allow the expiry dashboard to narrow results without separate endpoints.
     @RequirePermission("ROLE_READ")
     @GetMapping("/expiring")
     public ResponseEntity<List<ExpiringRoleAssignment>> expiring(
@@ -143,7 +144,7 @@ public class RoleAssignmentReportController {
                 )
         );
     }
-
+    // Manual trigger is useful for admin workflows; the scheduled job still runs independently
     @RequirePermission("ROLE_ASSIGN")
     @PostMapping("/expiry-notify")
     public ResponseEntity<ExpiryNotificationResponse>

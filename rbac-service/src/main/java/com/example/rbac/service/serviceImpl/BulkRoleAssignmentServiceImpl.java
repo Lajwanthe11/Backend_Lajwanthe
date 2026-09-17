@@ -26,7 +26,7 @@ import java.util.UUID;
 
 @Service
 public class BulkRoleAssignmentServiceImpl implements BulkRoleAssignmentService {
-
+    // Sprint limit: large requests are capped to avoid expensive bulk operations.
     private static final int MAX_BULK_SIZE = 500;
 
     private final UserRoleRepository userRoleRepository;
@@ -56,13 +56,14 @@ public class BulkRoleAssignmentServiceImpl implements BulkRoleAssignmentService 
             UUID actorId,
             BulkRoleAssignmentRequest request
     ) {
+        // Fail early before touching the database when request context or dates are invalid.
         validateContext(tenantId, actorId);
         validateAssignmentRequest(request);
 
         Role role = roleLookupService.getAssignableRole(tenantId, request.roleId());
         List<BulkOperationItemResult> results = new ArrayList<>();
         List<UserRole> stagedAssignments = new ArrayList<>();
-
+// LinkedHashSet removes duplicate users but keeps the original request order for the response.
         LinkedHashSet<UUID> uniqueUsers = new LinkedHashSet<>();
         for (UUID userId : request.userIds()) {
             if (!uniqueUsers.add(userId)) {
@@ -74,14 +75,14 @@ public class BulkRoleAssignmentServiceImpl implements BulkRoleAssignmentService 
         for (UUID userId : uniqueUsers) {
             try {
                 userAssignmentSupportService.validateAssignable(tenantId, userId);
-
+                // Existing active assignments are reported as skipped instead of creating duplicates.
                 if (userRoleRepository.existsByTenantIdAndUserIdAndRoleIdAndActiveTrue(
                         tenantId, userId, request.roleId())) {
                     results.add(new BulkOperationItemResult(
                             userId, "SKIPPED", "already assigned"));
                     continue;
                 }
-
+// Stage assignments first so saveAll can persist the successful set together.
                 UserRole assignment = new UserRole();
                 assignment.setTenantId(tenantId);
                 assignment.setUserId(userId);
@@ -94,13 +95,14 @@ public class BulkRoleAssignmentServiceImpl implements BulkRoleAssignmentService 
                 assignment.setActive(true);
                 stagedAssignments.add(assignment);
             } catch (RuntimeException ex) {
+                // Atomic mode fails the whole operation; partial mode records the user-level failure and continues.
                 if (atomicMode) {
                     throw ex;
                 }
                 results.add(new BulkOperationItemResult(userId, "FAILED", safeMessage(ex)));
             }
         }
-
+        // Audit only records assignments that were actually persisted.
         List<UserRole> saved = userRoleRepository.saveAll(stagedAssignments);
         for (UserRole assignment : saved) {
             roleAuditService.record(
@@ -128,12 +130,14 @@ public class BulkRoleAssignmentServiceImpl implements BulkRoleAssignmentService 
             UUID actorId,
             BulkRoleRevokeRequest request
     ) {
+        // Revoke requests use the same tenant and actor checks as assignment requests.
         validateContext(tenantId, actorId);
         validateBulkSize(request.userIds().size(), "revoked");
         roleLookupService.getRole(tenantId, request.roleId());
 
         List<BulkOperationItemResult> results = new ArrayList<>();
         List<UserRole> changedAssignments = new ArrayList<>();
+        // Duplicate user IDs are ignored after the first occurrence but still reported to the caller.
         LinkedHashSet<UUID> uniqueUsers = new LinkedHashSet<>();
 
         for (UUID userId : request.userIds()) {
@@ -148,7 +152,7 @@ public class BulkRoleAssignmentServiceImpl implements BulkRoleAssignmentService 
                 Optional<UserRole> current =
                         userRoleRepository.findFirstByTenantIdAndUserIdAndRoleIdAndActiveTrue(
                                 tenantId, userId, request.roleId());
-
+// Missing assignments are not treated as errors; there is simply nothing to revoke.
                 if (current.isEmpty()) {
                     results.add(new BulkOperationItemResult(
                             userId, "SKIPPED", "Role is not currently assigned"));
@@ -156,6 +160,7 @@ public class BulkRoleAssignmentServiceImpl implements BulkRoleAssignmentService 
                 }
 
                 UserRole assignment = current.get();
+                // Protect primary and last-active-role rules before changing the assignment state.
                 validateRevokeBusinessRules(tenantId, assignment);
                 assignment.setActive(false);
                 assignment.setRevokedBy(actorId);
@@ -169,7 +174,7 @@ public class BulkRoleAssignmentServiceImpl implements BulkRoleAssignmentService 
                 results.add(new BulkOperationItemResult(userId, "FAILED", safeMessage(ex)));
             }
         }
-
+// Persist revocation metadata together, then create the audit entries.
         List<UserRole> saved = userRoleRepository.saveAll(changedAssignments);
         for (UserRole assignment : saved) {
             roleAuditService.record(
@@ -205,7 +210,7 @@ public class BulkRoleAssignmentServiceImpl implements BulkRoleAssignmentService 
             throw new RoleAssignmentValidationException(
                     "Cannot revoke a primary role in bulk; set another primary role first");
         }
-
+// Only count roles that are effective today when checking the "last active role" rule.
         boolean currentlyEffective = !assignment.getEffectiveDate().isAfter(today)
                 && (assignment.getExpiryDate() == null
                 || !assignment.getExpiryDate().isBefore(today));
