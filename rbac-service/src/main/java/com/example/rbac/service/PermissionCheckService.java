@@ -19,6 +19,7 @@ public class PermissionCheckService {
                 this.permissionResolver = permissionResolver;
         }
 
+        // Checks if the user has the given permission in the tenant.
         public boolean hasPermission(
                         String userId,
                         String tenantId,
@@ -42,6 +43,7 @@ public class PermissionCheckService {
                 return allowed;
         }
 
+        // Gets all permissions resolved for the user.
         public Set<String> getResolvedPermissions(
                         String userId,
                         String tenantId) {
@@ -51,6 +53,7 @@ public class PermissionCheckService {
                                 tenantId);
         }
 
+        // Checks the permission using the currently logged-in user.
         public boolean hasPermission(String permissionCode) {
 
                 Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

@@ -1,20 +1,33 @@
 package com.example.rbac.service;
 
 import com.example.common.tenant.TenantContext;
+import com.example.rbac.entity.Permission;
+import com.example.rbac.entity.Role;
+import com.example.rbac.entity.RolePermission;
+import com.example.rbac.entity.UserRole;
+
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.MeterRegistry;
-
 import java.time.Duration;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -31,16 +44,16 @@ public class PermissionResolverImpl implements PermissionResolver {
     private static final String NO_PERMISSIONS =
             "__NO_PERMISSIONS__";
 
-    private final JdbcTemplate jdbcTemplate;
+    private final EntityManager entityManager;
     private final RedisTemplate<String, String> redisTemplate;
     private final Counter redisCacheFailures;
 
     public PermissionResolverImpl(
-            JdbcTemplate jdbcTemplate,
+            EntityManager entityManager,
             RedisTemplate<String, String> redisTemplate,
             MeterRegistry meterRegistry) {
 
-        this.jdbcTemplate = jdbcTemplate;
+        this.entityManager = entityManager;
         this.redisTemplate = redisTemplate;
 
         this.redisCacheFailures =
@@ -51,6 +64,7 @@ public class PermissionResolverImpl implements PermissionResolver {
     }
 
     @Override
+    // Gets the user's permissions from cache or database.
     public Set<String> resolvePermissions(
             String userId,
             String tenantId) {
@@ -58,7 +72,7 @@ public class PermissionResolverImpl implements PermissionResolver {
         String cacheKey =
                 "perms:" + tenantId + ":" + userId;
 
-        // Check Redis first; fall back to DB if unavailable or on cache miss.
+        // Check Redis first; fall back to database on cache miss/failure.
         try {
             Set<String> cachedPermissions =
                     redisTemplate.opsForSet().members(cacheKey);
@@ -139,7 +153,8 @@ public class PermissionResolverImpl implements PermissionResolver {
         return permissions;
     }
 
-    private Set<String> resolveFromDatabase(
+    // Gets the user's active permissions from the database.
+    Set<String> resolveFromDatabase(
             String userId,
             String tenantId) {
 
@@ -149,29 +164,81 @@ public class PermissionResolverImpl implements PermissionResolver {
         UUID tenantUuid =
                 UUID.fromString(tenantId);
 
-        // SUPER_ADMIN gets all permissions.
-        String superAdminSql = """
-                SELECT COUNT(*)
-                FROM user_roles ur
-                INNER JOIN roles r
-                    ON ur.role_id = r.role_id
-                WHERE ur.user_id = ?
-                  AND ur.tenant_id = ?
-                  AND ur.is_active = true
-                  AND ur.effective_date <= CURRENT_DATE
-                  AND (ur.expiry_date IS NULL
-                       OR ur.expiry_date > CURRENT_DATE)
-                  AND r.role_code = 'SUPER_ADMIN'
-                  AND r.status = 'ACTIVE'
-                  AND r.is_deleted = false
-                """;
+        LocalDate today =
+                LocalDate.now();
 
-        Integer superAdminCount =
-                jdbcTemplate.queryForObject(
-                        superAdminSql,
-                        Integer.class,
-                        userUuid,
-                        tenantUuid);
+        CriteriaBuilder criteriaBuilder =
+                entityManager.getCriteriaBuilder();
+
+        CriteriaQuery<Long> superAdminQuery =
+                criteriaBuilder.createQuery(Long.class);
+
+        Root<UserRole> userRole =
+                superAdminQuery.from(UserRole.class);
+
+        Root<Role> role =
+                superAdminQuery.from(Role.class);
+
+        List<Predicate> superAdminPredicates =
+                new ArrayList<>();
+
+        superAdminPredicates.add(
+                criteriaBuilder.equal(
+                        userRole.get("roleId"),
+                        role.get("id")));
+
+        superAdminPredicates.add(
+                criteriaBuilder.equal(
+                        userRole.get("userId"),
+                        userUuid));
+
+        superAdminPredicates.add(
+                criteriaBuilder.equal(
+                        userRole.get("tenantId"),
+                        tenantUuid));
+
+        superAdminPredicates.add(
+                criteriaBuilder.isTrue(
+                        userRole.get("active")));
+
+        superAdminPredicates.add(
+                criteriaBuilder.lessThanOrEqualTo(
+                        userRole.get("effectiveDate"),
+                        today));
+
+        superAdminPredicates.add(
+                criteriaBuilder.or(
+                        criteriaBuilder.isNull(
+                                userRole.get("expiryDate")),
+                        criteriaBuilder.greaterThan(
+                                userRole.get("expiryDate"),
+                                today)));
+
+        superAdminPredicates.add(
+                criteriaBuilder.equal(
+                        role.get("roleCode"),
+                        "SUPER_ADMIN"));
+
+        superAdminPredicates.add(
+                criteriaBuilder.equal(
+                        role.get("status"),
+                        "ACTIVE"));
+
+        superAdminPredicates.add(
+                criteriaBuilder.isFalse(
+                        role.get("isDeleted")));
+
+        superAdminQuery
+                .select(
+                        criteriaBuilder.count(userRole))
+                .where(
+                        superAdminPredicates.toArray(
+                                new Predicate[0]));
+
+        Long superAdminCount =
+                entityManager
+                        .createQuery(superAdminQuery)
+                        .getSingleResult();
 
         if (superAdminCount != null
                 && superAdminCount > 0) {
@@ -179,39 +246,105 @@ public class PermissionResolverImpl implements PermissionResolver {
             return Set.of("*");
         }
 
-        // Resolve permissions from all valid role assignments.
-        String sql = """
-                SELECT p.permission_code
-                FROM permissions p
-                INNER JOIN role_permissions rp
-                    ON p.permission_id = rp.permission_id
-                INNER JOIN user_roles ur
-                    ON rp.role_id = ur.role_id
-                INNER JOIN roles r
-                    ON ur.role_id = r.role_id
-                WHERE ur.user_id = ?
-                  AND ur.tenant_id = ?
-                  AND ur.is_active = true
-                  AND ur.effective_date <= CURRENT_DATE
-                  AND (ur.expiry_date IS NULL
-                       OR ur.expiry_date > CURRENT_DATE)
-                  AND rp.is_active = true
-                  AND p.is_active = true
-                  AND r.status = 'ACTIVE'
-                  AND r.is_deleted = false
-                """;
+        CriteriaQuery<String> permissionQuery =
+                criteriaBuilder.createQuery(String.class);
 
-        return new HashSet<>(
-                jdbcTemplate.query(
-                        sql,
-                        (resultSet, rowNum) ->
-                                resultSet.getString(
-                                        "permission_code"),
-                        userUuid,
+        Root<UserRole> assignment =
+                permissionQuery.from(UserRole.class);
+
+        Root<Role> assignedRole =
+                permissionQuery.from(Role.class);
+
+        Root<RolePermission> rolePermission =
+                permissionQuery.from(RolePermission.class);
+
+        Root<Permission> permission =
+                permissionQuery.from(Permission.class);
+
+        List<Predicate> permissionPredicates =
+                new ArrayList<>();
+
+        permissionPredicates.add(
+                criteriaBuilder.equal(
+                        assignment.get("roleId"),
+                        assignedRole.get("id")));
+
+        permissionPredicates.add(
+                criteriaBuilder.equal(
+                        rolePermission
+                                .get("role")
+                                .get("id"),
+                        assignedRole.get("id")));
+
+        permissionPredicates.add(
+                criteriaBuilder.equal(
+                        rolePermission
+                                .get("permission")
+                                .get("permissionId"),
+                        permission.get("permissionId")));
+
+        permissionPredicates.add(
+                criteriaBuilder.equal(
+                        assignment.get("userId"),
+                        userUuid));
+
+        permissionPredicates.add(
+                criteriaBuilder.equal(
+                        assignment.get("tenantId"),
                         tenantUuid));
+
+        permissionPredicates.add(
+                criteriaBuilder.isTrue(
+                        assignment.get("active")));
+
+        permissionPredicates.add(
+                criteriaBuilder.lessThanOrEqualTo(
+                        assignment.get("effectiveDate"),
+                        today));
+
+        permissionPredicates.add(
+                criteriaBuilder.or(
+                        criteriaBuilder.isNull(
+                                assignment.get("expiryDate")),
+                        criteriaBuilder.greaterThan(
+                                assignment.get("expiryDate"),
+                                today)));
+
+        permissionPredicates.add(
+                criteriaBuilder.isTrue(
+                        rolePermission.get("active")));
+
+        permissionPredicates.add(
+                criteriaBuilder.isTrue(
+                        permission.get("active")));
+
+        permissionPredicates.add(
+                criteriaBuilder.equal(
+                        assignedRole.get("status"),
+                        "ACTIVE"));
+
+        permissionPredicates.add(
+                criteriaBuilder.isFalse(
+                        assignedRole.get("isDeleted")));
+
+        permissionQuery
+                .select(
+                        permission.get("permissionCode"))
+                .distinct(true)
+                .where(
+                        permissionPredicates.toArray(
+                                new Predicate[0]));
+
+        List<String> permissionCodes =
+                entityManager
+                        .createQuery(permissionQuery)
+                        .getResultList();
+
+        return new HashSet<>(permissionCodes);
     }
 
     @Override
+    // Checks if the user has the given permission.
     public boolean hasPermission(
             String userId,
             String permissionCode) {
