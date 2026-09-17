@@ -6,6 +6,8 @@ import com.example.common.tenant.TenantContext;
 import com.example.platformadmin.organizations.businessunit.dto.BusinessUnitRequestDto;
 import com.example.platformadmin.organizations.businessunit.dto.BusinessUnitResponseDto;
 import com.example.platformadmin.organizations.businessunit.entity.BusinessUnit;
+import com.example.platformadmin.organizations.businessunit.exception.BusinessUnitConflictException;
+import com.example.platformadmin.organizations.businessunit.exception.BusinessUnitNotFoundException;
 import com.example.platformadmin.organizations.businessunit.repository.BusinessUnitRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -52,7 +54,7 @@ public class BusinessUnitServiceImpl implements BusinessUnitService {
     @Transactional
     public BusinessUnitResponseDto create(BusinessUnitRequestDto request) {
         if (repository.existsByUnitCodeAndIsDeletedFalse(request.getUnitCode())) {
-            throw new BadRequestException("Business Unit code already exists: " + request.getUnitCode());
+            throw new BusinessUnitConflictException("Business Unit code already exists: " + request.getUnitCode());
         }
 
         String currentUser = resolveCurrentUser();
@@ -82,7 +84,7 @@ public class BusinessUnitServiceImpl implements BusinessUnitService {
     @Transactional(readOnly = true)
     public BusinessUnitResponseDto getById(Long id) {
         return mapToDto(repository.findByIdAndIsDeletedFalse(id)
-                .orElseThrow(() -> new ResourceNotFoundException("BusinessUnit", "id", id)));
+                .orElseThrow(() -> new BusinessUnitNotFoundException(id)));
     }
 
     @Override
@@ -106,6 +108,7 @@ public class BusinessUnitServiceImpl implements BusinessUnitService {
                 .orElseThrow(() -> new ResourceNotFoundException("BusinessUnit", "id", id));
 
         entity.setUnitName(request.getUnitName());
+        entity.setUnitCode(request.getUnitCode());
         entity.setDescription(request.getDescription());
         entity.setStatus(request.getStatus());
         entity.setUpdatedAt(LocalDateTime.now());
@@ -132,13 +135,25 @@ public class BusinessUnitServiceImpl implements BusinessUnitService {
         return repository.findByIdAndIsDeletedFalse(id).isPresent();
     }
 
+
     @Override
     @Transactional(readOnly = true)
     public List<BusinessUnitResponseDto> searchBusinessUnits(String query) {
-        return repository.searchBusinessUnits(query).stream()
+        if (query == null || query.strip().isBlank()) {
+            throw new BadRequestException("Search query must not be blank");
+        }
+        List<BusinessUnitResponseDto> results = repository.searchBusinessUnits(query).stream()
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
+        // Throw 404 Exception if no records match
+        if (results.isEmpty()) {
+            throw new BusinessUnitNotFoundException("No business units found matching query: " + query);
+        }
+
+        return results;
+
     }
+
 
     private BusinessUnitResponseDto mapToDto(BusinessUnit unit) {
         return BusinessUnitResponseDto.builder()
