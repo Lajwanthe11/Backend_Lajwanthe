@@ -4,7 +4,9 @@ import com.example.microservice.auth.dto.AuthResponse;
 import com.example.microservice.auth.dto.LoginRequest;
 import com.example.microservice.auth.dto.RegisterRequest;
 import com.example.microservice.auth.dto.TokenRefreshRequest;
+import com.example.microservice.auth.entity.MfaPolicy;
 import com.example.microservice.auth.security.jwt.JwtTokenProvider;
+import com.example.microservice.auth.security.mfa.MfaService;
 import com.example.microservice.auth.security.user.CustomUserDetailsService;
 import com.example.microservice.auth.security.user.UserPrincipal;
 import com.example.microservice.common.exception.BadRequestException;
@@ -29,38 +31,67 @@ public class AuthService {
     private final CustomUserDetailsService customUserDetailsService;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider tokenProvider;
+    private final MfaService mfaService;
+    private final MfaPolicyService mfaPolicyService;
 
-    public AuthService(AuthenticationManager authenticationManager,
-                       CustomUserDetailsService customUserDetailsService,
-                       PasswordEncoder passwordEncoder,
-                       JwtTokenProvider tokenProvider) {
+    public AuthService(
+            AuthenticationManager authenticationManager,
+            CustomUserDetailsService customUserDetailsService,
+            PasswordEncoder passwordEncoder,
+            JwtTokenProvider tokenProvider,
+            MfaService mfaService,
+            MfaPolicyService mfaPolicyService) {
+
         this.authenticationManager = authenticationManager;
         this.customUserDetailsService = customUserDetailsService;
         this.passwordEncoder = passwordEncoder;
         this.tokenProvider = tokenProvider;
+        this.mfaService = mfaService;
+        this.mfaPolicyService = mfaPolicyService;
     }
 
+    // ---------------------------------------------------------------
+    // Login
+    // ---------------------------------------------------------------
+
     public AuthResponse login(LoginRequest loginRequest) {
+
         if (StringUtils.hasText(loginRequest.getTenantId())) {
-            TenantContext.setTenantId(loginRequest.getTenantId());
+            TenantContext.setTenantId(
+                    loginRequest.getTenantId()
+            );
         }
-        String tenantId = TenantContext.getTenantId();
 
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
+        String tenantId =
+                TenantContext.getTenantId();
+
+        Authentication authentication =
+                authenticationManager.authenticate(
+                        new UsernamePasswordAuthenticationToken(
+                                loginRequest.getUsername(),
+                                loginRequest.getPassword()
+                        )
+                );
+
+        SecurityContextHolder.getContext()
+                .setAuthentication(authentication);
+
+        String accessToken =
+                tokenProvider.generateAccessToken(
+                        authentication
+                );
+
+        String refreshToken =
+                tokenProvider.generateRefreshToken(
                         loginRequest.getUsername(),
-                        loginRequest.getPassword()
-                )
-        );
+                        tenantId
+                );
 
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-
-        String accessToken = tokenProvider.generateAccessToken(authentication);
-        String refreshToken = tokenProvider.generateRefreshToken(loginRequest.getUsername(), tenantId);
-
-        List<String> roles = authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.toList());
+        List<String> roles =
+                authentication.getAuthorities()
+                        .stream()
+                        .map(GrantedAuthority::getAuthority)
+                        .collect(Collectors.toList());
 
         return AuthResponse.builder()
                 .accessToken(accessToken)
@@ -72,56 +103,168 @@ public class AuthService {
                 .build();
     }
 
-    public AuthResponse register(RegisterRequest registerRequest) {
+    // ---------------------------------------------------------------
+    // Complete MFA Login
+    // ---------------------------------------------------------------
+
+    public AuthResponse completeMfaLogin(
+            String username,
+            String tenantId) {
+
+        if (StringUtils.hasText(tenantId)) {
+            TenantContext.setTenantId(tenantId);
+        }
+
+        String effectiveTenantId =
+                TenantContext.getTenantId();
+
+        UserDetails userDetails =
+                customUserDetailsService.loadUserByUsername(
+                        username
+                );
+
+        Authentication authentication =
+                new UsernamePasswordAuthenticationToken(
+                        userDetails,
+                        null,
+                        userDetails.getAuthorities()
+                );
+
+        SecurityContextHolder.getContext()
+                .setAuthentication(authentication);
+
+        String accessToken =
+                tokenProvider.generateAccessToken(
+                        authentication
+                );
+
+        String refreshToken =
+                tokenProvider.generateRefreshToken(
+                        username,
+                        effectiveTenantId
+                );
+
+        List<String> roles =
+                authentication.getAuthorities()
+                        .stream()
+                        .map(GrantedAuthority::getAuthority)
+                        .collect(Collectors.toList());
+
+        return AuthResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .tokenType("Bearer")
+                .username(username)
+                .tenantId(effectiveTenantId)
+                .roles(roles)
+                .build();
+    }
+
+    // ---------------------------------------------------------------
+    // Register
+    // ---------------------------------------------------------------
+
+    public AuthResponse register(
+            RegisterRequest registerRequest) {
+
         if (StringUtils.hasText(registerRequest.getTenantId())) {
-            TenantContext.setTenantId(registerRequest.getTenantId());
-        }
-        String tenantId = TenantContext.getTenantId();
-
-        if (customUserDetailsService.existsByUsernameAndTenant(registerRequest.getUsername(), tenantId)) {
-            throw new BadRequestException(String.format("Username '%s' is already taken in tenant '%s'", registerRequest.getUsername(), tenantId));
+            TenantContext.setTenantId(
+                    registerRequest.getTenantId()
+            );
         }
 
-        List<String> roles = registerRequest.getRoles() != null && !registerRequest.getRoles().isEmpty()
-                ? registerRequest.getRoles()
-                : List.of("ROLE_USER");
+        String tenantId =
+                TenantContext.getTenantId();
+
+        if (customUserDetailsService
+                .existsByUsernameAndTenant(
+                        registerRequest.getUsername(),
+                        tenantId)) {
+
+            throw new BadRequestException(
+                    String.format(
+                            "Username '%s' is already taken in tenant '%s'",
+                            registerRequest.getUsername(),
+                            tenantId
+                    )
+            );
+        }
+
+        List<String> roles =
+                registerRequest.getRoles() != null
+                        && !registerRequest.getRoles().isEmpty()
+                        ? registerRequest.getRoles()
+                        : List.of("ROLE_USER");
 
         customUserDetailsService.registerUser(
                 registerRequest.getUsername(),
                 registerRequest.getEmail(),
-                passwordEncoder.encode(registerRequest.getPassword()),
+                passwordEncoder.encode(
+                        registerRequest.getPassword()
+                ),
                 roles,
                 tenantId
         );
 
-        return login(new LoginRequest(registerRequest.getUsername(), registerRequest.getPassword(), tenantId));
+        return login(
+                new LoginRequest(
+                        registerRequest.getUsername(),
+                        registerRequest.getPassword(),
+                        tenantId
+                )
+        );
     }
 
-    public AuthResponse refreshToken(TokenRefreshRequest refreshRequest) {
-        String token = refreshRequest.getRefreshToken();
+    // ---------------------------------------------------------------
+    // Refresh Token
+    // ---------------------------------------------------------------
+
+    public AuthResponse refreshToken(
+            TokenRefreshRequest refreshRequest) {
+
+        String token =
+                refreshRequest.getRefreshToken();
+
         if (!tokenProvider.validateToken(token)) {
-            throw new BadRequestException("Invalid or expired refresh token");
+            throw new BadRequestException(
+                    "Invalid or expired refresh token"
+            );
         }
 
-        String username = tokenProvider.getUsernameFromJWT(token);
-        String tenantId = tokenProvider.getTenantIdFromJWT(token);
+        String username =
+                tokenProvider.getUsernameFromJWT(token);
+
+        String tenantId =
+                tokenProvider.getTenantIdFromJWT(token);
+
         TenantContext.setTenantId(tenantId);
 
-        UserDetails userDetails = customUserDetailsService.loadUserByUsername(username);
+        UserDetails userDetails =
+                customUserDetailsService.loadUserByUsername(
+                        username
+                );
 
-        String newAccessToken = tokenProvider.generateAccessToken(
-                username,
-                userDetails.getAuthorities().stream()
+        String newAccessToken =
+                tokenProvider.generateAccessToken(
+                        username,
+                        userDetails.getAuthorities()
+                                .stream()
+                                .map(GrantedAuthority::getAuthority)
+                                .collect(Collectors.joining(",")),
+                        tenantId
+                );
+
+        String newRefreshToken =
+                tokenProvider.generateRefreshToken(
+                        username,
+                        tenantId
+                );
+
+        List<String> roles =
+                userDetails.getAuthorities()
+                        .stream()
                         .map(GrantedAuthority::getAuthority)
-                        .collect(Collectors.joining(",")),
-                tenantId
-        );
-
-        String newRefreshToken = tokenProvider.generateRefreshToken(username, tenantId);
-
-        List<String> roles = userDetails.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.toList());
+                        .collect(Collectors.toList());
 
         return AuthResponse.builder()
                 .accessToken(newAccessToken)

@@ -24,6 +24,9 @@ public class UserPrincipal implements UserDetails, OAuth2User {
     private final Collection<? extends GrantedAuthority> authorities;
     private final Map<String, Object> attributes;
 
+    // MFA status
+    private boolean mfaEnabled;
+
     public UserPrincipal(String id, String username, String email, String password, String tenantId,
                          Collection<? extends GrantedAuthority> authorities,
                          Map<String, Object> attributes) {
@@ -31,9 +34,13 @@ public class UserPrincipal implements UserDetails, OAuth2User {
         this.username = username;
         this.email = email;
         this.password = password;
-        this.tenantId = (tenantId != null && !tenantId.isBlank()) ? tenantId : TenantContext.DEFAULT_TENANT_ID;
+        this.tenantId = (tenantId != null && !tenantId.isBlank())
+                ? tenantId
+                : TenantContext.DEFAULT_TENANT_ID;
         this.authorities = authorities;
-        this.attributes = attributes != null ? attributes : Collections.emptyMap();
+        this.attributes = attributes != null
+                ? attributes
+                : Collections.emptyMap();
     }
 
     public static UserPrincipalBuilder builder() {
@@ -52,6 +59,15 @@ public class UserPrincipal implements UserDetails, OAuth2User {
         return tenantId;
     }
 
+    // MFA status
+    public boolean isMfaEnabled() {
+        return mfaEnabled;
+    }
+
+    public void setMfaEnabled(boolean mfaEnabled) {
+        this.mfaEnabled = mfaEnabled;
+    }
+
     public static UserPrincipal create(String username, String email, String password, List<String> roles) {
         return create(username, email, password, roles, TenantContext.getTenantId());
     }
@@ -59,7 +75,10 @@ public class UserPrincipal implements UserDetails, OAuth2User {
     public static UserPrincipal create(String username, String email, String password, List<String> roles, String tenantId) {
         List<GrantedAuthority> authorities = roles == null || roles.isEmpty()
                 ? List.of(new SimpleGrantedAuthority("ROLE_USER"))
-                : roles.stream().map(SimpleGrantedAuthority::new).map(GrantedAuthority.class::cast).toList();
+                : roles.stream()
+                .map(SimpleGrantedAuthority::new)
+                .map(GrantedAuthority.class::cast)
+                .toList();
 
         return UserPrincipal.builder()
                 .id(username)
@@ -191,7 +210,15 @@ public class UserPrincipal implements UserDetails, OAuth2User {
         }
 
         public UserPrincipal build() {
-            return new UserPrincipal(id, username, email, password, tenantId, authorities, attributes);
+            return new UserPrincipal(
+                    id,
+                    username,
+                    email,
+                    password,
+                    tenantId,
+                    authorities,
+                    attributes
+            );
         }
     }
 }

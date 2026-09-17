@@ -23,23 +23,49 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     public CustomUserDetailsService(PasswordEncoder passwordEncoder) {
         // Seed default admin and user for out-of-the-box testing
-        registerUser("admin", "admin@example.com", passwordEncoder.encode("admin123"), List.of("ROLE_ADMIN", "ROLE_USER"), TenantContext.DEFAULT_TENANT_ID);
-        registerUser("user", "user@example.com", passwordEncoder.encode("user123"), List.of("ROLE_USER"), TenantContext.DEFAULT_TENANT_ID);
+        registerUser(
+                "admin",
+                "admin@example.com",
+                passwordEncoder.encode("admin123"),
+                List.of("ROLE_ADMIN", "ROLE_USER"),
+                TenantContext.DEFAULT_TENANT_ID
+        );
+
+        registerUser(
+                "user",
+                "user@example.com",
+                passwordEncoder.encode("user123"),
+                List.of("ROLE_USER"),
+                TenantContext.DEFAULT_TENANT_ID
+        );
     }
 
     private String buildUserKey(String username, String tenantId) {
-        String activeTenant = (tenantId != null && !tenantId.isBlank()) ? tenantId : TenantContext.DEFAULT_TENANT_ID;
+        String activeTenant =
+                (tenantId != null && !tenantId.isBlank())
+                        ? tenantId
+                        : TenantContext.DEFAULT_TENANT_ID;
+
         return activeTenant + ":" + username;
     }
 
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+    public UserDetails loadUserByUsername(String username)
+            throws UsernameNotFoundException {
+
         String currentTenant = TenantContext.getTenantId();
-        UserPrincipal user = users.get(buildUserKey(username, currentTenant));
-        
+
+        UserPrincipal user =
+                users.get(buildUserKey(username, currentTenant));
+
         // Fallback check on default tenant if not found in current tenant
         if (user == null) {
-            user = users.get(buildUserKey(username, TenantContext.DEFAULT_TENANT_ID));
+            user = users.get(
+                    buildUserKey(
+                            username,
+                            TenantContext.DEFAULT_TENANT_ID
+                    )
+            );
         }
 
         // Direct username lookup fallback
@@ -48,28 +74,186 @@ public class CustomUserDetailsService implements UserDetailsService {
         }
 
         if (user == null) {
-            throw new UsernameNotFoundException(String.format("User not found with username '%s' in tenant '%s'", username, currentTenant));
+            throw new UsernameNotFoundException(
+                    String.format(
+                            "User not found with username '%s' in tenant '%s'",
+                            username,
+                            currentTenant
+                    )
+            );
         }
+
         return user;
     }
 
-    public void registerUser(String username, String email, String encodedPassword, List<String> roles) {
-        registerUser(username, email, encodedPassword, roles, TenantContext.getTenantId());
+    public void registerUser(
+            String username,
+            String email,
+            String encodedPassword,
+            List<String> roles) {
+
+        registerUser(
+                username,
+                email,
+                encodedPassword,
+                roles,
+                TenantContext.getTenantId()
+        );
     }
 
-    public void registerUser(String username, String email, String encodedPassword, List<String> roles, String tenantId) {
-        String effectiveTenant = (tenantId != null && !tenantId.isBlank()) ? tenantId : TenantContext.getTenantId();
-        UserPrincipal principal = UserPrincipal.create(username, email, encodedPassword, roles, effectiveTenant);
-        users.put(buildUserKey(username, effectiveTenant), principal);
+    public void registerUser(
+            String username,
+            String email,
+            String encodedPassword,
+            List<String> roles,
+            String tenantId) {
+
+        String effectiveTenant =
+                (tenantId != null && !tenantId.isBlank())
+                        ? tenantId
+                        : TenantContext.getTenantId();
+
+        UserPrincipal principal =
+                UserPrincipal.create(
+                        username,
+                        email,
+                        encodedPassword,
+                        roles,
+                        effectiveTenant
+                );
+
+        users.put(
+                buildUserKey(username, effectiveTenant),
+                principal
+        );
+
         users.put(username, principal);
     }
 
     public boolean existsByUsername(String username) {
-        return existsByUsernameAndTenant(username, TenantContext.getTenantId());
+        return existsByUsernameAndTenant(
+                username,
+                TenantContext.getTenantId()
+        );
     }
 
-    public boolean existsByUsernameAndTenant(String username, String tenantId) {
-        String effectiveTenant = (tenantId != null && !tenantId.isBlank()) ? tenantId : TenantContext.getTenantId();
-        return users.containsKey(buildUserKey(username, effectiveTenant)) || users.containsKey(username);
+    public boolean existsByUsernameAndTenant(
+            String username,
+            String tenantId) {
+
+        String effectiveTenant =
+                (tenantId != null && !tenantId.isBlank())
+                        ? tenantId
+                        : TenantContext.getTenantId();
+
+        return users.containsKey(
+                buildUserKey(username, effectiveTenant)
+        ) || users.containsKey(username);
+    }
+
+    // ---------------------------------------------------------------
+    // MFA Status
+    // ---------------------------------------------------------------
+
+    public void updateMfaStatus(
+            String username,
+            boolean enabled) {
+
+        updateMfaStatus(
+                username,
+                TenantContext.getTenantId(),
+                enabled
+        );
+    }
+
+    public void updateMfaStatus(
+            String username,
+            String tenantId,
+            boolean enabled) {
+
+        String effectiveTenant =
+                (tenantId != null && !tenantId.isBlank())
+                        ? tenantId
+                        : TenantContext.getTenantId();
+
+        UserPrincipal user =
+                users.get(
+                        buildUserKey(
+                                username,
+                                effectiveTenant
+                        )
+                );
+
+        if (user == null) {
+            user = users.get(username);
+        }
+
+        if (user != null) {
+            user.setMfaEnabled(enabled);
+        }
+    }
+
+    public boolean isMfaEnabled(String username) {
+
+        return isMfaEnabled(
+                username,
+                TenantContext.getTenantId()
+        );
+    }
+
+    public boolean isMfaEnabled(
+            String username,
+            String tenantId) {
+
+        String effectiveTenant =
+                (tenantId != null && !tenantId.isBlank())
+                        ? tenantId
+                        : TenantContext.getTenantId();
+
+        UserPrincipal user =
+                users.get(
+                        buildUserKey(
+                                username,
+                                effectiveTenant
+                        )
+                );
+
+        if (user == null) {
+            user = users.get(username);
+        }
+
+        return user != null && user.isMfaEnabled();
+    }
+
+    // ---------------------------------------------------------------
+    // MFA Statistics
+    // ---------------------------------------------------------------
+
+    public long countMfaEnrolledUsers(
+            String organizationId) {
+
+        return users.values()
+                .stream()
+                .filter(user ->
+                        organizationId == null
+                                || organizationId.equals(user.getTenantId())
+                )
+                .filter(UserPrincipal::isMfaEnabled)
+                .distinct()
+                .count();
+    }
+
+    public long countMfaPendingUsers(
+            String organizationId) {
+
+        return users.values()
+                .stream()
+                .filter(user ->
+                        organizationId == null
+                                || organizationId.equals(user.getTenantId())
+                )
+                .filter(user -> !user.isMfaEnabled())
+                .distinct()
+                .count();
     }
 }
