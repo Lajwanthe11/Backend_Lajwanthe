@@ -9,17 +9,16 @@ import com.example.rbac.exception.RoleNotFoundException;
 import com.example.rbac.dto.*;
 import com.example.rbac.entity.Permission;
 import com.example.rbac.entity.Role;
-import com.example.rbac.entity.RoleTemplate;
 import com.example.rbac.enums.RoleType;
 import com.example.rbac.repository.RoleHistoryRepository;
 import com.example.rbac.repository.RoleRepository;
-import com.example.rbac.repository.RoleTemplateRepository;
 import com.example.rbac.service.RoleExportService;
 import com.example.rbac.service.RoleService;
 import com.example.rbac.service.CurrentUserContext;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,7 +31,6 @@ import java.util.stream.Collectors;
 public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto, RoleResponseDto> implements RoleService {
 
     private final RoleRepository roleRepository;
-    private final RoleTemplateRepository roleTemplateRepository;
     private final CurrentUserContext currentUser;
     private final RoleHistoryRepository roleHistoryRepository;
     private final RoleExportService roleExportService;
@@ -40,7 +38,6 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
 
     public RoleServiceImpl(
             RoleRepository roleRepository,
-            RoleTemplateRepository roleTemplateRepository,
             CurrentUserContext currentUser,
             RoleHistoryRepository roleHistoryRepository,
             RoleExportService roleExportService,
@@ -50,7 +47,6 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
         super(roleRepository, "Role");
 
         this.roleRepository = roleRepository;
-        this.roleTemplateRepository = roleTemplateRepository;
         this.currentUser = currentUser;
         this.roleHistoryRepository = roleHistoryRepository;
         this.roleExportService = roleExportService;
@@ -89,8 +85,8 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
         role.setIsDeleted(false);
 
         if (dto.getTemplateId() != null) {
-            RoleTemplate template = roleTemplateRepository
-                    .findById(String.valueOf(dto.getTemplateId()))
+            Role template = roleRepository
+                    .findById(dto.getTemplateId())   // UUID, not String.valueOf(...)
                     .orElseThrow(() -> new ResourceNotFoundException(
                             "Template not found: " + dto.getTemplateId()));
 
@@ -102,6 +98,7 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
             }
         }
         return role;
+
     }
 
     // Convert Role entity to response DTO
@@ -370,55 +367,77 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
     }
 
     // ---------------------------------------------------------------
-    // listTemplates()
+    // listTemplates() — GET /api/v1/roles/templates
+    // Templates = the SYSTEM-type rows already in the roles table (no
+    // separate role_templates table — see sprint doc's official table
+    // list, page 3). Only Super Admin can view the template library at
+    // the platform level; Org Admin only sees non-hidden ones within
+    // their tenant.
     // ---------------------------------------------------------------
     @Override
     public List<RoleTemplateSummaryDto> listTemplates() {
-        List<RoleTemplate> templates = currentUser.hasRole("SUPER_ADMIN")
-                ? roleTemplateRepository.findAll()
-                : roleTemplateRepository.findAllByHiddenFalse();
+        UUID tenantId = getCurrentTenantUuid();
+
+        List<Role> templates = currentUser.hasRole("SUPER_ADMIN")
+                ? roleRepository.findByTenantIdAndRoleTypeAndIsDeletedFalse(tenantId, RoleType.SYSTEM)
+                : roleRepository.findByTenantIdAndRoleTypeAndIsDeletedFalseAndTemplateHiddenFalse(
+                tenantId, RoleType.SYSTEM);
 
         return templates.stream()
-                .map(t -> new RoleTemplateSummaryDto(
-                        t.getId(), t.getName(), t.getDescription(),
-                        t.getPermissions().size(), t.getRecommendedFor()))
+                .map(r -> new RoleTemplateSummaryDto(
+                        r.getId(), r.getRoleName(), r.getDescription(),
+                        r.getPermissions().size(), r.getRoleCode()))
                 .toList();
     }
 
     // ---------------------------------------------------------------
-    // getTemplateDetail()
+    // getTemplateDetail() — GET /api/v1/roles/templates/{id}
     // ---------------------------------------------------------------
     @Override
     public RoleTemplateDetailDto getTemplateDetail(UUID templateId) {
-        RoleTemplate template = roleTemplateRepository.findById(String.valueOf(templateId))
-                .orElseThrow(() -> new ResourceNotFoundException("Template not found: " + templateId));
+        UUID tenantId = getCurrentTenantUuid();
+
+        Role template = roleRepository
+                .findByIdAndTenantIdAndRoleTypeAndIsDeletedFalse(templateId, tenantId, RoleType.SYSTEM)
+                .orElseThrow(() -> new ResourceNotFoundException("Role template", "id", templateId));
 
         Set<String> permissionCodes = template.getPermissions().stream()
                 .map(Permission::getPermissionCode)
                 .collect(Collectors.toSet());
 
         return new RoleTemplateDetailDto(
-                template.getId(), template.getName(), template.getDescription(),
-                template.getRecommendedFor(), permissionCodes);
+                template.getId(), template.getRoleName(), template.getDescription(),
+                template.getRoleCode(), permissionCodes);
+    }
+
+    private void requireSuperAdmin() {
+        if (!currentUser.hasRole("SUPER_ADMIN")) {
+            throw new AccessDeniedException("Only Super Admin can perform this action");
+        }
     }
 
     // ---------------------------------------------------------------
-    // updateTemplateVisibility()
-    // Templates are never deleted — only hidden/shown in the library.
-    // Endpoint-level @PreAuthorize restricts this to Super Admin already;
-    // no additional role check needed here.
+    // updateTemplateVisibility() — Super Admin only.
+    // Templates (SYSTEM roles) are never deleted, only hidden/shown in
+    // the library — this flips a flag on the same roles row, it does
+    // not deactivate the role itself.
     // ---------------------------------------------------------------
     @Override
     @Transactional
     public void updateTemplateVisibility(UUID templateId, boolean hidden) {
-        RoleTemplate template = roleTemplateRepository.findById(String.valueOf(templateId))
-                .orElseThrow(() -> new ResourceNotFoundException("Template not found: " + templateId));
-        template.setHidden(hidden);
-        roleTemplateRepository.save(template);
+        requireSuperAdmin();
+        UUID tenantId = getCurrentTenantUuid();
+
+        Role template = roleRepository
+                .findByIdAndTenantIdAndRoleTypeAndIsDeletedFalse(templateId, tenantId, RoleType.SYSTEM)
+                .orElseThrow(() -> new ResourceNotFoundException("Role template", "id", templateId));
+
+        template.setTemplateHidden(hidden);
+        roleRepository.save(template);
     }
 
     // ---------------------------------------------------------------
-    // listSystemRoles()
+    // listSystemRoles() — GET /api/v1/roles/system
     // ---------------------------------------------------------------
     @Override
     public List<RoleResponseDto> listSystemRoles() {
@@ -430,10 +449,9 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
     }
 
     // ---------------------------------------------------------------
-    // cloneRole()
-    // NOTE: takes String ids (not UUID) — matches the current real service
-    // signature confirmed by your compile errors. Ids are parsed with
-    // UUID.fromString at the point they're actually needed as UUID.
+    // cloneRole() — POST /api/v1/roles/{roleId}/clone
+    // Edge case: cloned role always becomes CUSTOM with a unique code,
+    // even when cloning a SYSTEM role.
     // ---------------------------------------------------------------
     @Override
     @Transactional
@@ -447,7 +465,7 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
         clone.setTenantId(tenantId);
         clone.setRoleName(request.getNewName());
         clone.setDescription(source.getDescription());
-        clone.setRoleType(RoleType.CUSTOM); // always CUSTOM, even cloning a SYSTEM role
+        clone.setRoleType(RoleType.CUSTOM);
         clone.setRoleCode(generateUniqueRoleCode(tenantId, request.getNewName()));
         clone.setClonedFromRoleId(source.getId());
         clone.setPermissions(new HashSet<>(source.getPermissions()));
@@ -461,7 +479,9 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
     }
 
     // ---------------------------------------------------------------
-    // compareRoles()
+    // compareRoles() — GET /api/v1/roles/compare?role1Id=&role2Id=
+    // Edge case: works even if one or both roles have zero permissions
+    // (empty sets, never null).
     // ---------------------------------------------------------------
     @Override
     public RoleCompareResponse compareRoles(String role1Id, String role2Id) {
@@ -472,8 +492,6 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
         Role role2 = roleRepository.findByIdAndTenantId(role2Id, tenantId)
                 .orElseThrow(() -> new RoleNotFoundException(role2Id));
 
-        // Permission sets default to empty (never null) so roles with zero
-        // permissions compare cleanly instead of NPE-ing.
         Set<String> perms1 = role1.getPermissions().stream()
                 .map(Permission::getPermissionCode)
                 .collect(Collectors.toCollection(HashSet::new));
@@ -498,14 +516,13 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
     }
 
     // ---------------------------------------------------------------
-    // getHistory()
+    // getHistory() — GET /api/v1/roles/{roleId}/history
+    // Must show: changed by (user), timestamp, what changed (before/after).
     // ---------------------------------------------------------------
     @Override
     public List<RoleHistoryDto> getHistory(String roleId) {
         UUID tenantId = currentUser.getTenantId();
 
-        // Confirms the role belongs to the caller's tenant before returning
-        // any history for it.
         roleRepository.findByIdAndTenantId(roleId, tenantId)
                 .orElseThrow(() -> new RoleNotFoundException(roleId));
 
@@ -518,13 +535,12 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
     }
 
     // ---------------------------------------------------------------
-    // exportRoles()
+    // exportRoles() — GET /api/v1/roles/export
+    // Respects caller's tenant scope — never exports other tenants' data.
     // ---------------------------------------------------------------
     @Override
     public byte[] exportRoles(String format) {
         UUID tenantId = currentUser.getTenantId();
-        // tenantId comes only from the verified token — "format" never
-        // influences which tenant's data gets pulled.
         List<Role> roles = roleRepository.findAllByTenantId(tenantId);
         return roleExportService.export(roles, format);
     }

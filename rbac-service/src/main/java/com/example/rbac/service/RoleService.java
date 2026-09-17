@@ -32,4 +32,6 @@ public interface RoleService extends BaseService<Role, UUID, RoleRequestDto, Rol
     List<RoleHistoryDto> getHistory(String roleId);
 
     byte[] exportRoles(String format);
+
+
 }

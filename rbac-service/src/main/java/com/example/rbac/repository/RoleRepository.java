@@ -36,7 +36,6 @@ public interface RoleRepository extends JpaRepository<Role, UUID> {
                 OR LOWER(r.roleCode) LIKE LOWER(CONCAT('%', :query, '%')))
             AND (:roleType IS NULL OR r.roleType = :roleType)
             AND (:status IS NULL OR r.status = :status)""")
-    List<Role> searchRoles( @Param("tenantId") UUID tenantId, @Param("query") String query, @Param("roleType") RoleType roleType, @Param("status") String status);
 
     long countByTenantIdAndIsDeletedFalse(UUID tenantId);
 
@@ -52,9 +51,34 @@ public interface RoleRepository extends JpaRepository<Role, UUID> {
 
     Optional<Role> findByIdAndTenantId(String id, UUID tenantId);
 
+    @Query("SELECT r FROM Role r WHERE r.tenantId = :tenantId AND r.roleType = :roleType AND r.isDeleted = false")
+
+    List<Role> findByTenantIdAndRoleTypeAndIsDeletedFalseAndTemplateHiddenFalse(UUID tenantId, RoleType roleType);
+
     List<Role> findAllByTenantIdAndType(UUID tenantId, RoleType type);
 
     Optional<Role> findByRoleIdAndTenantId(UUID roleId, UUID tenantId);
 
     Optional<Role> findByTenantIdAndRoleCodeIgnoreCase(UUID tenantId, String roleCode);
+
+    Optional<Role> findByIdAndTenantIdAndRoleTypeAndIsDeletedFalse(UUID id, UUID tenantId, RoleType roleType);
+
+    List<Role> findByTenantIdAndRoleTypeAndIsDeletedFalse(UUID tenantId, RoleType roleType);
+
+    @Query("""
+            SELECT r FROM Role r
+            WHERE r.tenantId = :tenantId
+              AND r.isDeleted = false
+              AND (:query IS NULL OR LOWER(r.roleName) LIKE LOWER(CONCAT('%', :query, '%'))
+                                    OR LOWER(r.roleCode) LIKE LOWER(CONCAT('%', :query, '%')))
+              AND (:roleType IS NULL OR r.roleType = :roleType)
+              AND (:status IS NULL OR r.status = :status)
+            """)
+    List<Role> searchRoles(
+            @Param("tenantId") UUID tenantId,
+            @Param("query") String query,
+            @Param("roleType") RoleType roleType,
+            @Param("status") String status);
+
+    List<Role> findAllByHiddenFalse();
 }

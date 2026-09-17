@@ -7,7 +7,6 @@ import com.example.rbac.enums.RoleType;
 import com.example.rbac.repository.PermissionRepository;
 import com.example.rbac.repository.RoleHistoryRepository;
 import com.example.rbac.repository.RoleRepository;
-import com.example.rbac.repository.RoleTemplateRepository;
 import com.example.rbac.service.serviceImpl.RoleServiceImpl;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -28,9 +27,6 @@ class RoleServiceImplTest {
 
     @Mock
     private RoleRepository roleRepository;
-
-    @Mock
-    private RoleTemplateRepository roleTemplateRepository;
 
     @Mock
     private CurrentUserContext currentUserContext;
@@ -60,7 +56,6 @@ class RoleServiceImplTest {
 
         roleService = new RoleServiceImpl(
                 roleRepository,
-                roleTemplateRepository,
                 currentUserContext,
                 roleHistoryRepository,
                 roleExportService,

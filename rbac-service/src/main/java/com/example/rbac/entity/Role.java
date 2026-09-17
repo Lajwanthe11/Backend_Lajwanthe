@@ -80,6 +80,8 @@ public class Role {
     @Column(name = "created_from_template_id")
     private UUID createdFromTemplateId;
 
+    @Column(name = "template_hidden", nullable = false)
+    private Boolean templateHidden = false;
 
     @PrePersist
     protected void onCreate() {
@@ -213,11 +215,15 @@ public class Role {
         return deleted;
     }
 
-    public boolean isActive() {
+    public boolean isActive(boolean b) {
         return active;
     }
 
-    public void setActive(boolean b) {
+    public Boolean getTemplateHidden() {
+        return templateHidden;
+    }
 
+    public void setTemplateHidden(Boolean templateHidden) {
+        this.templateHidden = templateHidden;
     }
 }
