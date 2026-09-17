@@ -37,17 +37,19 @@ public class AuthService {
     private final JwtTokenProvider tokenProvider;
     // NEW: password strength validation added for registration flow
     private final PasswordValidator passwordValidator;
+    private final SessionManagementService sessionManagementService;
 
     public AuthService(AuthenticationManager authenticationManager,
                        CustomUserDetailsService customUserDetailsService,
                        PasswordEncoder passwordEncoder,
                        JwtTokenProvider tokenProvider,
-                       PasswordValidator passwordValidator) {
+                       PasswordValidator passwordValidator,SessionManagementService sessionManagementService) {
         this.authenticationManager = authenticationManager;
         this.customUserDetailsService = customUserDetailsService;
         this.passwordEncoder = passwordEncoder;
         this.tokenProvider = tokenProvider;
         this.passwordValidator = passwordValidator;
+        this.sessionManagementService = sessionManagementService;
     }
 
     public AuthResponseDTO login(LoginRequestDTO loginRequest) {
@@ -94,9 +96,12 @@ public class AuthService {
         customUserDetailsService.resetFailedAttempts(loginRequest.getUsername(), tenantId);
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
-
-        String accessToken = tokenProvider.generateAccessToken(authentication);
-        String refreshToken = tokenProvider.generateRefreshToken(loginRequest.getUsername(), tenantId);
+        String sessionId = sessionManagementService.createSession(
+                loginRequest.getUsername(),
+                tenantId
+        );
+        String accessToken = tokenProvider.generateAccessToken(authentication,sessionId);
+        String refreshToken = tokenProvider.generateRefreshToken(loginRequest.getUsername(), tenantId,sessionId);
 
         List<String> roles = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
@@ -109,6 +114,7 @@ public class AuthService {
                 .username(loginRequest.getUsername())
                 .tenantId(tenantId)
                 .roles(roles)
+                .sessionId(sessionId)
                 .build();
     }
 
