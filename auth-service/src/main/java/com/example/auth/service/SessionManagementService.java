@@ -1,5 +1,9 @@
 package com.example.auth.service;
 
+import com.example.auth.securityalerts.dto.SecurityEventRequest;
+import com.example.auth.securityalerts.entity.SecurityEvent.EventType;
+import com.example.auth.securityalerts.entity.SecurityEvent.SourceModule;
+import com.example.auth.securityalerts.service.SecurityEventService;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -14,6 +18,12 @@ import java.util.concurrent.ConcurrentHashMap;
 
         private final Map<String, Session> sessions = new ConcurrentHashMap<>();
 
+        private final SecurityEventService securityEventService;
+
+        public SessionManagementService(SecurityEventService securityEventService) {
+            this.securityEventService = securityEventService;
+        }
+
         public String createSession(String username, String tenantId) {
 
             String sessionId = UUID.randomUUID().toString();
@@ -27,6 +37,14 @@ import java.util.concurrent.ConcurrentHashMap;
             );
 
             sessions.put(sessionId, session);
+
+            // Security Alerts: IP address and user agent are taken from the current request.
+            // record() never throws, so a monitoring problem cannot block the login.
+            securityEventService.record(SecurityEventRequest.builder(EventType.SESSION_CREATED, SourceModule.SESSION_MANAGEMENT)
+                    .username(username)
+                    .tenantId(tenantId)
+                    .sessionId(sessionId)
+                    .build());
 
             return sessionId;
         }

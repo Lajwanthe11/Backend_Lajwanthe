@@ -62,6 +62,15 @@ app:
     lockout:
         max-attempts: ${ACCOUNT_LOCKOUT_MAX_ATTEMPTS:3}
         duration-minutes: ${ACCOUNT_LOCKOUT_DURATION_MINUTES:2}
+  security-alerts:
+    enabled: ${SECURITY_ALERTS_ENABLED:true}
+    # Shared secret other services send in the X-Internal-Api-Key header to POST /security-alerts/events/ingest.
+    # Empty = that endpoint is disabled. Never commit a real value.
+    ingest-api-key: ${SECURITY_ALERTS_INGEST_API_KEY:}
+    # Only set to true behind a proxy that overwrites X-Forwarded-For; otherwise clients can fake their IP.
+    trust-forwarded-headers: ${SECURITY_ALERTS_TRUST_FORWARDED_HEADERS:false}
+    # Maximum rows in one "Export Report" CSV download.
+    export-max-rows: ${SECURITY_ALERTS_EXPORT_MAX_ROWS:10000}
   tenant:
     default-tenant: ${DEFAULT_TENANT_ID:default}
     header-name: ${TENANT_HEADER_NAME:X-Tenant-ID}

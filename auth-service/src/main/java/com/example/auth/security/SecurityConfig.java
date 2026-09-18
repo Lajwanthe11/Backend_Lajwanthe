@@ -8,6 +8,7 @@ import com.example.auth.security.oauth2.OAuth2AuthenticationSuccessHandler;
 import com.example.common.tenant.TenantFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -75,6 +76,8 @@ public class SecurityConfig {
                                 "/error"
                         ).permitAll()
                         .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
+                        // Service-to-service event reporting: authenticated by the X-Internal-Api-Key header in the controller
+                        .requestMatchers(HttpMethod.POST, "/security-alerts/events/ingest").permitAll()
                         // All other endpoints require authentication
                         .anyRequest().authenticated()
                 )
