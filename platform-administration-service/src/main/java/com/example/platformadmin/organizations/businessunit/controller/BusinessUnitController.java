@@ -1,6 +1,7 @@
 package com.example.platformadmin.organizations.businessunit.controller;
 
 import com.example.common.abstracts.AbstractController;
+import com.example.common.response.ApiResponse;
 import com.example.platformadmin.organizations.businessunit.dto.BusinessUnitRequestDto;
 import com.example.platformadmin.organizations.businessunit.dto.BusinessUnitResponseDto;
 import com.example.platformadmin.organizations.businessunit.entity.BusinessUnit;
@@ -32,9 +33,12 @@ public class BusinessUnitController extends AbstractController<
         this.businessUnitService = businessUnitService;
     }
 
+
     @GetMapping("/search")
     @Operation(summary = "Search business units", description = "Case-insensitive keyword search across code and name")
-    public ResponseEntity<List<BusinessUnitResponseDto>> searchBusinessUnits(@RequestParam String query) {
-        return ResponseEntity.ok(businessUnitService.searchBusinessUnits(query));
+    public ResponseEntity<ApiResponse<List<BusinessUnitResponseDto>>> searchBusinessUnits(@RequestParam String query) {
+        List<BusinessUnitResponseDto> results = businessUnitService.searchBusinessUnits(query);
+        return ResponseEntity.ok(ApiResponse.ok(results));
     }
+
 }

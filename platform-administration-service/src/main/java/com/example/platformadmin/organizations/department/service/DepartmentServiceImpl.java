@@ -4,6 +4,7 @@ import com.example.common.abstracts.AbstractService;
 import com.example.platformadmin.organizations.department.dto.DepartmentRequest;
 import com.example.platformadmin.organizations.department.dto.DepartmentResponse;
 import com.example.platformadmin.organizations.department.entity.Department;
+import com.example.platformadmin.organizations.department.exception.DepartmentNotFoundException;
 import com.example.platformadmin.organizations.department.repository.DepartmentRepository;
 import org.springframework.stereotype.Service;
 
@@ -64,7 +65,7 @@ public class DepartmentServiceImpl
                 .collect(Collectors.toList());
 
         if (departments.isEmpty()) {
-            throw new RuntimeException("Department not found");
+            throw new DepartmentNotFoundException("No departments found matching: " + departmentName);
         }
 
         return departments;
