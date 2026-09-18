@@ -7,6 +7,8 @@ public class RoleCloneRequest {
     @NotBlank(message = "New role name is required")
     private String newName;
 
+    public RoleCloneRequest() { }
+
     public RoleCloneRequest(String newName) {
         this.newName = newName;
     }

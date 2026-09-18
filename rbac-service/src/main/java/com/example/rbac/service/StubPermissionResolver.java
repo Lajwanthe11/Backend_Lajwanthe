@@ -6,6 +6,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
+// Development-only fake permission source. It maps known demo user IDs to permission sets.
 @Service
 @Profile("dev")
 public class StubPermissionResolver implements PermissionResolver {

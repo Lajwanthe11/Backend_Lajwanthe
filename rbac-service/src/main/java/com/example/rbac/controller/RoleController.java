@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -60,54 +61,67 @@ public class RoleController extends AbstractController<Role, UUID, RoleRequestDt
     return ResponseEntity.ok(roleService.getRoleCounts());
     }
 
-    // List all system roles
-    @PreAuthorize("hasAuthority('ROLE_READ')")
-    @GetMapping("/system")
-    public List<RoleResponseDto> listSystemRoles() {
-        return roleService.listSystemRoles();
+    // GET /api/v1/roles/templates — list all available role templates.
+    // Only Super Admin can view templates per security responsibilities.
+    @GetMapping("/templates")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public ResponseEntity<List<RoleTemplateSummaryDto>> listTemplates() {
+        return ResponseEntity.ok(roleService.listTemplates());
     }
 
-    // Clone an existing role
-    // roleId: ID of the role to clone
-    // request: Contains details for the new cloned role
-    @PreAuthorize("hasAuthority('ROLE_WRITE')")
+    // GET /api/v1/roles/templates/{id} — get template detail with permissions list
+    @GetMapping("/templates/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public ResponseEntity<RoleTemplateDetailDto> getTemplateDetail(@PathVariable UUID id) {
+        return ResponseEntity.ok(roleService.getTemplateDetail(id));
+    }
+
+    // Super Admin only — hide/show a template in the library (never deletes it)
+    @PatchMapping("/templates/{id}/visibility")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public ResponseEntity<Void> updateTemplateVisibility(
+            @PathVariable UUID id,
+            @RequestParam boolean hidden) {
+        roleService.updateTemplateVisibility(id, hidden);
+        return ResponseEntity.noContent().build();
+    }
+
+    // POST /api/v1/roles/{roleId}/clone — clone an existing role as a new role
     @PostMapping("/{roleId}/clone")
-    public RoleResponseDto cloneRole(@PathVariable String roleId, @Valid @RequestBody RoleCloneRequest request) {
-        return roleService.cloneRole(roleId, request);
+    public ResponseEntity<RoleResponseDto> cloneRole(
+            @PathVariable String roleId,
+            @Valid @RequestBody RoleCloneRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(roleService.cloneRole(roleId, request));
     }
 
-    // Compare two roles
-    @PreAuthorize("hasAuthority('ROLE_READ')")
+    // GET /api/v1/roles/compare?role1Id=&role2Id= — compare permissions of two roles
     @GetMapping("/compare")
-    public RoleCompareResponse compareRoles(@RequestParam String role1Id, @RequestParam String role2Id) {
-        return roleService.compareRoles(role1Id, role2Id);
+    public ResponseEntity<RoleCompareResponse> compareRoles(
+            @RequestParam String role1Id,
+            @RequestParam String role2Id) {
+        return ResponseEntity.ok(roleService.compareRoles(role1Id, role2Id));
     }
 
-    // Get the change history of a role
-    // roleId: ID of the role whose history should be retrieved
-    @PreAuthorize("hasAuthority('ROLE_READ')")
+    // GET /api/v1/roles/{roleId}/history — get audit history of a specific role
     @GetMapping("/{roleId}/history")
-    public List<RoleHistoryDto> getHistory(@PathVariable String roleId) {
-        return roleService.getHistory(roleId);
+    public ResponseEntity<List<RoleHistoryDto>> getHistory(@PathVariable String roleId) {
+        return ResponseEntity.ok(roleService.getHistory(roleId));
     }
 
-    // Export roles in XLSX or PDF format
-    @PreAuthorize("hasAuthority('ROLE_READ')")
+    // GET /api/v1/roles/export — export role list and permissions summary
+    // Endpoint produces role and permission data only — never other tenants' data.
     @GetMapping("/export")
-    public ResponseEntity<byte[]> exportRoles(@RequestParam(defaultValue = "xlsx") String format) {
-
-        // Generate the export file using the requested format
-        byte[] file = roleService.exportRoles(format);
-
-        // Generate the appropriate file name
-        MediaType mediaType = "pdf".equalsIgnoreCase(format)
-                ? MediaType.APPLICATION_PDF
-                : MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-        String filename = "roles-export." + ("pdf".equalsIgnoreCase(format) ? "pdf" : "xlsx");
-
+    public ResponseEntity<byte[]> exportRoles(@RequestParam(defaultValue = "csv") String format) {
+        byte[] data = roleService.exportRoles(format);
         return ResponseEntity.ok()
-                .contentType(mediaType)
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
-                .body(file);
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=roles-export.csv")
+                .contentType(MediaType.parseMediaType("text/csv"))
+                .body(data);
+    }
+
+    // GET /api/v1/roles/system — list all system (non-custom) roles
+    @GetMapping("/system")
+    public ResponseEntity<List<RoleResponseDto>> listSystemRoles() {
+        return ResponseEntity.ok(roleService.listSystemRoles());
     }
 }
