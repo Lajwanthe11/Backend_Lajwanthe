@@ -31,6 +31,7 @@ public class DepartmentPermissionController {
         return ResponseEntity.ok(departmentPermissionService.getDepartmentScope(roleId));
     }
 
+    // userId included in path for API consistency, not currently used in logic
     @PutMapping("/{userId}/roles/{roleId}/departments")
     @RequirePermission("ROLE_ASSIGN")
     @Operation(summary = "Update department scope for a user's role")
@@ -44,6 +45,7 @@ public class DepartmentPermissionController {
         return ResponseEntity.ok().build();
     }
 
+    // Reverts role assignment to "All Departments" (default when no scope rows exist)
     @DeleteMapping("/{userId}/roles/{roleId}/departments/all")
     @RequirePermission("ROLE_ASSIGN")
     @Operation(summary = "Remove all department scope for a user's role")

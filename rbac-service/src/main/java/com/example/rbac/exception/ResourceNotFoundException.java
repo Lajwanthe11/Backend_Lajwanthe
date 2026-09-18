@@ -11,8 +11,8 @@ public class ResourceNotFoundException extends RuntimeException {
         super(message);
     }
 
-    public ResourceNotFoundException(String role, String id, UUID id1) {
-        super("Not Found" + id);
+    public ResourceNotFoundException(String resourceType, String fieldName, UUID id) {
+        super(resourceType + " not found with " + fieldName + ": " + id);
     }
 }
 

@@ -17,7 +17,7 @@ public class CustomRoleConfig {
     private Long configId;
 
     @Column(name = "role_id", nullable = false)
-    private Long roleId;
+    private java.util.UUID roleId;
 
     @Column(name = "tenant_id", nullable = false, length = 100)
     private String tenantId;
@@ -55,11 +55,11 @@ public class CustomRoleConfig {
         this.configId = configId;
     }
 
-    public Long getRoleId() {
+    public java.util.UUID getRoleId() {
         return roleId;
     }
 
-    public void setRoleId(Long roleId) {
+    public void setRoleId(java.util.UUID roleId) {
         this.roleId = roleId;
     }
 

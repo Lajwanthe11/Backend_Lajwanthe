@@ -4,9 +4,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Response DTO for the Permission Matrix.
+ *
+ * Contains the roles displayed as matrix columns and the
+ * permission groups displayed as matrix rows.
+ */
 public class PermissionMatrixResponse {
 
+    // Roles displayed as columns in the Permission Matrix.
     private List<RoleColumn> roles;
+
+    // Permission groups displayed as sections in the Permission Matrix.
     private List<PermissionGroupRow> permissionGroups;
 
     public PermissionMatrixResponse() {
@@ -40,6 +49,9 @@ public class PermissionMatrixResponse {
         return new Builder();
     }
 
+    /**
+     * Builder for PermissionMatrixResponse.
+     */
     public static class Builder {
 
         private List<RoleColumn> roles;
@@ -63,12 +75,19 @@ public class PermissionMatrixResponse {
         }
     }
 
+    /**
+     * Represents one role displayed as a column in the matrix.
+     */
     public static class RoleColumn {
 
+        // Unique ID of the role.
         private UUID roleId;
+
+        // Display name of the role.
         private String roleName;
+
+        // Unique/business code of the role.
         private String roleCode;
-        private Long version;
 
         public RoleColumn() {
         }
@@ -76,12 +95,10 @@ public class PermissionMatrixResponse {
         public RoleColumn(
                 UUID roleId,
                 String roleName,
-                String roleCode,
-                Long version) {
+                String roleCode) {
             this.roleId = roleId;
             this.roleName = roleName;
             this.roleCode = roleCode;
-            this.version = version;
         }
 
         public UUID getRoleId() {
@@ -108,24 +125,18 @@ public class PermissionMatrixResponse {
             this.roleCode = roleCode;
         }
 
-        public Long getVersion() {
-            return version;
-        }
-
-        public void setVersion(Long version) {
-            this.version = version;
-        }
-
         public static RoleColumnBuilder builder() {
             return new RoleColumnBuilder();
         }
 
+        /**
+         * Builder for RoleColumn.
+         */
         public static class RoleColumnBuilder {
 
             private UUID roleId;
             private String roleName;
             private String roleCode;
-            private Long version;
 
             public RoleColumnBuilder roleId(UUID roleId) {
                 this.roleId = roleId;
@@ -142,25 +153,29 @@ public class PermissionMatrixResponse {
                 return this;
             }
 
-            public RoleColumnBuilder version(Long version) {
-                this.version = version;
-                return this;
-            }
-
             public RoleColumn build() {
                 return new RoleColumn(
                         roleId,
                         roleName,
-                        roleCode,
-                        version);
+                        roleCode);
             }
         }
     }
 
+    /**
+     * Represents one permission group in the matrix.
+     *
+     * A permission group can contain multiple permissions.
+     */
     public static class PermissionGroupRow {
 
+        // Unique ID of the permission group.
         private String groupId;
+
+        // Display name of the permission group.
         private String groupName;
+
+        // Permissions belonging to this group.
         private List<PermissionRow> permissions;
 
         public PermissionGroupRow() {
@@ -203,6 +218,9 @@ public class PermissionMatrixResponse {
             return new PermissionGroupRowBuilder();
         }
 
+        /**
+         * Builder for PermissionGroupRow.
+         */
         public static class PermissionGroupRowBuilder {
 
             private String groupId;
@@ -234,12 +252,29 @@ public class PermissionMatrixResponse {
         }
     }
 
+    /**
+     * Represents one permission row in the matrix.
+     *
+     * roleGrants contains the grant status for each role.
+     */
     public static class PermissionRow {
 
+        // Permission UUID represented as a String in the API response.
         private String permId;
+
+        // Unique permission code.
         private String permCode;
+
+        // Human-readable permission name.
         private String displayName;
+
+        // Maps role ID to its grant status.
+        //
+        // true = role has the permission.
+        // false = role does not have the permission.
         private Map<String, Boolean> roleGrants;
+
+        // Indicates whether this permission is a system permission.
         private boolean system;
 
         public PermissionRow() {
@@ -303,6 +338,9 @@ public class PermissionMatrixResponse {
             return new PermissionRowBuilder();
         }
 
+        /**
+         * Builder for PermissionRow.
+         */
         public static class PermissionRowBuilder {
 
             private String permId;

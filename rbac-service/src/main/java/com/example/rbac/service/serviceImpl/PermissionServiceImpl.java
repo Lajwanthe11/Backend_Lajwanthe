@@ -2,10 +2,9 @@ package com.example.rbac.service.serviceImpl;
 
 import com.example.rbac.dto.PermissionResponseDto;
 import com.example.rbac.entity.Permission;
+import com.example.rbac.exception.PermissionNotFoundException;
 import com.example.rbac.repository.PermissionRepository;
-import com.example.rbac.service.PermissionNotFoundException;
 import com.example.rbac.service.PermissionService;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -23,8 +22,7 @@ public class PermissionServiceImpl implements PermissionService {
     }
 
     @Override
-    public Page<PermissionResponseDto> listPermissions(UUID groupId, String module, boolean activeOnly,
-            Pageable pageable) {
+    public Page<PermissionResponseDto> listPermissions(UUID groupId, String module, boolean activeOnly, Pageable pageable) {
         return permissionRepository.filter(groupId, module, activeOnly, pageable).map(this::toDto);
     }
 
@@ -61,6 +59,7 @@ public class PermissionServiceImpl implements PermissionService {
                 p.getDescription(),
                 p.isActive(),
                 p.isSystem(),
-                p.getModule());
+                p.getModule()
+        );
     }
 }

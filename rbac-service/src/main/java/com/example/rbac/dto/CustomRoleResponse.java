@@ -4,10 +4,12 @@ import com.example.rbac.enums.CustomRoleStatus;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 public class CustomRoleResponse {
 
-    private Long roleId;
+    //private Long roleId;
+    private UUID roleId;
 
     private String roleName;
 
@@ -36,11 +38,11 @@ public class CustomRoleResponse {
     private LocalDateTime createdAt;
 
 
-    public Long getRoleId() {
+    public UUID getRoleId() {
         return roleId;
     }
 
-    public void setRoleId(Long roleId) {
+    public void setRoleId(UUID roleId) {
         this.roleId = roleId;
     }
 

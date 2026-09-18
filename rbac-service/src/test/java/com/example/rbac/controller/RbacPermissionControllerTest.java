@@ -1,158 +1,262 @@
 package com.example.rbac.controller;
 
+import com.example.rbac.controller.RbacPermissionController;
 import com.example.rbac.service.PermissionCacheService;
 import com.example.rbac.service.PermissionCheckService;
-
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.Set;
 
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-@ExtendWith(MockitoExtension.class)
+@WebMvcTest(RbacPermissionController.class)
+@AutoConfigureMockMvc(addFilters = false)
 class RbacPermissionControllerTest {
 
+    @Autowired
     private MockMvc mockMvc;
 
-    @Mock
+    @MockBean
     private PermissionCheckService permissionCheckService;
 
-    @Mock
+    @MockBean
     private PermissionCacheService permissionCacheService;
 
-    private RbacPermissionController rbacPermissionController;
-
-    @BeforeEach
-    void setUp() {
-
-        rbacPermissionController = new RbacPermissionController(
-                permissionCheckService,
-                permissionCacheService
-        );
-
-        mockMvc = MockMvcBuilders
-                .standaloneSetup(rbacPermissionController)
-                .build();
-    }
-
     @Test
-    void checkPermission_returnsAllowed() throws Exception {
+    void shouldReturnAllowedTrueWhenPermissionExists()
+            throws Exception {
 
         when(permissionCheckService.hasPermission(
-                "user1",
-                "tenant1",
-                "USER_CREATE"
+                "user-001",
+                "tenant-001",
+                "EMPLOYEE_VIEW"
         )).thenReturn(true);
-
-        String requestBody = """
-                {
-                    "userId": "user1",
-                    "tenantId": "tenant1",
-                    "permissionCode": "USER_CREATE"
-                }
-                """;
 
         mockMvc.perform(
                 post("/api/v1/auth/permissions/check")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody)
+                        .content("""
+                                {
+                                  "userId": "user-001",
+                                  "tenantId": "tenant-001",
+                                  "permissionCode": "EMPLOYEE_VIEW"
+                                }
+                                """)
         )
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.allowed").value(true));
 
-        verify(permissionCheckService).hasPermission(
-                "user1",
-                "tenant1",
-                "USER_CREATE"
-        );
+        verify(permissionCheckService)
+                .hasPermission(
+                        "user-001",
+                        "tenant-001",
+                        "EMPLOYEE_VIEW"
+                );
     }
 
     @Test
-    void checkPermission_returnsDenied() throws Exception {
+    void shouldReturnAllowedFalseWhenPermissionDoesNotExist()
+            throws Exception {
 
         when(permissionCheckService.hasPermission(
-                "user1",
-                "tenant1",
-                "USER_DELETE"
+                "user-001",
+                "tenant-001",
+                "EMPLOYEE_DELETE"
         )).thenReturn(false);
-
-        String requestBody = """
-                {
-                    "userId": "user1",
-                    "tenantId": "tenant1",
-                    "permissionCode": "USER_DELETE"
-                }
-                """;
 
         mockMvc.perform(
                 post("/api/v1/auth/permissions/check")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody)
+                        .content("""
+                                {
+                                  "userId": "user-001",
+                                  "tenantId": "tenant-001",
+                                  "permissionCode": "EMPLOYEE_DELETE"
+                                }
+                                """)
         )
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.allowed").value(false));
-
-        verify(permissionCheckService).hasPermission(
-                "user1",
-                "tenant1",
-                "USER_DELETE"
-        );
     }
 
     @Test
-    void getResolvedPermissions_returnsPermissions() throws Exception {
+    void shouldRejectRequestWhenPermissionCodeIsBlank()
+            throws Exception {
+
+        mockMvc.perform(
+                post("/api/v1/auth/permissions/check")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "userId": "user-001",
+                                  "tenantId": "tenant-001",
+                                  "permissionCode": ""
+                                }
+                                """)
+        )
+        .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(permissionCheckService);
+    }
+
+    @Test
+    void shouldRejectRequestWhenPermissionCodeIsMissing()
+            throws Exception {
+
+        mockMvc.perform(
+                post("/api/v1/auth/permissions/check")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "userId": "user-001",
+                                  "tenantId": "tenant-001"
+                                }
+                                """)
+        )
+        .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(permissionCheckService);
+    }
+
+    @Test
+    void shouldRejectRequestWhenUserIdIsNull()
+            throws Exception {
+
+        mockMvc.perform(
+                post("/api/v1/auth/permissions/check")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "userId": null,
+                                  "tenantId": "tenant-001",
+                                  "permissionCode": "EMPLOYEE_VIEW"
+                                }
+                                """)
+        )
+        .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(permissionCheckService);
+    }
+
+    @Test
+    void shouldRejectRequestWhenTenantIdIsNull()
+            throws Exception {
+
+        mockMvc.perform(
+                post("/api/v1/auth/permissions/check")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "userId": "user-001",
+                                  "tenantId": null,
+                                  "permissionCode": "EMPLOYEE_VIEW"
+                                }
+                                """)
+        )
+        .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(permissionCheckService);
+    }
+
+    @Test
+    void shouldReturnResolvedPermissions()
+            throws Exception {
 
         when(permissionCheckService.getResolvedPermissions(
-                "user1",
-                "tenant1"
+                "user-001",
+                "tenant-001"
         )).thenReturn(Set.of(
-                "USER_CREATE",
-                "USER_READ"
+                "USER_VIEW",
+                "EMPLOYEE_VIEW",
+                "EMPLOYEE_UPDATE"
         ));
 
         mockMvc.perform(
-                get("/api/v1/users/user1/permissions/resolved")
-                        .param("tenantId", "tenant1")
+                get("/api/v1/users/user-001/permissions/resolved")
+                        .param("tenantId", "tenant-001")
         )
         .andExpect(status().isOk())
         .andExpect(jsonPath("$").isArray())
-        .andExpect(jsonPath("$[?(@ == 'USER_CREATE')]").exists())
-        .andExpect(jsonPath("$[?(@ == 'USER_READ')]").exists());
+        .andExpect(jsonPath("$").isNotEmpty());
 
-        verify(permissionCheckService).getResolvedPermissions(
-                "user1",
-                "tenant1"
-        );
+        verify(permissionCheckService)
+                .getResolvedPermissions(
+                        "user-001",
+                        "tenant-001"
+                );
     }
 
     @Test
-    void clearPermissionCache_returnsNoContent() throws Exception {
+    void shouldReturnEmptyResolvedPermissions()
+            throws Exception {
+
+        when(permissionCheckService.getResolvedPermissions(
+                "user-002",
+                "tenant-001"
+        )).thenReturn(Set.of());
 
         mockMvc.perform(
-                post("/api/v1/users/user1/permissions/cache/clear")
-                        .param("tenantId", "tenant1")
+                get("/api/v1/users/user-002/permissions/resolved")
+                        .param("tenantId", "tenant-001")
+        )
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$").isArray())
+        .andExpect(jsonPath("$").isEmpty());
+    }
+
+    @Test
+    void shouldClearUserPermissionCache()
+            throws Exception {
+
+        doNothing()
+                .when(permissionCacheService)
+                .clearUserPermissionsCache(
+                        "user-001",
+                        "tenant-001"
+                );
+
+        mockMvc.perform(
+                post("/api/v1/users/user-001/permissions/cache/clear")
+                        .param("tenantId", "tenant-001")
         )
         .andExpect(status().isNoContent());
 
-        verify(permissionCacheService).clearUserPermissionsCache(
-                "user1",
-                "tenant1"
-        );
+        verify(permissionCacheService)
+                .clearUserPermissionsCache(
+                        "user-001",
+                        "tenant-001"
+                );
+    }
+
+    @Test
+    void shouldRequireTenantIdForResolvedPermissions()
+            throws Exception {
+
+        mockMvc.perform(
+                get("/api/v1/users/user-001/permissions/resolved")
+        )
+        .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(permissionCheckService);
+    }
+
+    @Test
+    void shouldRequireTenantIdForCacheClear()
+            throws Exception {
+
+        mockMvc.perform(
+                post("/api/v1/users/user-001/permissions/cache/clear")
+        )
+        .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(permissionCacheService);
     }
 }

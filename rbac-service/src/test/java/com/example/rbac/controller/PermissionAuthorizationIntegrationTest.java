@@ -7,6 +7,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
@@ -19,6 +20,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * detected -> Lavanya's (stub) resolver consulted -> allow, or generic 403
  * + logged security event.
  */
+@ActiveProfiles("dev")
 @SpringBootTest
 @AutoConfigureMockMvc
 @Import(IntegrationTestConfig.class)

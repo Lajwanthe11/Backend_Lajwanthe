@@ -11,10 +11,10 @@ import com.example.rbac.entity.UserRole;
 import com.example.rbac.repository.RolePermissionRepository;
 import com.example.rbac.repository.UserRoleRepository;
 
-
 import java.util.List;
 import java.util.UUID;
 
+// Manages department-level scoping for role assignments (no rows = All Departments)
 @Service
 public class DepartmentPermissionServiceImpl implements DepartmentPermissionService {
 
@@ -31,6 +31,7 @@ public class DepartmentPermissionServiceImpl implements DepartmentPermissionServ
         this.rolePermissionRepository = rolePermissionRepository;
     }
 
+    // Get department scope for a role assignment
     @Override
     @Transactional(readOnly = true)
     public List<UUID> getDepartmentScope(UUID userRoleId) {
@@ -40,6 +41,7 @@ public class DepartmentPermissionServiceImpl implements DepartmentPermissionServ
                 .toList();
     }
 
+    // Replace department scope (delete old, insert new)
     @Override
     @Transactional
     public void updateDepartmentScope(UUID userRoleId, List<UUID> departmentIds) {
@@ -48,8 +50,10 @@ public class DepartmentPermissionServiceImpl implements DepartmentPermissionServ
             throw new BadRequestException("Department list cannot be empty");
         }
 
-        if (departmentIds.contains(null)) {
-            throw new BadRequestException("Department list cannot contain null values");
+        for (UUID deptId : departmentIds) {
+            if (deptId == null) {
+                throw new BadRequestException("Department list cannot contain null values");
+            }
         }
 
         if (departmentIds.size() != new java.util.HashSet<>(departmentIds).size()) {
@@ -66,12 +70,14 @@ public class DepartmentPermissionServiceImpl implements DepartmentPermissionServ
         }
     }
 
+    // Clear all department scope (revert to All Departments)
     @Override
     @Transactional
     public void removeAllDepartmentScope(UUID userRoleId) {
         repository.deleteByUserRoleId(userRoleId);
     }
 
+    // Report of all department scope rules across all roles
     @Override
     @Transactional(readOnly = true)
     public List<DeptScopeReportDto> getDeptScopeReport() {
@@ -85,6 +91,7 @@ public class DepartmentPermissionServiceImpl implements DepartmentPermissionServ
                 .toList();
     }
 
+    // Find users in a department who hold a specific permission
     @Override
     @Transactional(readOnly = true)
     public List<UUID> getUsersByPermission(UUID departmentId, String permissionCode) {

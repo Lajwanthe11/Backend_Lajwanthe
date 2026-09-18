@@ -9,14 +9,23 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import com.example.rbac.dto.AccessDeniedResponse;
 import com.example.rbac.dto.ApiErrorResponse;
+import org.springframework.stereotype.Component;
 
+@Component("rbacGlobalExceptionHandler")
+@RestControllerAdvice(basePackages = "com.example.rbac")
 public class GlobalExceptionHandler {
     @ExceptionHandler(RoleNotFoundException.class)
     public ResponseEntity<ApiErrorResponse> handleRoleNotFound(RoleNotFoundException ex) {
+        return build(HttpStatus.NOT_FOUND, ex.getMessage(), Map.of());
+    }
+
+    @ExceptionHandler({PermissionNotFoundException.class, PermissionGroupNotFoundException.class})
+    public ResponseEntity<ApiErrorResponse> handlePermissionNotFound(RuntimeException ex) {
         return build(HttpStatus.NOT_FOUND, ex.getMessage(), Map.of());
     }
 
@@ -41,7 +50,10 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler({ MissingRequestHeaderException.class,
-            MethodArgumentTypeMismatchException.class })
+            MethodArgumentTypeMismatchException.class,
+            org.springframework.web.bind.MissingServletRequestParameterException.class,
+            org.springframework.http.converter.HttpMessageNotReadableException.class,
+            IllegalArgumentException.class })
     public ResponseEntity<ApiErrorResponse> handleRequestFormat(Exception ex) {
         return build(HttpStatus.BAD_REQUEST, ex.getMessage(), Map.of());
     }

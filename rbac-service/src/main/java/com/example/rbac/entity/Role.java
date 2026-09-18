@@ -42,9 +42,6 @@ public class Role {
     @Column(name = "is_active", nullable = false)
     private boolean active = true;
 
-    @Column(name = "is_deleted", nullable = false)
-    private boolean deleted;
-
     @Version
     private Long version;
 
@@ -210,10 +207,26 @@ public class Role {
 }
 
     public boolean isDeleted() {
-        return deleted;
+        return Boolean.TRUE.equals(isDeleted);
+    }
+
+    public void setDeleted(boolean deleted) {
+        this.isDeleted = deleted;
     }
 
     public boolean isActive() {
         return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
+    public UUID getRoleId() {
+        return id;
+    }
+
+    public void setRoleId(UUID roleId) {
+        this.id = roleId;
     }
 }

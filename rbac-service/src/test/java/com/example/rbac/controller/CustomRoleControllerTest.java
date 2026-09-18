@@ -16,14 +16,18 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 
 @WebMvcTest(CustomRoleController.class)
+@AutoConfigureMockMvc(addFilters = false)
 class CustomRoleControllerTest {
 
     @Autowired
@@ -35,11 +39,10 @@ class CustomRoleControllerTest {
     @MockitoBean
     private CustomRoleService customRoleService;
 
-
     private CustomRoleResponse response;
-
     private CustomRoleRequest request;
 
+    private final UUID roleId = UUID.fromString("11111111-1111-1111-1111-111111111111");
 
     @BeforeEach
     void setUp() {
@@ -52,10 +55,9 @@ class CustomRoleControllerTest {
         request.setPermissionIds(List.of(1L, 2L, 3L));
         request.setPublishNotes("Initial draft");
 
-
         response = new CustomRoleResponse();
 
-        response.setRoleId(1L);
+        response.setRoleId(roleId);
         response.setRoleName("HR Manager");
         response.setRoleCode("HR_MANAGER");
         response.setDescription("Custom role for HR managers");
@@ -68,7 +70,6 @@ class CustomRoleControllerTest {
         response.setPermissionCount(3);
     }
 
-
     // =========================================================
     // CREATE
     // POST /api/v1/roles/custom
@@ -76,11 +77,13 @@ class CustomRoleControllerTest {
 
     @Test
     void create_shouldReturnCreated() throws Exception {
+
         when(customRoleService.create(any(CustomRoleRequest.class))).thenReturn(response);
-        mockMvc.perform(post("/api/v1/roles/custom").contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(request))).andExpect(status().isCreated()).andExpect(jsonPath("$.roleId").value(1)).andExpect(jsonPath("$.roleName").value("HR Manager")).andExpect(jsonPath("$.roleCode").value("HR_MANAGER")).andExpect(jsonPath("$.status").value("DRAFT")).andExpect(jsonPath("$.draftVersion").value(1)).andExpect(jsonPath("$.publishedVersion").value(0)).andExpect(jsonPath("$.permissionCount").value(3));
+
+        mockMvc.perform(post("/api/v1/roles/custom").contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(request))).andExpect(status().isCreated()).andExpect(jsonPath("$.roleId").value(roleId.toString())).andExpect(jsonPath("$.roleName").value("HR Manager")).andExpect(jsonPath("$.roleCode").value("HR_MANAGER")).andExpect(jsonPath("$.status").value("DRAFT")).andExpect(jsonPath("$.draftVersion").value(1)).andExpect(jsonPath("$.publishedVersion").value(0)).andExpect(jsonPath("$.permissionCount").value(3));
+
         verify(customRoleService).create(any(CustomRoleRequest.class));
     }
-
 
     // =========================================================
     // GET ALL
@@ -89,20 +92,23 @@ class CustomRoleControllerTest {
 
     @Test
     void getAll_shouldReturnCustomRoles() throws Exception {
+
         when(customRoleService.getAll()).thenReturn(List.of(response));
-        mockMvc.perform(get("/api/v1/roles/custom")).andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(1)).andExpect(jsonPath("$[0].roleId").value(1)).andExpect(jsonPath("$[0].roleName").value("HR Manager")).andExpect(jsonPath("$[0].roleCode").value("HR_MANAGER")).andExpect(jsonPath("$[0].status").value("DRAFT"));
+
+        mockMvc.perform(get("/api/v1/roles/custom")).andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(1)).andExpect(jsonPath("$[0].roleId").value(roleId.toString())).andExpect(jsonPath("$[0].roleName").value("HR Manager")).andExpect(jsonPath("$[0].roleCode").value("HR_MANAGER")).andExpect(jsonPath("$[0].status").value("DRAFT"));
+
         verify(customRoleService).getAll();
     }
-
 
     @Test
     void getAll_shouldReturnEmptyList() throws Exception {
 
         when(customRoleService.getAll()).thenReturn(List.of());
+
         mockMvc.perform(get("/api/v1/roles/custom")).andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
+
         verify(customRoleService).getAll();
     }
-
 
     // =========================================================
     // LIMITS
@@ -111,15 +117,15 @@ class CustomRoleControllerTest {
 
     @Test
     void limits_shouldReturnLimits() throws Exception {
-        Map<String, Object> limits = Map.of("tenantId", "11111111-1111-1111-1111-111111111111",
 
-                "currentCustomRoles", 5, "limit", "LICENSE_INTEGRATION_PENDING");
+        Map<String, Object> limits = Map.of("tenantId", "11111111-1111-1111-1111-111111111111", "currentCustomRoles", 5, "limit", "LICENSE_INTEGRATION_PENDING");
 
         when(customRoleService.getLimits()).thenReturn(limits);
+
         mockMvc.perform(get("/api/v1/roles/custom/limits")).andExpect(status().isOk()).andExpect(jsonPath("$.currentCustomRoles").value(5)).andExpect(jsonPath("$.limit").value("LICENSE_INTEGRATION_PENDING"));
+
         verify(customRoleService).getLimits();
     }
-
 
     // =========================================================
     // UPDATE
@@ -128,21 +134,29 @@ class CustomRoleControllerTest {
 
     @Test
     void update_shouldReturnUpdatedRole() throws Exception {
+
         CustomRoleResponse updatedResponse = new CustomRoleResponse();
-        updatedResponse.setRoleId(1L);
+
+        updatedResponse.setRoleId(roleId);
         updatedResponse.setRoleName("HR Manager");
         updatedResponse.setRoleCode("HR_MANAGER");
         updatedResponse.setDescription("Updated HR role");
+
         updatedResponse.setStatus(CustomRoleStatus.DRAFT);
+
         updatedResponse.setDraftVersion(2);
         updatedResponse.setPublishedVersion(0);
-        updatedResponse.setPermissionIds(List.of(1L, 2L));
-        updatedResponse.setPermissionCount(2);
-        when(customRoleService.update(eq(1L), any(CustomRoleRequest.class))).thenReturn(updatedResponse);
-        mockMvc.perform(put("/api/v1/roles/custom/1").contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(request))).andExpect(status().isOk()).andExpect(jsonPath("$.roleId").value(1)).andExpect(jsonPath("$.draftVersion").value(2)).andExpect(jsonPath("$.permissionCount").value(2));
-        verify(customRoleService).update(eq(1L), any(CustomRoleRequest.class));
-    }
 
+        updatedResponse.setPermissionIds(List.of(1L, 2L));
+
+        updatedResponse.setPermissionCount(2);
+
+        when(customRoleService.update(eq(roleId), any(CustomRoleRequest.class))).thenReturn(updatedResponse);
+
+        mockMvc.perform(put("/api/v1/roles/custom/" + roleId).contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(request))).andExpect(status().isOk()).andExpect(jsonPath("$.roleId").value(roleId.toString())).andExpect(jsonPath("$.draftVersion").value(2)).andExpect(jsonPath("$.permissionCount").value(2));
+
+        verify(customRoleService).update(eq(roleId), any(CustomRoleRequest.class));
+    }
 
     // =========================================================
     // PUBLISH
@@ -154,7 +168,7 @@ class CustomRoleControllerTest {
 
         CustomRoleResponse publishedResponse = new CustomRoleResponse();
 
-        publishedResponse.setRoleId(1L);
+        publishedResponse.setRoleId(roleId);
         publishedResponse.setRoleName("HR Manager");
         publishedResponse.setRoleCode("HR_MANAGER");
 
@@ -164,21 +178,25 @@ class CustomRoleControllerTest {
         publishedResponse.setPublishedVersion(1);
 
         publishedResponse.setPermissionIds(List.of(1L, 2L, 3L));
-        publishedResponse.setPermissionCount(3);
-        when(customRoleService.publish(eq(1L), eq("Initial publication"))).thenReturn(publishedResponse);
-        mockMvc.perform(post("/api/v1/roles/custom/1/publish").param("publishNotes", "Initial publication")).andExpect(status().isOk()).andExpect(jsonPath("$.roleId").value(1)).andExpect(jsonPath("$.status").value("PUBLISHED")).andExpect(jsonPath("$.publishedVersion").value(1));
-        verify(customRoleService).publish(eq(1L), eq("Initial publication"));
-    }
 
+        publishedResponse.setPermissionCount(3);
+
+        when(customRoleService.publish(eq(roleId), eq("Initial publication"))).thenReturn(publishedResponse);
+
+        mockMvc.perform(post("/api/v1/roles/custom/" + roleId + "/publish").param("publishNotes", "Initial publication")).andExpect(status().isOk()).andExpect(jsonPath("$.roleId").value(roleId.toString())).andExpect(jsonPath("$.status").value("PUBLISHED")).andExpect(jsonPath("$.publishedVersion").value(1));
+
+        verify(customRoleService).publish(eq(roleId), eq("Initial publication"));
+    }
 
     @Test
     void publish_withoutNotes_shouldWork() throws Exception {
 
-        when(customRoleService.publish(eq(1L), isNull())).thenReturn(response);
-        mockMvc.perform(post("/api/v1/roles/custom/1/publish")).andExpect(status().isOk());
-        verify(customRoleService).publish(eq(1L), isNull());
-    }
+        when(customRoleService.publish(eq(roleId), isNull())).thenReturn(response);
 
+        mockMvc.perform(post("/api/v1/roles/custom/" + roleId + "/publish")).andExpect(status().isOk());
+
+        verify(customRoleService).publish(eq(roleId), isNull());
+    }
 
     // =========================================================
     // ARCHIVE
@@ -190,7 +208,7 @@ class CustomRoleControllerTest {
 
         CustomRoleResponse archivedResponse = new CustomRoleResponse();
 
-        archivedResponse.setRoleId(1L);
+        archivedResponse.setRoleId(roleId);
         archivedResponse.setRoleName("HR Manager");
         archivedResponse.setRoleCode("HR_MANAGER");
 
@@ -202,11 +220,13 @@ class CustomRoleControllerTest {
         archivedResponse.setPermissionIds(List.of(1L, 2L, 3L));
 
         archivedResponse.setPermissionCount(3);
-        when(customRoleService.archive(1L)).thenReturn(archivedResponse);
-        mockMvc.perform(post("/api/v1/roles/custom/1/archive")).andExpect(status().isOk()).andExpect(jsonPath("$.roleId").value(1)).andExpect(jsonPath("$.status").value("ARCHIVED"));
-        verify(customRoleService).archive(1L);
-    }
 
+        when(customRoleService.archive(roleId)).thenReturn(archivedResponse);
+
+        mockMvc.perform(post("/api/v1/roles/custom/" + roleId + "/archive")).andExpect(status().isOk()).andExpect(jsonPath("$.roleId").value(roleId.toString())).andExpect(jsonPath("$.status").value("ARCHIVED"));
+
+        verify(customRoleService).archive(roleId);
+    }
 
     // =========================================================
     // VERSIONS
@@ -218,31 +238,36 @@ class CustomRoleControllerTest {
 
         CustomRoleResponse version2 = new CustomRoleResponse();
 
-        version2.setRoleId(1L);
+        version2.setRoleId(roleId);
         version2.setRoleName("HR Manager");
         version2.setRoleCode("HR_MANAGER");
+
         version2.setVersionNumber(2);
         version2.setStatus(CustomRoleStatus.DRAFT);
-        version2.setPermissionIds(List.of(1L, 2L, 3L));
-        version2.setPermissionCount(3);
 
+        version2.setPermissionIds(List.of(1L, 2L, 3L));
+
+        version2.setPermissionCount(3);
 
         CustomRoleResponse version1 = new CustomRoleResponse();
 
-        version1.setRoleId(1L);
+        version1.setRoleId(roleId);
         version1.setRoleName("HR Manager");
         version1.setRoleCode("HR_MANAGER");
+
         version1.setVersionNumber(1);
         version1.setStatus(CustomRoleStatus.PUBLISHED);
+
         version1.setPermissionIds(List.of(1L, 2L));
+
         version1.setPermissionCount(2);
 
+        when(customRoleService.getVersions(roleId)).thenReturn(List.of(version2, version1));
 
-        when(customRoleService.getVersions(1L)).thenReturn(List.of(version2, version1));
-        mockMvc.perform(get("/api/v1/roles/custom/1/versions")).andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(2)).andExpect(jsonPath("$[0].versionNumber").value(2)).andExpect(jsonPath("$[0].status").value("DRAFT")).andExpect(jsonPath("$[1].versionNumber").value(1)).andExpect(jsonPath("$[1].status").value("PUBLISHED"));
-        verify(customRoleService).getVersions(1L);
+        mockMvc.perform(get("/api/v1/roles/custom/" + roleId + "/versions")).andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(2)).andExpect(jsonPath("$[0].roleId").value(roleId.toString())).andExpect(jsonPath("$[0].versionNumber").value(2)).andExpect(jsonPath("$[0].status").value("DRAFT")).andExpect(jsonPath("$[1].roleId").value(roleId.toString())).andExpect(jsonPath("$[1].versionNumber").value(1)).andExpect(jsonPath("$[1].status").value("PUBLISHED"));
+
+        verify(customRoleService).getVersions(roleId);
     }
-
 
     // =========================================================
     // REVERT
@@ -254,7 +279,7 @@ class CustomRoleControllerTest {
 
         CustomRoleResponse revertedResponse = new CustomRoleResponse();
 
-        revertedResponse.setRoleId(1L);
+        revertedResponse.setRoleId(roleId);
         revertedResponse.setRoleName("HR Manager");
         revertedResponse.setRoleCode("HR_MANAGER");
 
@@ -266,23 +291,28 @@ class CustomRoleControllerTest {
         revertedResponse.setPermissionIds(List.of(1L, 2L));
 
         revertedResponse.setPermissionCount(2);
-        when(customRoleService.revert(eq(1L), eq(1))).thenReturn(revertedResponse);
-        mockMvc.perform(post("/api/v1/roles/custom/1/revert/1")).andExpect(status().isOk()).andExpect(jsonPath("$.roleId").value(1)).andExpect(jsonPath("$.status").value("DRAFT")).andExpect(jsonPath("$.draftVersion").value(3));
-        verify(customRoleService).revert(1L, 1);
-    }
 
+        when(customRoleService.revert(eq(roleId), eq(1))).thenReturn(revertedResponse);
+
+        mockMvc.perform(post("/api/v1/roles/custom/" + roleId + "/revert/1")).andExpect(status().isOk()).andExpect(jsonPath("$.roleId").value(roleId.toString())).andExpect(jsonPath("$.status").value("DRAFT")).andExpect(jsonPath("$.draftVersion").value(3));
+
+        verify(customRoleService).revert(roleId, 1);
+    }
 
     // =========================================================
     // IMPACT
-    // GET /api/v1/roles/custom/{roleId}/impactgit status
+    // GET /api/v1/roles/custom/{roleId}/impact
     // =========================================================
 
     @Test
     void impact_shouldReturnImpactInformation() throws Exception {
 
-        Map<String, Object> impact = Map.of("roleId", 1L);
-        when(customRoleService.getImpact(1L)).thenReturn(impact);
-        mockMvc.perform(get("/api/v1/roles/custom/1/impact")).andExpect(status().isOk()).andExpect(jsonPath("$.roleId").value(1)).andExpect(jsonPath("$.message").value("Impact analysis integration is pending"));
-        verify(customRoleService).getImpact(1L);
+        Map<String, Object> impact = Map.of("roleId", roleId, "message", "Impact analysis integration is pending");
+
+        when(customRoleService.getImpact(roleId)).thenReturn(impact);
+
+        mockMvc.perform(get("/api/v1/roles/custom/" + roleId + "/impact")).andExpect(status().isOk()).andExpect(jsonPath("$.roleId").value(roleId.toString())).andExpect(jsonPath("$.message").value("Impact analysis integration is pending"));
+
+        verify(customRoleService).getImpact(roleId);
     }
 }

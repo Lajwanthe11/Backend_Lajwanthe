@@ -31,6 +31,7 @@ public class PermissionCacheService {
                         .register(meterRegistry);
     }
 
+    // Clears the permission cache for one user.
     public void clearUserPermissionsCache(
             String userId,
             String tenantId) {
@@ -53,6 +54,7 @@ public class PermissionCacheService {
         }
     }
 
+    // Clears the permission cache for multiple users.
     public void clearUsersPermissionsCache(
             Set<String> userIds,
             String tenantId) {

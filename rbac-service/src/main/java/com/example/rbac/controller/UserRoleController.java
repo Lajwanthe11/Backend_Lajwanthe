@@ -19,6 +19,10 @@ public class UserRoleController {
 
     private final UserRoleService userRoleService;
 
+    /**
+     * Assign one or more roles to a user.
+     * POST /api/v1/users/{userId}/roles
+     */
     @PostMapping("/users/{userId}/roles")
     public ResponseEntity<List<UserRoleResponse>> assignRoles(
             @PathVariable UUID userId,
@@ -29,6 +33,10 @@ public class UserRoleController {
         );
     }
 
+    /**
+     * Get all currently active roles assigned to a user.
+     * GET /api/v1/users/{userId}/roles
+     */
     @GetMapping("/users/{userId}/roles")
     public ResponseEntity<List<UserRoleResponse>> getCurrentRoles(
             @PathVariable UUID userId) {
@@ -38,6 +46,10 @@ public class UserRoleController {
         );
     }
 
+    /**
+     * Revoke a specific role from a user.
+     * DELETE /api/v1/users/{userId}/roles/{roleId}
+     */
     @DeleteMapping("/users/{userId}/roles/{roleId}")
     public ResponseEntity<Void> revokeRole(
             @PathVariable UUID userId,
@@ -53,6 +65,10 @@ public class UserRoleController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Set a specific role as the primary role for a user.
+     * PUT /api/v1/users/{userId}/roles/{roleId}/primary
+     */
     @PutMapping("/users/{userId}/roles/{roleId}/primary")
     public ResponseEntity<Void> setPrimaryRole(
             @PathVariable UUID userId,
@@ -66,6 +82,10 @@ public class UserRoleController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Get the full role assignment history for a user, including revoked roles.
+     * GET /api/v1/users/{userId}/roles/history
+     */
     @GetMapping("/users/{userId}/roles/history")
     public ResponseEntity<List<UserRoleResponse>> getRoleHistory(
             @PathVariable UUID userId) {
@@ -75,6 +95,10 @@ public class UserRoleController {
         );
     }
 
+    /**
+     * Get all users currently assigned to a specific role.
+     * GET /api/v1/roles/{roleId}/users
+     */
     @GetMapping("/roles/{roleId}/users")
     public ResponseEntity<List<UserRoleResponse>> getUsersByRole(
             @PathVariable UUID roleId) {

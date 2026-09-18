@@ -104,17 +104,14 @@ public class PermissionResolverImpl implements PermissionResolver {
                 try {
                         redisTemplate.delete(cacheKey);
 
-                        if (permissions.isEmpty()) {
-
-                                redisTemplate.opsForSet().add(
-                                                cacheKey,
-                                                NO_PERMISSIONS);
-
-                        } else {
-
+                        if (!permissions.isEmpty()) {
                                 redisTemplate.opsForSet().add(
                                                 cacheKey,
                                                 permissions.toArray(new String[0]));
+                        } else {
+                                redisTemplate.opsForSet().add(
+                                                cacheKey,
+                                                NO_PERMISSIONS);
                         }
 
                         redisTemplate.expire(
@@ -133,13 +130,23 @@ public class PermissionResolverImpl implements PermissionResolver {
                 return permissions;
         }
 
+        private Object parseId(String id) {
+                if (id == null) {
+                        return null;
+                }
+                try {
+                        return UUID.fromString(id);
+                } catch (IllegalArgumentException e) {
+                        return id;
+                }
+        }
+
         private Set<String> resolveFromDatabase(
                         String userId,
                         String tenantId) {
 
-                UUID userUuid = UUID.fromString(userId);
-
-                UUID tenantUuid = UUID.fromString(tenantId);
+                Object userParam = parseId(userId);
+                Object tenantParam = parseId(tenantId);
 
                 // SUPER_ADMIN gets all permissions.
                 String superAdminSql = """
@@ -161,8 +168,8 @@ public class PermissionResolverImpl implements PermissionResolver {
                 Integer superAdminCount = jdbcTemplate.queryForObject(
                                 superAdminSql,
                                 Integer.class,
-                                userUuid,
-                                tenantUuid);
+                                userParam,
+                                tenantParam);
 
                 if (superAdminCount != null
                                 && superAdminCount > 0) {
@@ -197,8 +204,8 @@ public class PermissionResolverImpl implements PermissionResolver {
                                                 sql,
                                                 (resultSet, rowNum) -> resultSet.getString(
                                                                 "permission_code"),
-                                                userUuid,
-                                                tenantUuid));
+                                                userParam,
+                                                tenantParam));
         }
 
         @Override

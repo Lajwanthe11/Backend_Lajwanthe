@@ -12,9 +12,6 @@ public class RoleTemplateDetailDto {
     private String recommendedFor;
     private Set<String> permissionCodes;
 
-    public RoleTemplateDetailDto() {
-    }
-
     public RoleTemplateDetailDto(UUID id, String name, String description,
                                  String recommendedFor, Set<String> permissionCodes) {
         this.id = id;

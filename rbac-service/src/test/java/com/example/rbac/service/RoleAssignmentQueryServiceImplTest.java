@@ -1,4 +1,6 @@
-package com.example.rbac.service.impl;
+package com.example.rbac.service;
+
+import com.example.rbac.service.serviceImpl.RoleAssignmentQueryServiceImpl;
 
 import com.example.rbac.dto.DepartmentRoleDistribution;
 import com.example.rbac.dto.ExpiringRoleAssignment;

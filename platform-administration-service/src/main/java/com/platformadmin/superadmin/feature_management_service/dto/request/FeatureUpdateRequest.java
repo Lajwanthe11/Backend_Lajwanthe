@@ -1,4 +1,4 @@
-package com.example.platformadmin.superadmin.feature_management_service.dto.request;
+package com.platformadmin.superadmin.feature_management_service.dto.request;
 
 import jakarta.validation.constraints.Size;
 import lombok.Data;

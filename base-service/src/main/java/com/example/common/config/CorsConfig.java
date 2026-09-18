@@ -10,12 +10,14 @@ import java.util.List;
 
 /**
  * Common CORS configuration — permissive defaults for local dev.
- * Override this bean in your service's @Configuration class if you need stricter rules.
+ * Override this bean in your service's @Configuration class if you need
+ * stricter rules.
  */
 @Configuration
 public class CorsConfig {
 
     @Bean
+
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOriginPatterns(List.of("*"));
@@ -23,11 +25,9 @@ public class CorsConfig {
         configuration.setAllowedHeaders(List.of(
                 "Authorization", "Content-Type", "X-Requested-With",
                 "Accept", "Origin", "Access-Control-Request-Method",
-                "Access-Control-Request-Headers", "X-Tenant-ID"
-        ));
+                "Access-Control-Request-Headers", "X-Tenant-ID"));
         configuration.setExposedHeaders(List.of(
-                "Access-Control-Allow-Origin", "Access-Control-Allow-Credentials", "Authorization"
-        ));
+                "Access-Control-Allow-Origin", "Access-Control-Allow-Credentials", "Authorization"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 

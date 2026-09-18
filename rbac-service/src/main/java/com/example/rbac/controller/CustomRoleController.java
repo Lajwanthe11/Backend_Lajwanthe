@@ -1,6 +1,5 @@
-// CustomRoleController.java
-
 package com.example.rbac.controller;
+
 import com.example.rbac.dto.CustomRoleRequest;
 import com.example.rbac.dto.CustomRoleResponse;
 import com.example.rbac.service.CustomRoleService;
@@ -10,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/roles/custom")
@@ -40,37 +40,37 @@ public class CustomRoleController {
     }
 
     @PutMapping("/{roleId}")
-    public ResponseEntity<CustomRoleResponse> update(@PathVariable Long roleId, @Valid @RequestBody CustomRoleRequest request) {
+    public ResponseEntity<CustomRoleResponse> update(@PathVariable UUID roleId, @Valid @RequestBody CustomRoleRequest request) {
 
         return ResponseEntity.ok(customRoleService.update(roleId, request));
     }
 
     @PostMapping("/{roleId}/publish")
-    public ResponseEntity<CustomRoleResponse> publish(@PathVariable Long roleId, @RequestParam(required = false) String publishNotes) {
+    public ResponseEntity<CustomRoleResponse> publish(@PathVariable UUID roleId, @RequestParam(required = false) String publishNotes) {
 
         return ResponseEntity.ok(customRoleService.publish(roleId, publishNotes));
     }
 
     @PostMapping("/{roleId}/archive")
-    public ResponseEntity<CustomRoleResponse> archive(@PathVariable Long roleId) {
+    public ResponseEntity<CustomRoleResponse> archive(@PathVariable UUID roleId) {
 
         return ResponseEntity.ok(customRoleService.archive(roleId));
     }
 
     @GetMapping("/{roleId}/versions")
-    public ResponseEntity<List<CustomRoleResponse>> versions(@PathVariable Long roleId) {
+    public ResponseEntity<List<CustomRoleResponse>> versions(@PathVariable UUID roleId) {
 
         return ResponseEntity.ok(customRoleService.getVersions(roleId));
     }
 
     @PostMapping("/{roleId}/revert/{version}")
-    public ResponseEntity<CustomRoleResponse> revert(@PathVariable Long roleId, @PathVariable Integer version) {
+    public ResponseEntity<CustomRoleResponse> revert(@PathVariable UUID roleId, @PathVariable Integer version) {
 
         return ResponseEntity.ok(customRoleService.revert(roleId, version));
     }
 
     @GetMapping("/{roleId}/impact")
-    public ResponseEntity<Object> impact(@PathVariable Long roleId) {
+    public ResponseEntity<Object> impact(@PathVariable UUID roleId) {
 
         return ResponseEntity.ok(customRoleService.getImpact(roleId));
     }

@@ -6,12 +6,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
 
-/**
- * Single source of truth for "who is making this request". Every permission
- * check in {@link PermissionAuthorizationAspect} goes through this class - a
- * client-supplied userId/tenantId in the request body/params/headers is
- * never used for authorization decisions.
- */
 @Component
 public class SecurityContextUtil {
 
@@ -20,7 +14,7 @@ public class SecurityContextUtil {
 
     public AuthenticatedUser currentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
+        if (authentication == null || authentication.getPrincipal() == null) {
             throw new IllegalStateException("No authenticated principal in SecurityContext");
         }
 
@@ -36,6 +30,9 @@ public class SecurityContextUtil {
 
         // Fallback for non-JWT auth (tests, alternate auth mechanism) - still
         // sourced from the verified Authentication, never from request input.
+        if (!authentication.isAuthenticated()) {
+            throw new IllegalStateException("No authenticated principal in SecurityContext");
+        }
         return new AuthenticatedUser(authentication.getName(), null);
     }
 }

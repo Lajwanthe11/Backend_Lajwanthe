@@ -1,6 +1,6 @@
 package com.example.rbac.service.serviceImpl;
 
-import com.example.rbac.config.CurrentUserService;
+import com.example.rbac.service.CurrentUserService;
 import com.example.rbac.config.SessionService;
 import com.example.rbac.dto.request.AssignRoleRequest;
 import com.example.rbac.dto.request.RevokeRoleRequest;

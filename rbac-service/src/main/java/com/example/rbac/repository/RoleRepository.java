@@ -42,7 +42,10 @@ public interface RoleRepository extends JpaRepository<Role, UUID> {
 
     long countByTenantIdAndRoleTypeAndIsDeletedFalse(UUID tenantId, RoleType roleType);
 
-    Optional<Role> findByIdAndTenantId(UUID id,UUID tenantId);
+    Optional<Role> findByIdAndTenantId(UUID id, UUID tenantId);
+
+    @Query("SELECT r FROM Role r WHERE CAST(r.id AS string) = :id AND r.tenantId = :tenantId")
+    Optional<Role> findByIdAndTenantId(@Param("id") String id, @Param("tenantId") UUID tenantId);
 
     List<Role> findAllByTenantIdAndRoleType( UUID tenantId, RoleType roleType);
 
@@ -50,11 +53,11 @@ public interface RoleRepository extends JpaRepository<Role, UUID> {
 
     List<Role> findAllByTenantId(UUID tenantId);
 
-    Optional<Role> findByIdAndTenantId(String id, UUID tenantId);
+    @Query("SELECT r FROM Role r WHERE r.tenantId = :tenantId AND r.roleType = :type")
+    List<Role> findAllByTenantIdAndType(@Param("tenantId") UUID tenantId, @Param("type") RoleType type);
 
-    List<Role> findAllByTenantIdAndType(UUID tenantId, RoleType type);
-
-    Optional<Role> findByRoleIdAndTenantId(UUID roleId, UUID tenantId);
+    @Query("SELECT r FROM Role r WHERE r.id = :roleId AND r.tenantId = :tenantId")
+    Optional<Role> findByRoleIdAndTenantId(@Param("roleId") UUID roleId, @Param("tenantId") UUID tenantId);
 
     Optional<Role> findByTenantIdAndRoleCodeIgnoreCase(UUID tenantId, String roleCode);
 }

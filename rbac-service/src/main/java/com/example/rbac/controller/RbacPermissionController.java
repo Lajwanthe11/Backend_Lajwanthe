@@ -25,6 +25,7 @@ public class RbacPermissionController {
         this.permissionCacheService = permissionCacheService;
     }
 
+    // Checks whether the user has the requested permission.
     @PostMapping("/auth/permissions/check")
     public ResponseEntity<Map<String, Boolean>> checkPermission(
             @Valid @RequestBody PermissionCheckRequestDto request) {
@@ -38,6 +39,7 @@ public class RbacPermissionController {
                 Map.of("allowed", allowed));
     }
 
+    // Returns all permissions resolved for the user.
     @GetMapping("/users/{userId}/permissions/resolved")
     public ResponseEntity<Set<String>> getResolvedPermissions(
             @PathVariable String userId,
@@ -51,6 +53,7 @@ public class RbacPermissionController {
         return ResponseEntity.ok(permissions);
     }
 
+    // Clears the user's permission cache.
     @PostMapping("/users/{userId}/permissions/cache/clear")
     public ResponseEntity<Void> clearPermissionCache(
             @PathVariable String userId,
@@ -61,5 +64,10 @@ public class RbacPermissionController {
                 tenantId);
 
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/rbac/health")
+    public ResponseEntity<Map<String, String>> health() {
+        return ResponseEntity.ok(Map.of("status", "UP"));
     }
 }

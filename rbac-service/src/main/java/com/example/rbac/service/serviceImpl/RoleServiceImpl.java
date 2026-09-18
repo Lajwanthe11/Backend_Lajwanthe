@@ -5,7 +5,7 @@ import com.example.common.exception.BadRequestException;
 import com.example.rbac.exception.ResourceNotFoundException;
 import com.example.rbac.entity.RoleHistory;
 import com.example.rbac.repository.PermissionRepository;
-import com.example.rbac.service.RoleNotFoundException;
+import com.example.rbac.exception.RoleNotFoundException;
 import com.example.rbac.dto.*;
 import com.example.rbac.entity.Permission;
 import com.example.rbac.entity.Role;
@@ -59,7 +59,7 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
 
     // Convert current tenant ID from JWT String to UUID
     private UUID getCurrentTenantUuid() {
-        return currentUser.getTenantId();
+        return currentUser.getTenantId() != null ? UUID.fromString(currentUser.getTenantId()) : null;
     }
 
     // Convert request DTO to Role entity
@@ -87,6 +87,18 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
                 : "ACTIVE");
 
         role.setIsDeleted(false);
+
+        if (dto.getTemplateId() != null) {
+            role.setCreatedFromTemplateId(dto.getTemplateId().toString());
+            if (dto.getPermissionCodes() == null || dto.getPermissionCodes().isEmpty()) {
+                roleTemplateRepository.findById(dto.getTemplateId().toString()).ifPresent(template -> {
+                    Set<String> codes = template.getPermissions().stream()
+                            .map(Permission::getPermissionCode)
+                            .collect(Collectors.toSet());
+                    role.setPermissions(resolvePermissionsByCode(codes));
+                });
+            }
+        }
 
         return role;
     }
@@ -409,7 +421,7 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
     // ---------------------------------------------------------------
     @Override
     public List<RoleResponseDto> listSystemRoles() {
-        UUID tenantId = currentUser.getTenantId();
+        UUID tenantId = getCurrentTenantUuid();
         return roleRepository.findAllByTenantIdAndType(tenantId, RoleType.SYSTEM)
                 .stream()
                 .map(this::toDtos)
@@ -425,7 +437,7 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
     @Override
     @Transactional
     public RoleResponseDto cloneRole(String sourceRoleId, RoleCloneRequest request) {
-        UUID tenantId = currentUser.getTenantId();
+        UUID tenantId = getCurrentTenantUuid();
 
         Role source = roleRepository.findByIdAndTenantId(sourceRoleId, tenantId)
                 .orElseThrow(() -> new RoleNotFoundException(sourceRoleId));
@@ -452,7 +464,7 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
     // ---------------------------------------------------------------
     @Override
     public RoleCompareResponse compareRoles(String role1Id, String role2Id) {
-        UUID tenantId = currentUser.getTenantId();
+        UUID tenantId = getCurrentTenantUuid();
 
         Role role1 = roleRepository.findByIdAndTenantId(role1Id, tenantId)
                 .orElseThrow(() -> new RoleNotFoundException(role1Id));
@@ -489,7 +501,7 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
     // ---------------------------------------------------------------
     @Override
     public List<RoleHistoryDto> getHistory(String roleId) {
-        UUID tenantId = currentUser.getTenantId();
+        UUID tenantId = getCurrentTenantUuid();
 
         // Confirms the role belongs to the caller's tenant before returning
         // any history for it.
@@ -509,7 +521,7 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
     // ---------------------------------------------------------------
     @Override
     public byte[] exportRoles(String format) {
-        UUID tenantId = currentUser.getTenantId();
+        UUID tenantId = getCurrentTenantUuid();
         // tenantId comes only from the verified token — "format" never
         // influences which tenant's data gets pulled.
         List<Role> roles = roleRepository.findAllByTenantId(tenantId);

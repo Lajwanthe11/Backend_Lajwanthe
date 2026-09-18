@@ -12,11 +12,11 @@ import java.time.LocalDateTime;
 public class CustomRoleVersion {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private java.util.UUID id;
 
     @Column(name = "role_id", nullable = false)
-    private Long roleId;
+    private java.util.UUID roleId;
 
     @Column(name = "tenant_id", nullable = false, length = 100)
     private String tenantId;
@@ -28,7 +28,7 @@ public class CustomRoleVersion {
     @Column(name = "status", nullable = false, length = 20)
     private CustomRoleStatus status;
 
-    @Column(name = "permission_snapshot", nullable = false, columnDefinition = "jsonb")
+    @Column(name = "permission_snapshot", nullable = false, columnDefinition = "TEXT")
     private String permissionSnapshot;
 
     @Column(name = "created_by", nullable = false, length = 100)
@@ -58,19 +58,19 @@ public class CustomRoleVersion {
         }
     }
 
-    public Long getId() {
+    public java.util.UUID getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(java.util.UUID id) {
         this.id = id;
     }
 
-    public Long getRoleId() {
+    public java.util.UUID getRoleId() {
         return roleId;
     }
 
-    public void setRoleId(Long roleId) {
+    public void setRoleId(java.util.UUID roleId) {
         this.roleId = roleId;
     }
 
