@@ -31,7 +31,22 @@
         <jjwt.version>0.12.6</jjwt.version>
         <springdoc.version>2.8.3</springdoc.version>
         <spring-cloud.version>2024.0.0</spring-cloud.version>
+        <!-- Overrides Spring Boot's Lombok 1.18.36, which crashes javac on JDK 25 (ExceptionInInitializerError) -->
+        <lombok.version>1.18.46</lombok.version>
     </properties>
+
+    <profiles>
+        <!-- JDK 23+ no longer runs annotation processors (Lombok) unless asked to -->
+        <profile>
+            <id>jdk23-annotation-processing</id>
+            <activation>
+                <jdk>[23,)</jdk>
+            </activation>
+            <properties>
+                <maven.compiler.proc>full</maven.compiler.proc>
+            </properties>
+        </profile>
+    </profiles>
 
     <dependencyManagement>
         <dependencies>
