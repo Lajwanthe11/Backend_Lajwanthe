@@ -8,11 +8,13 @@ import com.example.rbac.dto.RoleResponseDto;
 import com.example.rbac.entity.Permission;
 import com.example.rbac.entity.Role;
 import com.example.rbac.entity.RoleHistory;
+import com.example.rbac.entity.RoleTemplate;
 import com.example.rbac.enums.RoleType;
 import com.example.rbac.exception.RoleNotFoundException;
 import com.example.rbac.repository.PermissionRepository;
 import com.example.rbac.repository.RoleHistoryRepository;
 import com.example.rbac.repository.RoleRepository;
+import com.example.rbac.repository.RoleTemplateRepository;
 import com.example.rbac.service.serviceImpl.RoleServiceImpl;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -47,6 +49,9 @@ class RoleServiceFeatureTest {
     private RoleRepository roleRepository;
 
     @Mock
+    private RoleTemplateRepository roleTemplateRepository;
+
+    @Mock
     private CurrentUserContext currentUserContext;
 
     @Mock
@@ -74,6 +79,7 @@ class RoleServiceFeatureTest {
 
         roleService = new RoleServiceImpl(
                 roleRepository,
+                roleTemplateRepository,
                 currentUserContext,
                 roleHistoryRepository,
                 roleExportService,
@@ -107,11 +113,13 @@ class RoleServiceFeatureTest {
     void createRole_fromTemplate_whenNoExplicitPermissionsGiven() {
 
         UUID templateId = UUID.randomUUID();
-        Role template = new Role();
-        template.setId(templateId);
-        template.setRoleName("HR Starter");
+
         Permission empView = new Permission();
         empView.setPermissionCode("EMPLOYEE_VIEW");
+
+        RoleTemplate template = new RoleTemplate();
+        template.setId(templateId);
+        template.setName("HR Starter");
         template.setPermissions(new HashSet<>(Set.of(empView)));
 
         RoleRequestDto request = new RoleRequestDto();
@@ -128,8 +136,10 @@ class RoleServiceFeatureTest {
                 .existsByRoleCodeIgnoreCaseAndTenantIdAndIsDeletedFalse(
                         anyString(), eq(tenantId)))
                 .thenReturn(false);
-        when(roleRepository.findById(templateId))
+        when(roleTemplateRepository.findById(templateId.toString()))
                 .thenReturn(java.util.Optional.of(template));
+        when(permissionRepository.findByPermissionCodeIn(any()))
+                .thenReturn(List.of(empView));
         when(roleRepository.save(any(Role.class)))
                 .thenAnswer(inv -> inv.getArgument(0));
 
@@ -180,60 +190,38 @@ class RoleServiceFeatureTest {
     void updateTemplateVisibility_setsHiddenFlag() {
 
             UUID templateId = UUID.randomUUID();
-            Role template = new Role();
+            RoleTemplate template = new RoleTemplate();
             template.setId(templateId);
-            template.setTenantId(tenantId);
-            template.setRoleType(RoleType.SYSTEM);
-            template.setIsDeleted(false);
-            template.setTemplateHidden(false);
+            template.setHidden(false);
+            template.setPermissions(new HashSet<>());
 
-            // User must be Super Admin
-            when(currentUserContext.hasRole("SUPER_ADMIN"))
-                    .thenReturn(true);
-
-            // Mock the exact repository method used by the service
-            when(roleRepository
-                    .findByIdAndTenantIdAndRoleTypeAndIsDeletedFalse(
-                            templateId,
-                            tenantId,
-                            RoleType.SYSTEM))
+            when(roleTemplateRepository.findById(String.valueOf(templateId)))
                     .thenReturn(java.util.Optional.of(template));
 
-            when(roleRepository.save(any(Role.class)))
+            when(roleTemplateRepository.save(any(RoleTemplate.class)))
                     .thenAnswer(inv -> inv.getArgument(0));
 
             roleService.updateTemplateVisibility(templateId, true);
 
-            assertTrue(template.getTemplateHidden());
+            assertTrue(template.isHidden());
 
-            verify(roleRepository)
-                    .findByIdAndTenantIdAndRoleTypeAndIsDeletedFalse(
-                            templateId,
-                            tenantId,
-                            RoleType.SYSTEM);
-
-            verify(roleRepository).save(template);
+            verify(roleTemplateRepository).findById(String.valueOf(templateId));
+            verify(roleTemplateRepository).save(template);
     }
 
     @Test
-    void listTemplates_superAdmin_seesHiddenTemplates() {
+    void listTemplates_superAdmin_seesAllTemplates() {
 
         when(currentUserContext.hasRole("SUPER_ADMIN"))
                 .thenReturn(true);
 
-        when(roleRepository.findByTenantIdAndRoleTypeAndIsDeletedFalse(
-                tenantId,
-                RoleType.SYSTEM))
+        when(roleTemplateRepository.findAll())
                 .thenReturn(List.of());
 
         roleService.listTemplates();
 
-        verify(roleRepository).findByTenantIdAndRoleTypeAndIsDeletedFalse(
-                tenantId,
-                RoleType.SYSTEM);
-
-        verify(roleRepository, never()).findAll();
-        verify(roleRepository, never()).findAllByHiddenFalse();
+        verify(roleTemplateRepository).findAll();
+        verify(roleTemplateRepository, never()).findAllByHiddenFalse();
     }
 
     @Test
@@ -242,28 +230,13 @@ class RoleServiceFeatureTest {
             when(currentUserContext.hasRole("SUPER_ADMIN"))
                     .thenReturn(false);
 
-            when(roleRepository
-                    .findByTenantIdAndRoleTypeAndIsDeletedFalseAndTemplateHiddenFalse(
-                            tenantId,
-                            RoleType.SYSTEM))
+            when(roleTemplateRepository.findAllByHiddenFalse())
                     .thenReturn(List.of());
 
             roleService.listTemplates();
 
-            verify(roleRepository)
-                    .findByTenantIdAndRoleTypeAndIsDeletedFalseAndTemplateHiddenFalse(
-                            tenantId,
-                            RoleType.SYSTEM);
-
-            verify(roleRepository, never()).findAll();
-
-            verify(roleRepository, never())
-                    .findByTenantIdAndRoleTypeAndIsDeletedFalse(
-                            tenantId,
-                            RoleType.SYSTEM);
-
-            verify(roleRepository, never()).findAllByHiddenFalse();
-
+            verify(roleTemplateRepository).findAllByHiddenFalse();
+            verify(roleTemplateRepository, never()).findAll();
     }
 
     @Test
