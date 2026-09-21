@@ -28,7 +28,7 @@ public class SecurityConfig {
     @Value("${app.cors.allowed-origins}")
     private List<String> allowedOrigins;
 
-    @Bean
+    @Bean(name = "rbacCorsConfigurationSource")
     @Order(0)
     @Profile("dev")
     public SecurityFilterChain devFilterChain(HttpSecurity http) throws Exception {
@@ -55,7 +55,7 @@ public class SecurityConfig {
         return http.build();
     }
 
-    @Bean
+    @Bean (name = "rbacCorsConfigurationource")
     @Primary
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
