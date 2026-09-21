@@ -20,6 +20,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -38,19 +39,19 @@ public class AuthService {
     // NEW: password strength validation added for registration flow
     private final PasswordValidator passwordValidator;
     private final AuthAuditService authAuditService;
+
     public AuthService(AuthenticationManager authenticationManager,
                        CustomUserDetailsService customUserDetailsService,
                        PasswordEncoder passwordEncoder,
                        JwtTokenProvider tokenProvider,
                        PasswordValidator passwordValidator,
-                       AuthAuditService authAuditService
-                        ) {
+                       AuthAuditService authAuditService) {
         this.authenticationManager = authenticationManager;
         this.customUserDetailsService = customUserDetailsService;
         this.passwordEncoder = passwordEncoder;
         this.tokenProvider = tokenProvider;
         this.passwordValidator = passwordValidator;
-        this.authAuditService=authAuditService;
+        this.authAuditService = authAuditService;
     }
 
     public AuthResponseDTO login(LoginRequestDTO loginRequest) {
@@ -68,10 +69,6 @@ public class AuthService {
                     )
             );
         } catch (LockedException ex) {
-            authAuditService.accountLocked(
-                    loginRequest.getUsername(),
-                    tenantId
-            );
             // NEW: account-lockout handling — fetch lock expiry to build a
             // user-friendly "try again after X min Y sec" message
             LocalDateTime lockedUntil = customUserDetailsService.getLockedUntil(loginRequest.getUsername(), tenantId);
@@ -85,30 +82,40 @@ public class AuthService {
                     message = String.format(
                             "Account locked after %d failed login attempts. Try again after %d min %d sec.",
                             customUserDetailsService.getMaxAttempts(), minutes, seconds);
-
                 }
             }
-            authAuditService.accountLocked(loginRequest.getUsername(),tenantId);
+            authAuditService.accountLocked(loginRequest.getUsername(), tenantId);
             // NEW: custom exception so controller/advice can return a distinct
             // "locked" response instead of a generic auth failure
             throw new AccountLockedException(message);
         } catch (BadCredentialsException ex) {
-
             // NEW: Wrong password -> track the failed attempt, then rethrow so the
             // existing "invalid credentials" behavior is unchanged for the caller.
             customUserDetailsService.incrementFailedAttempts(loginRequest.getUsername(), tenantId);
-            authAuditService.loginFailed(
-                    loginRequest.getUsername(),tenantId);
-                      throw ex;
+            authAuditService.loginFailed(loginRequest.getUsername(), tenantId);
+            throw ex;
         }
 
         // NEW: Successful login -> clear any prior failed-attempt count / lock state
         customUserDetailsService.resetFailedAttempts(loginRequest.getUsername(), tenantId);
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        authAuditService.loginSuccess(loginRequest.getUsername(),tenantId);
+        authAuditService.loginSuccess(loginRequest.getUsername(), tenantId);
 
-        String accessToken = tokenProvider.generateAccessToken(authentication);
-        String refreshToken = tokenProvider.generateRefreshToken(loginRequest.getUsername(), tenantId);
+
+
+        String accessToken = tokenProvider.generateAccessToken(
+                loginRequest.getUsername(),
+                authentication.getAuthorities().stream()
+                        .map(GrantedAuthority::getAuthority)
+                        .collect(Collectors.joining(",")),
+                tenantId
+        );
+
+        String refreshToken = tokenProvider.generateRefreshToken(
+                loginRequest.getUsername(),
+                tenantId
+        );
+
         List<String> roles = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toList());
@@ -120,6 +127,7 @@ public class AuthService {
                 .username(loginRequest.getUsername())
                 .tenantId(tenantId)
                 .roles(roles)
+
                 .build();
     }
 
@@ -150,7 +158,7 @@ public class AuthService {
                 tenantId
         );
 
-        authAuditService.userRegistered(registerRequest.getUsername(),tenantId);
+        authAuditService.userRegistered(registerRequest.getUsername(), tenantId);
 
         // Auto-login after registration
         return login(new LoginRequestDTO(registerRequest.getUsername(), registerRequest.getPassword(), tenantId));
@@ -176,10 +184,8 @@ public class AuthService {
                 tenantId
         );
         String newRefreshToken = tokenProvider.generateRefreshToken(username, tenantId);
-        authAuditService.tokenRefresh(
-                username,
-                tenantId
-        );
+        authAuditService.tokenRefresh(username, tenantId);
+
         List<String> roles = userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toList());
