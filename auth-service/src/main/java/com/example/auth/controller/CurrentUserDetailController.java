@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/oauth2")
 @Tag(name = "Authentication", description = "Endpoints for registration, login, logout, token refresh, and password reset")
-public class CurrentUserDetails {
+public class CurrentUserDetailController {
 
     @GetMapping("/whoami")
     @Operation(summary = "Current user profile", description = "Returns the signed-in user's identity extracted from the JWT Bearer token.")
@@ -49,4 +49,5 @@ public class CurrentUserDetails {
 
         return ResponseEntity.ok(body);
     }
+
 }
