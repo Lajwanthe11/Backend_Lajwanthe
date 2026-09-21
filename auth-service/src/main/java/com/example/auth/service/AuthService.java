@@ -1,5 +1,8 @@
 package com.example.auth.service;
 
+import com.example.auth.devicemanagement.device.dto.DeviceRegistrationRequest;
+import com.example.auth.devicemanagement.device.exception.DeviceBlockedException;
+import com.example.auth.devicemanagement.device.service.DeviceService;
 import com.example.auth.dto.AuthResponseDTO;
 import com.example.auth.dto.LoginRequestDTO;
 import com.example.auth.dto.RegisterRequestDTO;
@@ -21,9 +24,6 @@ import org.springframework.util.StringUtils;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Core authentication business logic: login, registration, and token refresh.
- */
 @Service
 public class AuthService {
 
@@ -32,17 +32,20 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider tokenProvider;
     private final PasswordValidator passwordValidator;
+    private final DeviceService deviceService;
 
     public AuthService(AuthenticationManager authenticationManager,
                        CustomUserDetailsService customUserDetailsService,
                        PasswordEncoder passwordEncoder,
                        JwtTokenProvider tokenProvider,
-                       PasswordValidator passwordValidator) {
+                       PasswordValidator passwordValidator,
+                       DeviceService deviceService) {
         this.authenticationManager = authenticationManager;
         this.customUserDetailsService = customUserDetailsService;
         this.passwordEncoder = passwordEncoder;
         this.tokenProvider = tokenProvider;
         this.passwordValidator = passwordValidator;
+        this.deviceService = deviceService;
     }
 
     public AuthResponseDTO login(LoginRequestDTO loginRequest) {
@@ -50,6 +53,13 @@ public class AuthService {
             TenantContext.setTenantId(loginRequest.getTenantId());
         }
         String tenantId = TenantContext.getTenantId();
+
+        // Device blocked check — before issuing any token
+        if (StringUtils.hasText(loginRequest.getDeviceIdentifier())) {
+            if (deviceService.isDeviceBlocked(loginRequest.getDeviceIdentifier())) {
+                throw new DeviceBlockedException(loginRequest.getDeviceIdentifier());
+            }
+        }
 
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
@@ -66,6 +76,13 @@ public class AuthService {
         List<String> roles = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toList());
+
+        // Auto-register the device after successful login
+        if (StringUtils.hasText(loginRequest.getDeviceIdentifier())) {
+            DeviceRegistrationRequest deviceRequest = new DeviceRegistrationRequest();
+            deviceRequest.setDeviceIdentifier(loginRequest.getDeviceIdentifier());
+            deviceService.registerDevice(deviceRequest, loginRequest.getUsername(), loginRequest.getUserAgent());
+        }
 
         return AuthResponseDTO.builder()
                 .accessToken(accessToken)
@@ -103,7 +120,6 @@ public class AuthService {
                 tenantId
         );
 
-        // Auto-login after registration
         return login(new LoginRequestDTO(registerRequest.getUsername(), registerRequest.getPassword(), tenantId));
     }
 
@@ -142,6 +158,3 @@ public class AuthService {
                 .build();
     }
 }
-
-
-

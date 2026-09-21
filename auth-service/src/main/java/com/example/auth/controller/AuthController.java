@@ -65,6 +65,26 @@ public class AuthController {
             description = "Authenticate with username and password. Returns a JWT Access Token and Refresh Token."
     )
     public ResponseEntity<ApiResponse<AuthResponseDTO>> login(
+            @Valid @RequestBody LoginRequestDTO loginRequest,
+
+            // Read the User-Agent header from the HTTP request automatically.
+            // This tells us what browser/OS the login is coming from
+            // so we can auto-detect deviceName, deviceType, and operatingSystem
+            // without the client having to send them explicitly.
+            // required = false means login still works even if User-Agent is missing
+            // (e.g. raw curl calls or non-browser clients).
+            @RequestHeader(value = "User-Agent", required = false) String userAgent) {
+
+        // Set the User-Agent on the login request DTO so AuthService
+        // can pass it through to DeviceService.registerDevice()
+        // after successful authentication — that's where the actual
+        // device name/type/OS detection happens.
+        loginRequest.setUserAgent(userAgent);
+
+        AuthResponseDTO response = authService.login(loginRequest);
+        return ResponseEntity.ok(ApiResponse.ok("Login successful", response));
+    }
+    public ResponseEntity<ApiResponse<AuthResponseDTO>> login(
             @Valid @RequestBody LoginRequestDTO loginRequest) {
 
         AuthResponseDTO response = authService.login(loginRequest);

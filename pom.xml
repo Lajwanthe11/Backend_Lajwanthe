@@ -25,7 +25,6 @@
         <module>base-service</module>
         <module>auth-service</module>
         <module>platform-administration-service</module>
-        <module>device-management-service</module>
     </modules>
 
     <properties>
