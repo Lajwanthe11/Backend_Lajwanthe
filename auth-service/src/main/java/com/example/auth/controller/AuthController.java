@@ -10,7 +10,6 @@ import com.example.auth.dto.TokenRefreshRequestDTO;
 import com.example.auth.security.jwt.JwtTokenProvider;
 import com.example.auth.service.AuthService;
 import com.example.auth.service.PasswordResetService;
-import com.example.auth.service.SessionManagementService;
 import com.example.auth.service.TokenDenylistService;
 import com.example.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -45,17 +44,15 @@ public class AuthController {
     private final PasswordResetService passwordResetService;
     private final TokenDenylistService tokenDenylistService;
     private final JwtTokenProvider tokenProvider;
-    private final SessionManagementService sessionManagementService;
 
     public AuthController(AuthService authService,
                           PasswordResetService passwordResetService,
                           TokenDenylistService tokenDenylistService,
-                          JwtTokenProvider tokenProvider, SessionManagementService sessionManagementService) {
+                          JwtTokenProvider tokenProvider) {
         this.authService = authService;
         this.passwordResetService = passwordResetService;
         this.tokenDenylistService = tokenDenylistService;
         this.tokenProvider = tokenProvider;
-        this.sessionManagementService = sessionManagementService;
     }
 
     // ---------------------------------------------------------------
@@ -72,13 +69,6 @@ public class AuthController {
 
         AuthResponseDTO response = authService.login(loginRequest);
         return ResponseEntity.ok(ApiResponse.ok("Login successful", response));
-    }
-    @GetMapping("/session/{sessionId}")
-    public ResponseEntity<?> checkSession(@PathVariable String sessionId) {
-
-        boolean active = sessionManagementService.isSessionActive(sessionId);
-
-        return ResponseEntity.ok(active);
     }
 
     // ---------------------------------------------------------------
@@ -110,7 +100,7 @@ public class AuthController {
                           "Once revoked, the token is rejected on all subsequent requests.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
-    public ResponseEntity<ApiResponse<Void>> logout(HttpServletRequest request,@RequestParam String sessionId) {
+    public ResponseEntity<ApiResponse<Void>> logout(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
 
         if (!StringUtils.hasText(bearerToken) || !bearerToken.startsWith("Bearer ")) {
@@ -128,11 +118,10 @@ public class AuthController {
         Date expiry = tokenProvider.getExpiryFromJWT(jwt);
         tokenDenylistService.revokeToken(jwt, expiry);
 
-        sessionManagementService.invalidateSession(sessionId);
-
         return ResponseEntity.ok(ApiResponse.ok("Logged out successfully", null));
     }
 
+    // ---------------------------------------------------------------
     // Token Refresh
     // ---------------------------------------------------------------
 
