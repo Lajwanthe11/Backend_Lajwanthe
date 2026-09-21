@@ -4,8 +4,8 @@ import com.example.platformadmin.superadmin.globaldashboard.integration.dto.Plat
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-@Component
-@Profile("local")
+@Component("globalDashboardHealthClientStub")
+@Profile({"local", "default"})
 public class PlatformHealthClientStub implements PlatformHealthClient {
 
     @Override

@@ -7,14 +7,14 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 @Component
-@Profile("!local")
+@Profile("prod")
 public class TenantManagementClientImpl implements TenantManagementClient {
 
     private final RestClient restClient;
 
     public TenantManagementClientImpl(
             RestClient.Builder restClientBuilder,
-            @Value("${services.tenant.base-url}") String tenantBaseUrl) {
+            @Value("${services.tenant.base-url:http://localhost:8083}") String tenantBaseUrl){
 
         this.restClient = restClientBuilder
                 .baseUrl(tenantBaseUrl)

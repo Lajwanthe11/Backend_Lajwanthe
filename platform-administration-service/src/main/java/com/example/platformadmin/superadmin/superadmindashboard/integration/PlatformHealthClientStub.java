@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
  *
  * TODO: replace with a real RestClient-based implementation once confirmed.
  */
-@Component
+@Component("superAdminHealthClientStub")
 public class PlatformHealthClientStub implements PlatformHealthClient {
 
     @Override
