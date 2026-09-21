@@ -1,10 +1,14 @@
 package com.example.auth.notification;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class NotificationDeliveryService {
+
+    private static final Logger log = LoggerFactory.getLogger(NotificationDeliveryService.class);
 
     private final NotificationService notificationService;
 
@@ -32,6 +36,17 @@ public class NotificationDeliveryService {
             }
 
         } catch (Exception exception) {
+
+            // Log the real cause before masking it as a delivery failure —
+            // previously this was swallowed silently, so a genuine bug
+            // (bad data, a downstream outage, etc.) was indistinguishable
+            // from an expected delivery failure.
+            log.error(
+                    "Notification delivery threw an unexpected exception for notification id={}, channel={}",
+                    notification.getId(),
+                    notification.getChannel(),
+                    exception
+            );
 
             return notificationService.markAsFailed(
                     notification.getId()
