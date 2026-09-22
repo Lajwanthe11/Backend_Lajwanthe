@@ -53,7 +53,7 @@ public class JwtTokenProvider {
     // ---------------------------------------------------------------
 
     /** Generate an access token from a Spring Security Authentication object. */
-    public String generateAccessToken(Authentication authentication) {
+    public String generateAccessToken(Authentication authentication,String sessionId) {
         UserDetails principal = (UserDetails) authentication.getPrincipal();
         String tenantId = (principal instanceof UserPrincipal userPrincipal)
                 ? userPrincipal.getTenantId()
@@ -63,7 +63,7 @@ public class JwtTokenProvider {
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.joining(","));
 
-        return generateToken(principal.getUsername(), roles, tenantId, jwtExpirationInMs);
+        return generateToken(principal.getUsername(), roles, tenantId, sessionId, jwtExpirationInMs);
     }
 
     /** Generate an access token from raw username/roles (used by OAuth2 success handler). */
@@ -72,19 +72,22 @@ public class JwtTokenProvider {
     }
 
     public String generateAccessToken(String username, String roles, String tenantId) {
-        return generateToken(username, roles, tenantId != null ? tenantId : TenantContext.getTenantId(), jwtExpirationInMs);
+        return generateToken(username, roles, tenantId != null ? tenantId : TenantContext.getTenantId(),null, jwtExpirationInMs);
     }
 
     /** Generate a refresh token (no roles embedded — minimal claims). */
     public String generateRefreshToken(String username) {
-        return generateRefreshToken(username, TenantContext.getTenantId());
+        return generateRefreshToken(username, TenantContext.getTenantId(),null);
     }
-
     public String generateRefreshToken(String username, String tenantId) {
-        return generateToken(username, null, tenantId != null ? tenantId : TenantContext.getTenantId(), refreshExpirationInMs);
+        return generateRefreshToken(username, tenantId, null);
     }
 
-    private String generateToken(String username, String roles, String tenantId, long expirationTime) {
+    public String generateRefreshToken(String username, String tenantId,String sessionId) {
+        return generateToken(username, null, tenantId != null ? tenantId : TenantContext.getTenantId(), sessionId, refreshExpirationInMs);
+    }
+
+    private String generateToken(String username, String roles, String tenantId,String sessionId, long expirationTime) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expirationTime);
 
@@ -96,6 +99,9 @@ public class JwtTokenProvider {
             claims.put("tenantId", tenantId);
         } else {
             claims.put("tenantId", TenantContext.DEFAULT_TENANT_ID);
+        }
+        if (sessionId != null) {
+            claims.put("sessionId", sessionId);
         }
 
         return Jwts.builder()
@@ -122,6 +128,9 @@ public class JwtTokenProvider {
     public String getTenantIdFromJWT(String token) {
         String tenantId = parseClaims(token).get("tenantId", String.class);
         return (tenantId != null && !tenantId.isBlank()) ? tenantId : TenantContext.DEFAULT_TENANT_ID;
+    }
+    public String getSessionIdFromJWT(String token) {
+        return parseClaims(token).get("sessionId", String.class);
     }
 
     public Date getExpiryFromJWT(String token) {

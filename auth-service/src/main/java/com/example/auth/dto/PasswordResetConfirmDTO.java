@@ -14,7 +14,7 @@ public class PasswordResetConfirmDTO {
     private String resetToken;
 
     @NotBlank(message = "New password is required")
-    @Size(min = 6, message = "Password must be at least 6 characters")
+    @Size(min = 8, max = 20, message = "Password must be between 8 and 20 characters long")
     private String newPassword;
 
     public PasswordResetConfirmDTO() {
