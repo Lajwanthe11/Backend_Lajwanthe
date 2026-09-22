@@ -8,3 +8,8 @@ build-errors.txt
 errors.txt
 
 .idea/
+
+.classpath
+.project
+.settings/
+custom-role-error.txt
