@@ -1,5 +1,6 @@
 package com.example.rbac.service;
 
+import com.example.common.tenant.TenantContext;
 import com.example.rbac.entity.Permission;
 import com.example.rbac.entity.Role;
 import com.example.rbac.entity.RolePermission;
@@ -26,11 +27,13 @@ import static org.mockito.Mockito.*;
 /**
  * Unit tests for RolePermissionService.
  *
- * These tests verify:
+ * Covers:
  * - Reading role permissions
+ * - Getting a specific role-permission mapping
  * - Granting permissions
+ * - Re-granting active permissions
+ * - Rejecting inactive permissions
  * - Revoking permissions
- * - Permission validation
  * - Super Admin system-permission protection
  * - Audit creation
  * - Tenant ID handling
@@ -38,588 +41,578 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class RolePermissionServiceTest {
 
-        /*
-         * Mock repository used for RolePermission database operations.
-         */
-        @Mock
-        private RolePermissionRepository rolePermissionRepository;
+    @Mock
+    private RolePermissionRepository rolePermissionRepository;
+
+    @Mock
+    private RolePermissionAuditRepository auditRepository;
+
+    @Mock
+    private RoleRepository roleRepository;
+
+    @Mock
+    private PermissionRepository permissionRepository;
+
+    private RolePermissionService service;
+
+    private UUID roleId;
+    private UUID permissionId;
+    private UUID userId;
+    private UUID tenantId;
+
+    @BeforeEach
+    void setUp() {
+
+        service = new RolePermissionService(
+                rolePermissionRepository,
+                auditRepository,
+                roleRepository,
+                permissionRepository);
+
+        roleId = UUID.randomUUID();
+        permissionId = UUID.randomUUID();
+        userId = UUID.randomUUID();
+        tenantId = UUID.randomUUID();
+
+        TenantContext.setTenantId(tenantId.toString());
+    }
+
+    @AfterEach
+    void tearDown() {
+        TenantContext.clear();
+    }
+
+    // -------------------------------------------------------------------------
+    // getPermissionsByRole()
+    // -------------------------------------------------------------------------
+
+    @Test
+    void getPermissionsByRole_shouldReturnActivePermissions() {
+
+        Role role = new Role();
+        RolePermission rolePermission = new RolePermission();
+
+        when(roleRepository.findById(roleId))
+                .thenReturn(Optional.of(role));
+
+        when(rolePermissionRepository.findByRole_IdAndActiveTrue(roleId))
+                .thenReturn(List.of(rolePermission));
+
+        List<RolePermission> result =
+                service.getPermissionsByRole(roleId);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertSame(rolePermission, result.get(0));
+
+        verify(roleRepository).findById(roleId);
+
+        verify(rolePermissionRepository)
+                .findByRole_IdAndActiveTrue(roleId);
+    }
+
+    @Test
+    void getPermissionsByRole_shouldThrowWhenRoleNotFound() {
+
+        when(roleRepository.findById(roleId))
+                .thenReturn(Optional.empty());
+
+        IllegalArgumentException exception =
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () -> service.getPermissionsByRole(roleId));
+
+        assertEquals(
+                "Role not found",
+                exception.getMessage());
+
+        verify(roleRepository).findById(roleId);
+
+        verify(
+                rolePermissionRepository,
+                never())
+                .findByRole_IdAndActiveTrue(any());
+    }
+
+    // -------------------------------------------------------------------------
+    // getRolePermission()
+    // -------------------------------------------------------------------------
+
+    @Test
+    void getRolePermission_shouldReturnPermission() {
+
+        RolePermission rolePermission =
+                new RolePermission();
+
+        when(
+                rolePermissionRepository
+                        .findByRole_IdAndPermission_PermissionId(
+                                roleId,
+                                permissionId))
+                .thenReturn(Optional.of(rolePermission));
+
+        RolePermission result =
+                service.getRolePermission(
+                        roleId,
+                        permissionId);
+
+        assertSame(
+                rolePermission,
+                result);
+
+        verify(rolePermissionRepository)
+                .findByRole_IdAndPermission_PermissionId(
+                        roleId,
+                        permissionId);
+    }
+
+    @Test
+    void getRolePermission_shouldReturnNullWhenNotFound() {
+
+        when(
+                rolePermissionRepository
+                        .findByRole_IdAndPermission_PermissionId(
+                                roleId,
+                                permissionId))
+                .thenReturn(Optional.empty());
+
+        RolePermission result =
+                service.getRolePermission(
+                        roleId,
+                        permissionId);
+
+        assertNull(result);
+
+        verify(rolePermissionRepository)
+                .findByRole_IdAndPermission_PermissionId(
+                        roleId,
+                        permissionId);
+    }
+
+    // -------------------------------------------------------------------------
+    // grantPermission()
+    // -------------------------------------------------------------------------
+
+    @Test
+    void grantPermission_shouldCreatePermissionAndAudit() {
+
+        Role role = new Role();
+        Permission permission = new Permission();
+
+        when(roleRepository.findById(roleId))
+                .thenReturn(Optional.of(role));
+
+        when(permissionRepository.findById(permissionId))
+                .thenReturn(Optional.of(permission));
+
+        when(
+                rolePermissionRepository
+                        .findByRole_IdAndPermission_PermissionId(
+                                roleId,
+                                permissionId))
+                .thenReturn(Optional.empty());
+
+        RolePermission savedPermission =
+                new RolePermission();
+
+        when(
+                rolePermissionRepository
+                        .save(any(RolePermission.class)))
+                .thenReturn(savedPermission);
+
+        RolePermission result =
+                service.grantPermission(
+                        roleId,
+                        permissionId,
+                        userId);
+
+        // Returned object must be the repository result.
+        assertSame(
+                savedPermission,
+                result);
+
+        // Capture the entity passed to save().
+        ArgumentCaptor<RolePermission> permissionCaptor =
+                ArgumentCaptor.forClass(RolePermission.class);
+
+        verify(rolePermissionRepository)
+                .save(permissionCaptor.capture());
+
+        RolePermission saved =
+                permissionCaptor.getValue();
+
+        // Correct role.
+        assertSame(
+                role,
+                saved.getRole());
+
+        // Correct permission.
+        assertSame(
+                permission,
+                saved.getPermission());
 
         /*
-         * Mock repository used for permission audit records.
-         */
-        @Mock
-        private RolePermissionAuditRepository auditRepository;
-
-        /*
-         * Mock repository used to find and validate roles.
-         */
-        @Mock
-        private RoleRepository roleRepository;
-
-        /*
-         * Mock repository used to find and validate permissions.
-         */
-        @Mock
-        private PermissionRepository permissionRepository;
-
-        /*
-         * Service under test.
-         */
-        private RolePermissionService service;
-
-        /*
-         * Test IDs.
+         * IMPORTANT:
          *
-         * The current Permission Matrix implementation uses UUIDs.
+         * RolePermission.tenantId is String in the current
+         * developer implementation.
+         *
+         * RolePermissionService does:
+         *
+         * rolePermission.setTenantId(getTenantId().toString());
+         *
+         * Therefore compare String with String.
          */
-        private UUID roleId;
-        private UUID permissionId;
-        private UUID userId;
-        private UUID tenantId;
+        assertEquals(
+                tenantId.toString(),
+                saved.getTenantId());
 
-        /**
-         * Create the service and initialize test IDs
-         * before every test.
+        /*
+         * grantedBy is also String in the current implementation.
          */
-        @BeforeEach
-        void setUp() {
+        assertEquals(
+                userId.toString(),
+                saved.getGrantedBy());
 
-                service = new RolePermissionService(
-                                rolePermissionRepository,
-                                auditRepository,
-                                roleRepository,
-                                permissionRepository);
+        assertNotNull(
+                saved.getGrantedAt());
 
-                roleId = UUID.randomUUID();
-                permissionId = UUID.randomUUID();
-                userId = UUID.randomUUID();
-                tenantId = UUID.randomUUID();
+        assertTrue(
+                saved.isActive());
 
-                /*
-                 * RolePermissionService reads the current tenant
-                 * from TenantContext.
-                 */
-                com.example.common.tenant.TenantContext.setTenantId(
-                                tenantId.toString());
-        }
+        assertNull(
+                saved.getRevokedBy());
 
-        /**
-         * Clear TenantContext after every test so that
-         * one test does not affect another test.
-         */
-        @AfterEach
-        void tearDown() {
+        assertNull(
+                saved.getRevokedAt());
 
-                com.example.common.tenant.TenantContext.clear();
-        }
+        // Audit must be created.
+        verify(auditRepository)
+                .save(any());
+    }
 
-        /**
-         * Verify that active permissions are returned
-         * when the role exists.
-         */
-        @Test
-        void getPermissionsByRole_shouldReturnActivePermissions() {
+    @Test
+    void grantPermission_shouldReturnExistingActivePermission() {
 
-                Role role = new Role();
+        Role role = new Role();
+        Permission permission = new Permission();
 
-                RolePermission rolePermission = new RolePermission();
+        RolePermission existing =
+                new RolePermission();
 
-                when(roleRepository.findById(roleId))
-                                .thenReturn(Optional.of(role));
+        existing.setActive(true);
 
-                when(rolePermissionRepository.findByRole_IdAndActiveTrue(roleId))
-                                .thenReturn(List.of(rolePermission));
+        when(roleRepository.findById(roleId))
+                .thenReturn(Optional.of(role));
 
-                List<RolePermission> result = service.getPermissionsByRole(roleId);
+        when(permissionRepository.findById(permissionId))
+                .thenReturn(Optional.of(permission));
 
-                assertNotNull(result);
-                assertEquals(1, result.size());
-                assertSame(rolePermission, result.get(0));
-
-                verify(roleRepository).findById(roleId);
-
-                verify(rolePermissionRepository)
-                                .findByRole_IdAndActiveTrue(roleId);
-        }
-
-        /**
-         * Verify that the service rejects the request
-         * when the role does not exist.
-         */
-        @Test
-        void getPermissionsByRole_shouldThrowWhenRoleNotFound() {
-
-                when(roleRepository.findById(roleId))
-                                .thenReturn(Optional.empty());
-
-                IllegalArgumentException exception = assertThrows(
-                                IllegalArgumentException.class,
-                                () -> service.getPermissionsByRole(roleId));
-
-                assertEquals(
-                                "Role not found",
-                                exception.getMessage());
-
-                verify(roleRepository).findById(roleId);
-
-                verify(
-                                rolePermissionRepository,
-                                never()).findByRole_IdAndActiveTrue(any());
-        }
-
-        /**
-         * Verify that an existing role-permission mapping
-         * can be retrieved.
-         */
-        @Test
-        void getRolePermission_shouldReturnPermission() {
-
-                RolePermission rolePermission = new RolePermission();
-
-                when(
-                                rolePermissionRepository
-                                                .findByRole_IdAndPermission_PermissionId(
-                                                                roleId,
-                                                                permissionId))
-                                .thenReturn(Optional.of(rolePermission));
-
-                RolePermission result = service.getRolePermission(
+        when(
+                rolePermissionRepository
+                        .findByRole_IdAndPermission_PermissionId(
                                 roleId,
-                                permissionId);
+                                permissionId))
+                .thenReturn(Optional.of(existing));
 
-                assertSame(
-                                rolePermission,
-                                result);
+        RolePermission result =
+                service.grantPermission(
+                        roleId,
+                        permissionId,
+                        userId);
 
-                verify(rolePermissionRepository)
-                                .findByRole_IdAndPermission_PermissionId(
-                                                roleId,
-                                                permissionId);
-        }
+        assertSame(
+                existing,
+                result);
 
-        /**
-         * Verify that null is returned when no
-         * role-permission mapping exists.
-         */
-        @Test
-        void getRolePermission_shouldReturnNullWhenNotFound() {
+        verify(
+                rolePermissionRepository,
+                never())
+                .save(any(RolePermission.class));
 
-                when(
-                                rolePermissionRepository
-                                                .findByRole_IdAndPermission_PermissionId(
-                                                                roleId,
-                                                                permissionId))
-                                .thenReturn(Optional.empty());
+        verify(
+                auditRepository,
+                never())
+                .save(any());
+    }
 
-                RolePermission result = service.getRolePermission(
-                                roleId,
-                                permissionId);
+    @Test
+    void grantPermission_shouldRejectInactivePermission() {
 
-                assertNull(result);
-        }
+        Role role = new Role();
+        Permission permission = new Permission();
 
-        /**
-         * Verify that a new permission assignment is created
-         * and an audit record is written.
-         */
-        @Test
-        void grantPermission_shouldCreatePermissionAndAudit() {
+        permission.setActive(false);
 
-                Role role = new Role();
+        when(roleRepository.findById(roleId))
+                .thenReturn(Optional.of(role));
 
-                Permission permission = new Permission();
+        when(permissionRepository.findById(permissionId))
+                .thenReturn(Optional.of(permission));
 
-                when(roleRepository.findById(roleId))
-                                .thenReturn(Optional.of(role));
-
-                when(permissionRepository.findById(permissionId))
-                                .thenReturn(Optional.of(permission));
-
-                when(
-                                rolePermissionRepository
-                                                .findByRole_IdAndPermission_PermissionId(
-                                                                roleId,
-                                                                permissionId))
-                                .thenReturn(Optional.empty());
-
-                RolePermission savedPermission = new RolePermission();
-
-                when(
-                                rolePermissionRepository
-                                                .save(any(RolePermission.class)))
-                                .thenReturn(savedPermission);
-
-                RolePermission result = service.grantPermission(
+        IllegalArgumentException exception =
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () -> service.grantPermission(
                                 roleId,
                                 permissionId,
-                                userId);
+                                userId));
 
-                assertSame(
-                                savedPermission,
-                                result);
+        assertEquals(
+                "Inactive permission cannot be granted",
+                exception.getMessage());
 
-                /*
-                 * Capture the RolePermission passed to the repository
-                 * so that its fields can be verified.
-                 */
-                ArgumentCaptor<RolePermission> permissionCaptor = ArgumentCaptor.forClass(
-                                RolePermission.class);
+        verify(
+                rolePermissionRepository,
+                never())
+                .save(any());
 
-                verify(rolePermissionRepository)
-                                .save(permissionCaptor.capture());
+        verify(
+                auditRepository,
+                never())
+                .save(any());
+    }
 
-                RolePermission saved = permissionCaptor.getValue();
+    @Test
+    void grantPermission_shouldThrowWhenRoleNotFound() {
 
-                assertSame(
-                                role,
-                                saved.getRole());
+        when(roleRepository.findById(roleId))
+                .thenReturn(Optional.empty());
 
-                assertSame(
-                                permission,
-                                saved.getPermission());
-
-                assertEquals(
-                                tenantId,
-                                saved.getTenantId());
-
-                assertEquals(
-                                userId,
-                                saved.getGrantedBy());
-
-                assertNotNull(
-                                saved.getGrantedAt());
-
-                assertTrue(
-                                saved.isActive());
-
-                assertNull(
-                                saved.getRevokedBy());
-
-                assertNull(
-                                saved.getRevokedAt());
-
-                /*
-                 * Granting a permission must create an audit record.
-                 */
-                verify(auditRepository)
-                                .save(any());
-        }
-
-        /**
-         * Verify that an already active permission is returned
-         * without creating another database record or audit entry.
-         */
-        @Test
-        void grantPermission_shouldReturnExistingActivePermission() {
-
-                Role role = new Role();
-
-                Permission permission = new Permission();
-
-                RolePermission existing = new RolePermission();
-
-                existing.setActive(true);
-
-                when(roleRepository.findById(roleId))
-                                .thenReturn(Optional.of(role));
-
-                when(permissionRepository.findById(permissionId))
-                                .thenReturn(Optional.of(permission));
-
-                when(
-                                rolePermissionRepository
-                                                .findByRole_IdAndPermission_PermissionId(
-                                                                roleId,
-                                                                permissionId))
-                                .thenReturn(Optional.of(existing));
-
-                RolePermission result = service.grantPermission(
+        IllegalArgumentException exception =
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () -> service.grantPermission(
                                 roleId,
                                 permissionId,
-                                userId);
+                                userId));
 
-                assertSame(
-                                existing,
-                                result);
+        assertEquals(
+                "Role not found",
+                exception.getMessage());
 
-                verify(
-                                rolePermissionRepository,
-                                never()).save(any(RolePermission.class));
+        verify(
+                permissionRepository,
+                never())
+                .findById(any());
 
-                verify(
-                                auditRepository,
-                                never()).save(any());
-        }
+        verify(
+                rolePermissionRepository,
+                never())
+                .save(any());
 
-        /**
-         * Verify that inactive permissions cannot be granted.
-         */
-        @Test
-        void grantPermission_shouldRejectInactivePermission() {
+        verify(
+                auditRepository,
+                never())
+                .save(any());
+    }
 
-                Role role = new Role();
+    @Test
+    void grantPermission_shouldThrowWhenPermissionNotFound() {
 
-                Permission permission = new Permission();
+        Role role = new Role();
 
-                when(roleRepository.findById(roleId))
-                                .thenReturn(Optional.of(role));
+        when(roleRepository.findById(roleId))
+                .thenReturn(Optional.of(role));
 
-                when(permissionRepository.findById(permissionId))
-                                .thenReturn(Optional.of(permission));
+        when(permissionRepository.findById(permissionId))
+                .thenReturn(Optional.empty());
 
-                permission.setActive(false);
-
-                IllegalArgumentException exception = assertThrows(
-                                IllegalArgumentException.class,
-                                () -> service.grantPermission(
-                                                roleId,
-                                                permissionId,
-                                                userId));
-
-                assertEquals(
-                                "Inactive permission cannot be granted",
-                                exception.getMessage());
-
-                verify(
-                                rolePermissionRepository,
-                                never()).save(any());
-
-                verify(
-                                auditRepository,
-                                never()).save(any());
-        }
-
-        /**
-         * Verify that granting a permission fails
-         * when the role does not exist.
-         */
-        @Test
-        void grantPermission_shouldThrowWhenRoleNotFound() {
-
-                when(roleRepository.findById(roleId))
-                                .thenReturn(Optional.empty());
-
-                IllegalArgumentException exception = assertThrows(
-                                IllegalArgumentException.class,
-                                () -> service.grantPermission(
-                                                roleId,
-                                                permissionId,
-                                                userId));
-
-                assertEquals(
-                                "Role not found",
-                                exception.getMessage());
-
-                verify(
-                                permissionRepository,
-                                never()).findById(any());
-        }
-
-        /**
-         * Verify that granting a permission fails
-         * when the permission does not exist.
-         */
-        @Test
-        void grantPermission_shouldThrowWhenPermissionNotFound() {
-
-                Role role = new Role();
-
-                when(roleRepository.findById(roleId))
-                                .thenReturn(Optional.of(role));
-
-                when(permissionRepository.findById(permissionId))
-                                .thenReturn(Optional.empty());
-
-                IllegalArgumentException exception = assertThrows(
-                                IllegalArgumentException.class,
-                                () -> service.grantPermission(
-                                                roleId,
-                                                permissionId,
-                                                userId));
-
-                assertEquals(
-                                "Permission not found",
-                                exception.getMessage());
-
-                verify(
-                                rolePermissionRepository,
-                                never()).save(any());
-        }
-
-        /**
-         * Verify that an active permission is deactivated
-         * when it is revoked and an audit record is created.
-         */
-        @Test
-        void revokePermission_shouldDeactivatePermissionAndCreateAudit() {
-
-                Role role = new Role();
-
-                Permission permission = new Permission();
-
-                RolePermission rolePermission = new RolePermission();
-
-                rolePermission.setActive(true);
-
-                when(roleRepository.findById(roleId))
-                                .thenReturn(Optional.of(role));
-
-                when(permissionRepository.findById(permissionId))
-                                .thenReturn(Optional.of(permission));
-
-                when(
-                                rolePermissionRepository
-                                                .findByRole_IdAndPermission_PermissionId(
-                                                                roleId,
-                                                                permissionId))
-                                .thenReturn(Optional.of(rolePermission));
-
-                service.revokePermission(
+        IllegalArgumentException exception =
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () -> service.grantPermission(
                                 roleId,
                                 permissionId,
-                                userId);
+                                userId));
 
-                assertFalse(
-                                rolePermission.isActive());
+        assertEquals(
+                "Permission not found",
+                exception.getMessage());
 
-                assertEquals(
-                                userId,
-                                rolePermission.getRevokedBy());
+        verify(
+                rolePermissionRepository,
+                never())
+                .save(any());
 
-                assertNotNull(
-                                rolePermission.getRevokedAt());
+        verify(
+                auditRepository,
+                never())
+                .save(any());
+    }
 
-                verify(rolePermissionRepository)
-                                .save(rolePermission);
+    // -------------------------------------------------------------------------
+    // revokePermission()
+    // -------------------------------------------------------------------------
 
-                verify(auditRepository)
-                                .save(any());
-        }
+    @Test
+    void revokePermission_shouldDeactivatePermissionAndCreateAudit() {
 
-        /**
-         * Verify that revoking a permission that is not
-         * currently granted does not create a database
-         * or audit operation.
+        Role role = new Role();
+        Permission permission = new Permission();
+
+        RolePermission rolePermission =
+                new RolePermission();
+
+        rolePermission.setActive(true);
+
+        when(roleRepository.findById(roleId))
+                .thenReturn(Optional.of(role));
+
+        when(permissionRepository.findById(permissionId))
+                .thenReturn(Optional.of(permission));
+
+        when(
+                rolePermissionRepository
+                        .findByRole_IdAndPermission_PermissionId(
+                                roleId,
+                                permissionId))
+                .thenReturn(Optional.of(rolePermission));
+
+        service.revokePermission(
+                roleId,
+                permissionId,
+                userId);
+
+        assertFalse(
+                rolePermission.isActive());
+
+        /*
+         * revokedBy is String in the current implementation.
          */
-        @Test
-        void revokePermission_shouldDoNothingWhenPermissionNotGranted() {
+        assertEquals(
+                userId.toString(),
+                rolePermission.getRevokedBy());
 
-                Role role = new Role();
+        assertNotNull(
+                rolePermission.getRevokedAt());
 
-                Permission permission = new Permission();
+        verify(rolePermissionRepository)
+                .save(rolePermission);
 
-                when(roleRepository.findById(roleId))
-                                .thenReturn(Optional.of(role));
+        verify(auditRepository)
+                .save(any());
+    }
 
-                when(permissionRepository.findById(permissionId))
-                                .thenReturn(Optional.of(permission));
+    @Test
+    void revokePermission_shouldDoNothingWhenPermissionNotGranted() {
 
-                when(
-                                rolePermissionRepository
-                                                .findByRole_IdAndPermission_PermissionId(
-                                                                roleId,
-                                                                permissionId))
-                                .thenReturn(Optional.empty());
+        Role role = new Role();
+        Permission permission = new Permission();
 
-                service.revokePermission(
+        when(roleRepository.findById(roleId))
+                .thenReturn(Optional.of(role));
+
+        when(permissionRepository.findById(permissionId))
+                .thenReturn(Optional.of(permission));
+
+        when(
+                rolePermissionRepository
+                        .findByRole_IdAndPermission_PermissionId(
+                                roleId,
+                                permissionId))
+                .thenReturn(Optional.empty());
+
+        service.revokePermission(
+                roleId,
+                permissionId,
+                userId);
+
+        verify(
+                rolePermissionRepository,
+                never())
+                .save(any());
+
+        verify(
+                auditRepository,
+                never())
+                .save(any());
+    }
+
+    @Test
+    void revokePermission_shouldRejectSystemPermissionForSuperAdmin() {
+
+        Role role = new Role();
+        Permission permission = new Permission();
+
+        role.setRoleCode("SUPER_ADMIN");
+        permission.setSystem(true);
+
+        when(roleRepository.findById(roleId))
+                .thenReturn(Optional.of(role));
+
+        when(permissionRepository.findById(permissionId))
+                .thenReturn(Optional.of(permission));
+
+        IllegalArgumentException exception =
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () -> service.revokePermission(
                                 roleId,
                                 permissionId,
-                                userId);
+                                userId));
 
-                verify(
-                                rolePermissionRepository,
-                                never()).save(any());
+        assertEquals(
+                "System permissions cannot be revoked from Super Admin",
+                exception.getMessage());
 
-                verify(
-                                auditRepository,
-                                never()).save(any());
-        }
+        verify(
+                rolePermissionRepository,
+                never())
+                .save(any());
 
-        /**
-         * Verify that a Super Admin cannot revoke
-         * a system permission.
-         */
-        @Test
-        void revokePermission_shouldRejectSystemPermissionForSuperAdmin() {
+        verify(
+                auditRepository,
+                never())
+                .save(any());
+    }
 
-                Role role = new Role();
+    @Test
+    void revokePermission_shouldAllowSystemPermissionForNonSuperAdmin() {
 
-                Permission permission = new Permission();
+        Role role = new Role();
+        Permission permission = new Permission();
 
-                role.setRoleCode("SUPER_ADMIN");
+        RolePermission rolePermission =
+                new RolePermission();
 
-                permission.setSystem(true);
+        rolePermission.setActive(true);
 
-                when(roleRepository.findById(roleId))
-                                .thenReturn(Optional.of(role));
+        role.setRoleCode("HR");
+        permission.setSystem(true);
 
-                when(permissionRepository.findById(permissionId))
-                                .thenReturn(Optional.of(permission));
+        when(roleRepository.findById(roleId))
+                .thenReturn(Optional.of(role));
 
-                IllegalArgumentException exception = assertThrows(
-                                IllegalArgumentException.class,
-                                () -> service.revokePermission(
-                                                roleId,
-                                                permissionId,
-                                                userId));
+        when(permissionRepository.findById(permissionId))
+                .thenReturn(Optional.of(permission));
 
-                assertEquals(
-                                "System permissions cannot be revoked from Super Admin",
-                                exception.getMessage());
-
-                verify(
-                                rolePermissionRepository,
-                                never()).save(any());
-
-                verify(
-                                auditRepository,
-                                never()).save(any());
-        }
-
-        /**
-         * Verify that system permissions can be revoked
-         * from a normal non-Super-Admin role.
-         */
-        @Test
-        void revokePermission_shouldAllowSystemPermissionForNonSuperAdmin() {
-
-                Role role = new Role();
-
-                Permission permission = new Permission();
-
-                RolePermission rolePermission = new RolePermission();
-
-                rolePermission.setActive(true);
-
-                role.setRoleCode("HR");
-
-                permission.setSystem(true);
-
-                when(roleRepository.findById(roleId))
-                                .thenReturn(Optional.of(role));
-
-                when(permissionRepository.findById(permissionId))
-                                .thenReturn(Optional.of(permission));
-
-                when(
-                                rolePermissionRepository
-                                                .findByRole_IdAndPermission_PermissionId(
-                                                                roleId,
-                                                                permissionId))
-                                .thenReturn(Optional.of(rolePermission));
-
-                service.revokePermission(
+        when(
+                rolePermissionRepository
+                        .findByRole_IdAndPermission_PermissionId(
                                 roleId,
-                                permissionId,
-                                userId);
+                                permissionId))
+                .thenReturn(Optional.of(rolePermission));
 
-                assertFalse(
-                                rolePermission.isActive());
+        service.revokePermission(
+                roleId,
+                permissionId,
+                userId);
 
-                verify(rolePermissionRepository)
-                                .save(rolePermission);
+        assertFalse(
+                rolePermission.isActive());
 
-                verify(auditRepository)
-                                .save(any());
-        }
+        assertEquals(
+                userId.toString(),
+                rolePermission.getRevokedBy());
+
+        assertNotNull(
+                rolePermission.getRevokedAt());
+
+        verify(rolePermissionRepository)
+                .save(rolePermission);
+
+        verify(auditRepository)
+                .save(any());
+    }
 }

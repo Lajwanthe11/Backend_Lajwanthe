@@ -34,6 +34,9 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 @ExtendWith(MockitoExtension.class)
 class PermissionResolverTest {
 
+    private static final String EMPTY_PERMISSION_SENTINEL =
+            "__NO_PERMISSIONS__";
+
     @Mock
     private JdbcTemplate jdbcTemplate;
 
@@ -86,8 +89,7 @@ class PermissionResolverTest {
         assertNotNull(result);
         assertEquals(cachedPermissions, result);
 
-        verify(setOperations)
-                .members(key);
+        verify(setOperations).members(key);
 
         verifyNoInteractions(jdbcTemplate);
     }
@@ -111,8 +113,7 @@ class PermissionResolverTest {
                 result
         );
 
-        verify(setOperations)
-                .members(key);
+        verify(setOperations).members(key);
 
         verifyNoInteractions(jdbcTemplate);
     }
@@ -136,8 +137,7 @@ class PermissionResolverTest {
                 result
         );
 
-        verify(setOperations)
-                .members(key);
+        verify(setOperations).members(key);
 
         verifyNoInteractions(jdbcTemplate);
     }
@@ -183,11 +183,8 @@ class PermissionResolverTest {
                 tenantB
         );
 
-        verify(setOperations)
-                .members(tenantAKey);
-
-        verify(setOperations)
-                .members(tenantBKey);
+        verify(setOperations).members(tenantAKey);
+        verify(setOperations).members(tenantBKey);
 
         verifyNoInteractions(jdbcTemplate);
     }
@@ -233,11 +230,8 @@ class PermissionResolverTest {
                 userB
         );
 
-        verify(setOperations)
-                .members(userAKey);
-
-        verify(setOperations)
-                .members(userBKey);
+        verify(setOperations).members(userAKey);
+        verify(setOperations).members(userBKey);
 
         verifyNoInteractions(jdbcTemplate);
     }
@@ -255,14 +249,6 @@ class PermissionResolverTest {
         when(setOperations.members(key))
                 .thenReturn(Set.of());
 
-        /*
-         * The resolver first checks whether the user has
-         * an active/effective SUPER_ADMIN role.
-         *
-         * We deliberately use any SQL and any parameter order here.
-         * The test verifies the resolver behaviour rather than
-         * coupling the test to SQL parameter ordering.
-         */
         when(jdbcTemplate.queryForObject(
                 anyString(),
                 eq(Integer.class),
@@ -391,10 +377,6 @@ class PermissionResolverTest {
                         any()
                 );
 
-        /*
-         * Super admin should return immediately.
-         * Normal permission query must not execute.
-         */
         verify(jdbcTemplate, never())
                 .query(
                         anyString(),
@@ -491,23 +473,23 @@ class PermissionResolverTest {
                 );
 
         assertNotNull(result);
-
         assertTrue(result.isEmpty());
 
         /*
-         * Developer implementation only caches non-empty
-         * permission sets.
+         * Developer implementation caches an empty result
+         * using a sentinel value so that repeated lookups
+         * do not continuously hit the database.
          */
-        verify(setOperations, never())
+        verify(setOperations)
                 .add(
-                        anyString(),
-                        any(String[].class)
+                        eq(key),
+                        eq(EMPTY_PERMISSION_SENTINEL)
                 );
 
-        verify(redisTemplate, never())
+        verify(redisTemplate)
                 .expire(
-                        anyString(),
-                        any(Duration.class)
+                        eq(key),
+                        eq(Duration.ofMinutes(15))
                 );
     }
 
@@ -671,10 +653,6 @@ class PermissionResolverTest {
                         "tenant-001"
                 );
 
-        /*
-         * Redis failure must not prevent the DB result
-         * from being returned.
-         */
         assertEquals(
                 Set.of("USER_READ"),
                 result
@@ -708,11 +686,10 @@ class PermissionResolverTest {
         ResponseStatusException exception =
                 assertThrows(
                         ResponseStatusException.class,
-                        () ->
-                                resolver.resolvePermissions(
-                                        "user-001",
-                                        "tenant-001"
-                                )
+                        () -> resolver.resolvePermissions(
+                                "user-001",
+                                "tenant-001"
+                        )
                 );
 
         assertEquals(
@@ -750,11 +727,10 @@ class PermissionResolverTest {
 
         assertThrows(
                 ResponseStatusException.class,
-                () ->
-                        resolver.resolvePermissions(
-                                "user-001",
-                                "tenant-001"
-                        )
+                () -> resolver.resolvePermissions(
+                        "user-001",
+                        "tenant-001"
+                )
         );
 
         verify(setOperations, never())
