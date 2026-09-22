@@ -1,28 +1,29 @@
 package com.example.rbac.security;
 
-import com.example.rbac.config.RequirePermission;
-import com.example.rbac.service.PermissionAuthorizationService;
-import com.example.rbac.exception.PermissionDeniedException;
-import com.example.rbac.service.PermissionResolver;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
+import java.time.Instant;
+import java.util.Map;
+
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-
-import org.junit.jupiter.api.AfterEach;
+import org.springframework.context.annotation.Import;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
-import java.time.Instant;
-import java.util.Map;
 
+import com.example.rbac.config.RequirePermission;
 import com.example.rbac.controller.IntegrationTestConfig;
-import org.springframework.context.annotation.Import;
+import com.example.rbac.exception.PermissionDeniedException;
+import com.example.rbac.service.PermissionAuthorizationService;
+import com.example.rbac.service.PermissionResolver;
 
 @SpringBootTest
 @Import(IntegrationTestConfig.class)
@@ -33,6 +34,12 @@ class PermissionBypassTest {
 
     @MockBean
     private PermissionResolver permissionResolver;
+
+    @MockBean
+    private RedisConnectionFactory redisConnectionFactory;
+
+    @MockBean
+    private JwtDecoder jwtDecoder;
 
     private void setSecurityContext(String userId) {
         Jwt jwt = new Jwt(
@@ -46,7 +53,9 @@ class PermissionBypassTest {
                         "tenantId", "tenant-1"
                 )
         );
-        SecurityContextHolder.getContext().setAuthentication(new JwtAuthenticationToken(jwt));
+
+        SecurityContextHolder.getContext()
+                .setAuthentication(new JwtAuthenticationToken(jwt));
     }
 
     @AfterEach
@@ -58,211 +67,132 @@ class PermissionBypassTest {
     void userWithoutRequiredPermission_shouldBeDenied() {
         setSecurityContext("user-readonly-1");
 
-        when(
-                permissionResolver.hasPermission(
-                        "user-readonly-1",
-                        "USER_CREATE"
-                )
-        ).thenReturn(false);
+        when(permissionResolver.hasPermission(
+                "user-readonly-1",
+                "USER_CREATE"))
+                .thenReturn(false);
 
-        RequirePermission annotation =
-                getRequirePermission();
+        RequirePermission annotation = getRequirePermission();
 
         PermissionDeniedException exception =
                 assertThrows(
                         PermissionDeniedException.class,
-                        () ->
-                                authorizationService
-                                        .authorize(annotation)
-                );
+                        () -> authorizationService.authorize(annotation));
 
         assertEquals(
                 "USER_CREATE",
-                exception.getRequestedPermission()
-        );
+                exception.getRequestedPermission());
     }
 
     @Test
     void userWithRequiredPermission_shouldBeAllowed() {
         setSecurityContext("user-admin-1");
 
-        when(
-                permissionResolver.hasPermission(
-                        "user-admin-1",
-                        "USER_CREATE"
-                )
-        ).thenReturn(true);
+        when(permissionResolver.hasPermission(
+                "user-admin-1",
+                "USER_CREATE"))
+                .thenReturn(true);
 
-        RequirePermission annotation =
-                getRequirePermission();
+        RequirePermission annotation = getRequirePermission();
 
         assertDoesNotThrow(
-                () ->
-                        authorizationService
-                                .authorize(annotation)
-        );
+                () -> authorizationService.authorize(annotation));
     }
 
     @Test
     void requireAll_whenOnePermissionMissing_shouldDeny() {
         setSecurityContext("user-hr-1");
 
-        when(
-                permissionResolver.hasPermission(
-                        "user-hr-1",
-                        "USER_READ"
-                )
-        ).thenReturn(true);
+        when(permissionResolver.hasPermission(
+                "user-hr-1",
+                "USER_READ"))
+                .thenReturn(true);
 
-        when(
-                permissionResolver.hasPermission(
-                        "user-hr-1",
-                        "USER_UPDATE"
-                )
-        ).thenReturn(false);
+        when(permissionResolver.hasPermission(
+                "user-hr-1",
+                "USER_UPDATE"))
+                .thenReturn(false);
 
-        RequirePermission annotation =
-                getRequireAllPermission();
+        RequirePermission annotation = getRequireAllPermission();
 
         PermissionDeniedException exception =
                 assertThrows(
                         PermissionDeniedException.class,
-                        () ->
-                                authorizationService
-                                        .authorize(annotation)
-                );
+                        () -> authorizationService.authorize(annotation));
 
         assertEquals(
                 "USER_UPDATE",
-                exception.getRequestedPermission()
-        );
+                exception.getRequestedPermission());
     }
 
     @Test
     void requireAny_whenOnePermissionExists_shouldAllow() {
         setSecurityContext("user-readonly-1");
 
-        when(
-                permissionResolver.hasPermission(
-                        "user-readonly-1",
-                        "REPORT_VIEW"
-                )
-        ).thenReturn(true);
+        when(permissionResolver.hasPermission(
+                "user-readonly-1",
+                "REPORT_VIEW"))
+                .thenReturn(true);
 
-        when(
-                permissionResolver.hasPermission(
-                        "user-readonly-1",
-                        "REPORT_EXPORT"
-                )
-        ).thenReturn(false);
+        when(permissionResolver.hasPermission(
+                "user-readonly-1",
+                "REPORT_EXPORT"))
+                .thenReturn(false);
 
-        RequirePermission annotation =
-                getRequireAnyPermission();
+        RequirePermission annotation = getRequireAnyPermission();
 
         assertDoesNotThrow(
-                () ->
-                        authorizationService
-                                .authorize(annotation)
-        );
+                () -> authorizationService.authorize(annotation));
     }
 
     @Test
     void emptyPermissionAnnotation_shouldFailClosed() {
         setSecurityContext("user-admin-1");
 
-        RequirePermission annotation =
-                getEmptyPermission();
+        RequirePermission annotation = getEmptyPermission();
 
         assertThrows(
                 PermissionDeniedException.class,
-                () ->
-                        authorizationService
-                                .authorize(annotation)
-        );
+                () -> authorizationService.authorize(annotation));
     }
 
     private RequirePermission getRequirePermission() {
-
         try {
-
             return PermissionBypassTest.class
-                    .getDeclaredMethod(
-                            "dummyMethod",
-                            String.class
-                    )
-                    .getAnnotation(
-                            RequirePermission.class
-                    );
-
+                    .getDeclaredMethod("dummyMethod", String.class)
+                    .getAnnotation(RequirePermission.class);
         } catch (NoSuchMethodException e) {
-
-            throw new AssertionError(
-                    "dummyMethod not found",
-                    e
-            );
+            throw new AssertionError("dummyMethod not found", e);
         }
     }
 
     private RequirePermission getRequireAllPermission() {
-
         try {
-
             return PermissionBypassTest.class
-                    .getDeclaredMethod(
-                            "requireAllDummy"
-                    )
-                    .getAnnotation(
-                            RequirePermission.class
-                    );
-
+                    .getDeclaredMethod("requireAllDummy")
+                    .getAnnotation(RequirePermission.class);
         } catch (NoSuchMethodException e) {
-
-            throw new AssertionError(
-                    "requireAllDummy not found",
-                    e
-            );
+            throw new AssertionError("requireAllDummy not found", e);
         }
     }
 
     private RequirePermission getRequireAnyPermission() {
-
         try {
-
             return PermissionBypassTest.class
-                    .getDeclaredMethod(
-                            "requireAnyDummy"
-                    )
-                    .getAnnotation(
-                            RequirePermission.class
-                    );
-
+                    .getDeclaredMethod("requireAnyDummy")
+                    .getAnnotation(RequirePermission.class);
         } catch (NoSuchMethodException e) {
-
-            throw new AssertionError(
-                    "requireAnyDummy not found",
-                    e
-            );
+            throw new AssertionError("requireAnyDummy not found", e);
         }
     }
 
     private RequirePermission getEmptyPermission() {
-
         try {
-
             return PermissionBypassTest.class
-                    .getDeclaredMethod(
-                            "emptyDummy"
-                    )
-                    .getAnnotation(
-                            RequirePermission.class
-                    );
-
+                    .getDeclaredMethod("emptyDummy")
+                    .getAnnotation(RequirePermission.class);
         } catch (NoSuchMethodException e) {
-
-            throw new AssertionError(
-                    "emptyDummy not found",
-                    e
-            );
+            throw new AssertionError("emptyDummy not found", e);
         }
     }
 
