@@ -12,6 +12,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -23,13 +25,15 @@ class BulkAssignmentIntegrationTest {
     private MockMvc mockMvc;
 
     /*
-     * TC-S2-04
+     * Redis is not required for TC-S2-04.
      *
-     * Developer implementation:
-     * MAX_BULK_SIZE = 500.
-     *
-     * Therefore 600 users must be rejected with 400.
+     * RedisConfig requires a RedisConnectionFactory when creating
+     * the application's RedisTemplate. We provide a mock factory
+     * so the Spring context can start without a real Redis server.
      */
+    @MockBean
+    private RedisConnectionFactory redisConnectionFactory;
+
     @Test
     @DisplayName("TC-S2-04 - Bulk assignment of 600 users must return 400")
     void bulkAssign600Users_shouldReturn400() throws Exception {
@@ -54,8 +58,8 @@ class BulkAssignmentIntegrationTest {
 
         mockMvc.perform(
                 post("/api/v1/users/roles/bulk-assign")
-                        .header("X-Tenant-Id", tenantId)
-                        .header("X-User-Id", actorId)
+                        .header("X-Tenant-Id", tenantId.toString())
+                        .header("X-User-Id", actorId.toString())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(request)
         )
