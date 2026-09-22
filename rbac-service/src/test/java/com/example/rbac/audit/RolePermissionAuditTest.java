@@ -1,11 +1,11 @@
 package com.example.rbac.audit;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -60,8 +60,6 @@ class RolePermissionAuditTest {
     @BeforeEach
     void setUp() {
 
-        // Create UUID-based test identifiers to match the RBAC entities
-        // and service/repository method signatures.
         roleId = UUID.randomUUID();
         permissionId = UUID.randomUUID();
         changedBy = UUID.randomUUID();
@@ -85,24 +83,19 @@ class RolePermissionAuditTest {
     @Test
     void grantPermission_shouldCreateAuditLog() {
 
-        // The role must exist before a permission can be granted.
         when(roleRepository.findById(roleId))
                 .thenReturn(Optional.of(role));
 
-        // The permission must exist and be active.
         when(permissionRepository.findById(permissionId))
                 .thenReturn(Optional.of(permission));
 
-        // No existing mapping means this is a new permission grant.
         when(rolePermissionRepository
                 .findByRole_IdAndPermission_PermissionId(
                         roleId,
                         permissionId))
                 .thenReturn(Optional.empty());
 
-        RolePermission savedRolePermission =
-                new RolePermission();
-
+        RolePermission savedRolePermission = new RolePermission();
         savedRolePermission.setActive(true);
 
         when(rolePermissionRepository.save(any(RolePermission.class)))
@@ -114,7 +107,7 @@ class RolePermissionAuditTest {
                 changedBy
         );
 
-        // Verify that a new role-permission mapping was persisted.
+        // Verify role-permission mapping was persisted.
         ArgumentCaptor<RolePermission> rolePermissionCaptor =
                 ArgumentCaptor.forClass(RolePermission.class);
 
@@ -126,8 +119,7 @@ class RolePermissionAuditTest {
 
         assertTrue(savedMapping.isActive());
 
-        // Verify that the permission change was also recorded in
-        // the audit table.
+        // Verify audit record was persisted.
         ArgumentCaptor<RolePermissionAudit> auditCaptor =
                 ArgumentCaptor.forClass(RolePermissionAudit.class);
 
@@ -137,11 +129,30 @@ class RolePermissionAuditTest {
         RolePermissionAudit audit =
                 auditCaptor.getValue();
 
-        assertEquals(roleId, audit.getRoleId());
-        assertEquals(permissionId, audit.getPermissionId());
-        assertEquals(changedBy, audit.getChangedBy());
+        /*
+         * RolePermissionAudit uses String/UUID representations for
+         * its identifier fields depending on the entity field type.
+         *
+         * String.valueOf(...) compares the actual UUID value without
+         * making the test dependent on whether the getter returns
+         * String or UUID.
+         */
+        assertEquals(
+                roleId.toString(),
+                String.valueOf(audit.getRoleId())
+        );
 
-        // A new grant changes the permission state from false to true.
+        assertEquals(
+                permissionId.toString(),
+                String.valueOf(audit.getPermissionId())
+        );
+
+        assertEquals(
+                changedBy.toString(),
+                String.valueOf(audit.getChangedBy())
+        );
+
+        // New grant: false -> true.
         assertFalse(audit.isFromGranted());
         assertTrue(audit.isToGranted());
 
@@ -161,10 +172,7 @@ class RolePermissionAuditTest {
         when(permissionRepository.findById(permissionId))
                 .thenReturn(Optional.of(permission));
 
-        // Existing active mapping represents a currently granted permission.
-        RolePermission existing =
-                new RolePermission();
-
+        RolePermission existing = new RolePermission();
         existing.setActive(true);
 
         when(rolePermissionRepository
@@ -182,13 +190,13 @@ class RolePermissionAuditTest {
                 changedBy
         );
 
-        // Revocation must deactivate the existing mapping.
+        // Revocation must deactivate the mapping.
         assertFalse(existing.isActive());
 
         verify(rolePermissionRepository)
                 .save(existing);
 
-        // Verify that the revoke operation created an audit record.
+        // Verify audit record was created.
         ArgumentCaptor<RolePermissionAudit> auditCaptor =
                 ArgumentCaptor.forClass(RolePermissionAudit.class);
 
@@ -198,11 +206,25 @@ class RolePermissionAuditTest {
         RolePermissionAudit audit =
                 auditCaptor.getValue();
 
-        assertEquals(roleId, audit.getRoleId());
-        assertEquals(permissionId, audit.getPermissionId());
-        assertEquals(changedBy, audit.getChangedBy());
+        /*
+         * Compare by UUID value rather than Java object type.
+         */
+        assertEquals(
+                roleId.toString(),
+                String.valueOf(audit.getRoleId())
+        );
 
-        // A revoke changes the permission state from true to false.
+        assertEquals(
+                permissionId.toString(),
+                String.valueOf(audit.getPermissionId())
+        );
+
+        assertEquals(
+                changedBy.toString(),
+                String.valueOf(audit.getChangedBy())
+        );
+
+        // Revoke: true -> false.
         assertTrue(audit.isFromGranted());
         assertFalse(audit.isToGranted());
 
@@ -222,11 +244,7 @@ class RolePermissionAuditTest {
         when(permissionRepository.findById(permissionId))
                 .thenReturn(Optional.of(permission));
 
-        // An active mapping already exists, so another grant should
-        // not create a new mapping or audit entry.
-        RolePermission existing =
-                new RolePermission();
-
+        RolePermission existing = new RolePermission();
         existing.setActive(true);
 
         when(rolePermissionRepository
@@ -260,11 +278,7 @@ class RolePermissionAuditTest {
         when(permissionRepository.findById(permissionId))
                 .thenReturn(Optional.of(permission));
 
-        // An inactive mapping has already been revoked, so another
-        // revoke operation should not persist anything.
-        RolePermission existing =
-                new RolePermission();
-
+        RolePermission existing = new RolePermission();
         existing.setActive(false);
 
         when(rolePermissionRepository
@@ -297,7 +311,6 @@ class RolePermissionAuditTest {
         when(permissionRepository.findById(permissionId))
                 .thenReturn(Optional.of(permission));
 
-        // No role-permission mapping exists, so there is nothing to revoke.
         when(rolePermissionRepository
                 .findByRole_IdAndPermission_PermissionId(
                         roleId,
@@ -324,7 +337,6 @@ class RolePermissionAuditTest {
     @Test
     void grantInactivePermission_shouldRejectRequest() {
 
-        // An inactive permission must not be granted to a role.
         permission.setActive(false);
 
         when(roleRepository.findById(roleId))
@@ -342,8 +354,6 @@ class RolePermissionAuditTest {
                 )
         );
 
-        // Failed authorization changes must not persist either
-        // the mapping or its audit entry.
         verify(rolePermissionRepository, never())
                 .save(any(RolePermission.class));
 
@@ -354,7 +364,6 @@ class RolePermissionAuditTest {
     @Test
     void grantPermission_whenRoleDoesNotExist_shouldFail() {
 
-        // The operation must fail when the requested role cannot be found.
         when(roleRepository.findById(roleId))
                 .thenReturn(Optional.empty());
 
@@ -367,7 +376,6 @@ class RolePermissionAuditTest {
                 )
         );
 
-        // Permission lookup should not happen after the role lookup fails.
         verify(permissionRepository, never())
                 .findById(any());
 
@@ -384,8 +392,6 @@ class RolePermissionAuditTest {
         when(roleRepository.findById(roleId))
                 .thenReturn(Optional.of(role));
 
-        // The operation must fail when the requested permission cannot
-        // be found.
         when(permissionRepository.findById(permissionId))
                 .thenReturn(Optional.empty());
 
@@ -398,8 +404,6 @@ class RolePermissionAuditTest {
                 )
         );
 
-        // A failed permission lookup must not modify the mapping
-        // or create an audit record.
         verify(rolePermissionRepository, never())
                 .save(any(RolePermission.class));
 
