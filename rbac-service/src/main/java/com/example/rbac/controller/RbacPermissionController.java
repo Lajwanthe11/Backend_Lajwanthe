@@ -1,12 +1,12 @@
 package com.example.rbac.controller;
 
+import com.example.rbac.config.PublicEndpoint;
 import com.example.rbac.dto.PermissionCheckRequestDto;
 import com.example.rbac.service.PermissionCacheService;
 import com.example.rbac.service.PermissionCheckService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.Map;
 import java.util.Set;
 
@@ -26,6 +26,8 @@ public class RbacPermissionController {
     }
 
     // Checks whether the user has the requested permission.
+
+    @PublicEndpoint(reason = "Internal RBAC permission service endpoint")
     @PostMapping("/auth/permissions/check")
     public ResponseEntity<Map<String, Boolean>> checkPermission(
             @Valid @RequestBody PermissionCheckRequestDto request) {
@@ -40,6 +42,8 @@ public class RbacPermissionController {
     }
 
     // Returns all permissions resolved for the user.
+
+    @PublicEndpoint(reason = "Internal RBAC permission service endpoint")
     @GetMapping("/users/{userId}/permissions/resolved")
     public ResponseEntity<Set<String>> getResolvedPermissions(
             @PathVariable String userId,
@@ -54,6 +58,8 @@ public class RbacPermissionController {
     }
 
     // Clears the user's permission cache.
+
+    @PublicEndpoint(reason = "Internal RBAC permission service endpoint")
     @PostMapping("/users/{userId}/permissions/cache/clear")
     public ResponseEntity<Void> clearPermissionCache(
             @PathVariable String userId,
@@ -66,6 +72,7 @@ public class RbacPermissionController {
         return ResponseEntity.noContent().build();
     }
 
+    @PublicEndpoint(reason = "Health check endpoint")
     @GetMapping("/rbac/health")
     public ResponseEntity<Map<String, String>> health() {
         return ResponseEntity.ok(Map.of("status", "UP"));
