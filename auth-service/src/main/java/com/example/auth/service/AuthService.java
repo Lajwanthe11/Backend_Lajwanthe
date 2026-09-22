@@ -43,13 +43,13 @@ public class AuthService {
 
     // Audit & Compliance
     private final AuthAuditService authAuditService;
+
     public AuthService(AuthenticationManager authenticationManager,
                        CustomUserDetailsService customUserDetailsService,
                        PasswordEncoder passwordEncoder,
                        JwtTokenProvider tokenProvider,
                        PasswordValidator passwordValidator,
                        AuthAuditService authAuditService) {
-
         this.authenticationManager = authenticationManager;
         this.customUserDetailsService = customUserDetailsService;
         this.passwordEncoder = passwordEncoder;
@@ -59,14 +59,14 @@ public class AuthService {
     }
 
     public AuthResponseDTO login(LoginRequestDTO loginRequest) {
-
         if (StringUtils.hasText(loginRequest.getTenantId())) {
             TenantContext.setTenantId(loginRequest.getTenantId());
         }
 
         String tenantId = TenantContext.getTenantId();
 
-        // Declared here since it is needed below after successful authentication
+        // Declared here (not inside try) since it's only assigned on success
+        // but needed below
         Authentication authentication;
 
         try {
@@ -76,10 +76,9 @@ public class AuthService {
                             loginRequest.getPassword()
                     )
             );
-
         } catch (LockedException ex) {
 
-            // Account-lockout handling
+            // NEW: account-lockout handling
             LocalDateTime lockedUntil =
                     customUserDetailsService.getLockedUntil(
                             loginRequest.getUsername(),
@@ -107,7 +106,6 @@ public class AuthService {
                 }
             }
 
-            // Audit locked account
             authAuditService.accountLocked(
                     loginRequest.getUsername(),
                     tenantId
@@ -117,13 +115,12 @@ public class AuthService {
 
         } catch (BadCredentialsException ex) {
 
-            // Wrong password -> track failed attempt
+            // NEW: Wrong password -> track failed attempt
             customUserDetailsService.incrementFailedAttempts(
                     loginRequest.getUsername(),
                     tenantId
             );
 
-            // Audit failed login
             authAuditService.loginFailed(
                     loginRequest.getUsername(),
                     tenantId
@@ -132,7 +129,7 @@ public class AuthService {
             throw ex;
         }
 
-        // Successful login -> clear failed-attempt state
+        // NEW: Successful login -> clear prior failed-attempt state
         customUserDetailsService.resetFailedAttempts(
                 loginRequest.getUsername(),
                 tenantId
@@ -150,8 +147,7 @@ public class AuthService {
         // Existing token generation
         String accessToken = tokenProvider.generateAccessToken(
                 loginRequest.getUsername(),
-                authentication.getAuthorities()
-                        .stream()
+                authentication.getAuthorities().stream()
                         .map(GrantedAuthority::getAuthority)
                         .collect(Collectors.joining(",")),
                 tenantId
@@ -162,8 +158,7 @@ public class AuthService {
                 tenantId
         );
 
-        List<String> roles = authentication.getAuthorities()
-                .stream()
+        List<String> roles = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toList());
 
@@ -179,31 +174,24 @@ public class AuthService {
 
     public AuthResponseDTO register(RegisterRequestDTO registerRequest) {
 
-        // Enforce password strength rules
-        passwordValidator.validate(
-                registerRequest.getPassword()
-        );
+        // NEW: enforce password strength rules
+        passwordValidator.validate(registerRequest.getPassword());
 
         if (StringUtils.hasText(registerRequest.getTenantId())) {
-            TenantContext.setTenantId(
-                    registerRequest.getTenantId()
-            );
+            TenantContext.setTenantId(registerRequest.getTenantId());
         }
 
         String tenantId = TenantContext.getTenantId();
 
         if (customUserDetailsService.existsByUsernameAndTenant(
                 registerRequest.getUsername(),
-                tenantId
-        )) {
+                tenantId)) {
 
-            throw new BadRequestException(
-                    String.format(
-                            "Username '%s' is already taken in tenant '%s'",
-                            registerRequest.getUsername(),
-                            tenantId
-                    )
-            );
+            throw new BadRequestException(String.format(
+                    "Username '%s' is already taken in tenant '%s'",
+                    registerRequest.getUsername(),
+                    tenantId
+            ));
         }
 
         List<String> roles =
@@ -215,14 +203,12 @@ public class AuthService {
         customUserDetailsService.registerUser(
                 registerRequest.getUsername(),
                 registerRequest.getEmail(),
-                passwordEncoder.encode(
-                        registerRequest.getPassword()
-                ),
+                passwordEncoder.encode(registerRequest.getPassword()),
                 roles,
                 tenantId
         );
 
-        // Audit user registration
+        // Audit successful registration
         authAuditService.userRegistered(
                 registerRequest.getUsername(),
                 tenantId
@@ -249,26 +235,21 @@ public class AuthService {
             );
         }
 
-        String username =
-                tokenProvider.getUsernameFromJWT(token);
-
-        String tenantId =
-                tokenProvider.getTenantIdFromJWT(token);
+        String username = tokenProvider.getUsernameFromJWT(token);
+        String tenantId = tokenProvider.getTenantIdFromJWT(token);
 
         TenantContext.setTenantId(tenantId);
 
         UserDetails userDetails =
                 customUserDetailsService.loadUserByUsername(username);
 
-        String newAccessToken =
-                tokenProvider.generateAccessToken(
-                        username,
-                        userDetails.getAuthorities()
-                                .stream()
-                                .map(GrantedAuthority::getAuthority)
-                                .collect(Collectors.joining(",")),
-                        tenantId
-                );
+        String newAccessToken = tokenProvider.generateAccessToken(
+                username,
+                userDetails.getAuthorities().stream()
+                        .map(GrantedAuthority::getAuthority)
+                        .collect(Collectors.joining(",")),
+                tenantId
+        );
 
         String newRefreshToken =
                 tokenProvider.generateRefreshToken(
@@ -282,11 +263,9 @@ public class AuthService {
                 tenantId
         );
 
-        List<String> roles =
-                userDetails.getAuthorities()
-                        .stream()
-                        .map(GrantedAuthority::getAuthority)
-                        .collect(Collectors.toList());
+        List<String> roles = userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.toList());
 
         return AuthResponseDTO.builder()
                 .accessToken(newAccessToken)
