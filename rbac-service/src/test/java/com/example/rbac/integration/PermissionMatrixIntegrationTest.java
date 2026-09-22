@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -20,16 +22,19 @@ class PermissionMatrixIntegrationTest {
     @Autowired
     private MockMvc mockMvc;
 
+    @MockBean
+    private RedisConnectionFactory redisConnectionFactory;
+
     /*
      * TC-S2-07
      *
      * One invalid permission in a batch update must cause the transaction
      * to roll back.
      *
-     * Important developer contract:
-     *   roleId       = Long
-     *   permissionId = UUID
-     *   expectedVersion = Long
+     * Developer contract:
+     * roleId          = Long
+     * permissionId    = UUID
+     * expectedVersion = Long
      */
     @Test
     @DisplayName("TC-S2-07 - Invalid permission in batch must rollback")
@@ -56,28 +61,18 @@ class PermissionMatrixIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(request)
         )
-        .andExpect(
-                result -> {
-                    int status = result.getResponse().getStatus();
+        .andExpect(result -> {
+            int responseStatus = result.getResponse().getStatus();
 
-                    /*
-                     * An invalid permission is a business/application
-                     * failure. It must never result in a successful
-                     * permission update.
-                     */
-                    if (status < 400 || status >= 500) {
-                        throw new AssertionError(
-                                "Invalid permission batch must not succeed. "
-                                + "Received HTTP " + status
-                        );
-                    }
-                }
-        );
+            if (responseStatus < 400 || responseStatus >= 500) {
+                throw new AssertionError(
+                        "Invalid permission batch must not succeed. "
+                        + "Received HTTP " + responseStatus
+                );
+            }
+        });
     }
 
-    /*
-     * API validation checks.
-     */
     @Test
     @DisplayName("Batch permission update must reject empty permissions")
     void emptyPermissions_shouldReturn400() throws Exception {
@@ -160,4 +155,3 @@ class PermissionMatrixIntegrationTest {
         .andExpect(status().isBadRequest());
     }
 }
-
