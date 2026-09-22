@@ -4,8 +4,6 @@ import com.example.rbac.config.SecurityContextUtil;
 import com.example.rbac.dto.AuthenticatedUser;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
@@ -13,13 +11,13 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import java.time.Instant;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-@SpringBootTest
 class CrossTenantSecurityTest {
 
-    @Autowired
-    private SecurityContextUtil securityContextUtil;
+    private final SecurityContextUtil securityContextUtil =
+            new SecurityContextUtil();
 
     @AfterEach
     void clearSecurityContext() {
@@ -50,8 +48,17 @@ class CrossTenantSecurityTest {
         AuthenticatedUser user =
                 securityContextUtil.currentUser();
 
-        assertEquals("user-tenant-a", user.userId());
-        assertEquals("tenant-a", user.tenantId());
+        assertEquals(
+                "user-tenant-a",
+                user.userId(),
+                "User ID should come from the JWT"
+        );
+
+        assertEquals(
+                "tenant-a",
+                user.tenantId(),
+                "Tenant ID should come from the JWT"
+        );
     }
 
     @Test
@@ -78,8 +85,23 @@ class CrossTenantSecurityTest {
         AuthenticatedUser user =
                 securityContextUtil.currentUser();
 
-        assertEquals("tenant-b", user.tenantId());
-        assertNotEquals("tenant-a", user.tenantId());
+        assertEquals(
+                "user-tenant-b",
+                user.userId(),
+                "User ID should come from the tenant-B JWT"
+        );
+
+        assertEquals(
+                "tenant-b",
+                user.tenantId(),
+                "Tenant B must remain Tenant B"
+        );
+
+        assertNotEquals(
+                "tenant-a",
+                user.tenantId(),
+                "Tenant B must never be treated as Tenant A"
+        );
     }
 
     @Test
@@ -104,10 +126,17 @@ class CrossTenantSecurityTest {
                 securityContextUtil.currentUser();
 
         /*
-         * The security context gets tenant-a from JWT.
-         * A controller/request parameter must not replace it
-         * for authorization decisions.
+         * The tenant used by SecurityContextUtil comes from
+         * the authenticated JWT.
+         *
+         * A controller/request parameter must not replace
+         * the tenant contained in the authenticated identity.
          */
-        assertEquals("tenant-a", user.tenantId());
+        assertEquals(
+                "tenant-a",
+                user.tenantId(),
+                "JWT tenant must be used for authorization context"
+        );
     }
 }
+
