@@ -44,7 +44,8 @@ public class SecurityConfig {
     @Order(1)
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                // .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .cors(Customizer.withDefaults())
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
@@ -55,13 +56,15 @@ public class SecurityConfig {
         return http.build();
     }
 
-    @Bean (name = "rbacCorsConfigurationource")
+    @Bean(name = "rbacCorsConfigurationource")
     @Primary
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(allowedOrigins);
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Tenant-ID"));
+        // config.setAllowedOrigins(allowedOrigins);
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE",
+                "OPTIONS"));
+        config.setAllowedHeaders(List.of("Authorization", "Content-Type",
+                "X-Tenant-ID"));
         config.setExposedHeaders(List.of("Authorization"));
         config.setAllowCredentials(false); // Bearer token in header — no cookies
         config.setMaxAge(1800L); // 30-minute preflight cache
@@ -76,5 +79,5 @@ public class SecurityConfig {
         byte[] keyBytes = io.jsonwebtoken.io.Decoders.BASE64.decode(jwtSecret);
         SecretKeySpec key = new SecretKeySpec(keyBytes, "HmacSHA256");
         return NimbusJwtDecoder.withSecretKey(key).build();
-        }
+    }
 }

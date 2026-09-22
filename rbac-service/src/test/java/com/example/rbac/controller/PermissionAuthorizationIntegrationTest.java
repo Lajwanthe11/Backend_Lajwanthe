@@ -14,6 +14,7 @@ import java.time.Instant;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 
 /**
  * End-to-end proof of the full chain: JWT auth -> @RequirePermission
@@ -92,6 +93,7 @@ class PermissionAuthorizationIntegrationTest {
                 mockMvc.perform(get("/api/v1/users/123/report")
                                 .with(SecurityMockMvcRequestPostProcessors.jwt()
                                                 .jwt(jwtFor("user-readonly-1", "tenant-1"))))
+                                .andDo(print())
                                 .andExpect(status().isOk());
         }
         // No JWT -> 401 before the permission check.
@@ -102,7 +104,7 @@ class PermissionAuthorizationIntegrationTest {
                                 .andExpect(status().isUnauthorized());
         }
 
-        // nternal service caller can validate the target user’s
+        // Enternal service caller can validate the target user’s
 
         @Test
         void internalAccessValidateChecksTargetUserNotCaller() throws Exception {
