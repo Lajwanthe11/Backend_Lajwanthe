@@ -40,6 +40,7 @@ public class AuthService {
 
     // NEW: password strength validation added for registration flow
     private final PasswordValidator passwordValidator;
+    private final SessionManagementService sessionManagementService;
 
     // Audit & Compliance
     private final AuthAuditService authAuditService;
@@ -169,6 +170,7 @@ public class AuthService {
                 .username(loginRequest.getUsername())
                 .tenantId(tenantId)
                 .roles(roles)
+                .sessionId(sessionId)
                 .build();
     }
 

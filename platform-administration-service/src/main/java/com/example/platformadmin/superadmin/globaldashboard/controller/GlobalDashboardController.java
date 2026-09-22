@@ -18,7 +18,7 @@ import java.util.List;
         name = "Global Dashboard",
         description = "Global platform dashboard APIs"
 )
-@SecurityRequirement(name = "basicAuth")
+@SecurityRequirement(name = "bearerAuth")
 public class GlobalDashboardController {
 
     private final GlobalDashboardService globalDashboardService;
