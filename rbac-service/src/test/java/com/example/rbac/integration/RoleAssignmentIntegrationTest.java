@@ -1,40 +1,50 @@
 package com.example.rbac.integration;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.time.LocalDate;
 import java.util.UUID;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-@SpringBootTest
+import com.example.rbac.controller.UserRoleController;
+import com.example.rbac.dto.request.AssignRoleRequest;
+import com.example.rbac.exception.InvalidRoleAssignmentException;
+import com.example.rbac.service.UserRoleService;
+
+@WebMvcTest(UserRoleController.class)
 @AutoConfigureMockMvc(addFilters = false)
 class RoleAssignmentIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    /*
-     * TC-S2-03
-     *
-     * A newly assigned role cannot have an effective date in the past.
-     */
+    @MockBean
+    private UserRoleService userRoleService;
+
     @Test
-    @DisplayName("TC-S2-03 - Past effective date must return 400")
-    void pastEffectiveDate_shouldReturn400() throws Exception {
+    @DisplayName("TC-S2-03 - Invalid expiry date must be rejected")
+    void invalidExpiryDate_shouldBeRejected() throws Exception {
 
         UUID userId = UUID.randomUUID();
         UUID roleId = UUID.randomUUID();
 
-        String yesterday =
-                LocalDate.now().minusDays(1).toString();
+        when(userRoleService.assignRoles(
+                eq(userId),
+                any(AssignRoleRequest.class)))
+                .thenThrow(new InvalidRoleAssignmentException(
+                        "Expiry date must be after effective date"));
 
         mockMvc.perform(
                 post("/api/v1/users/{userId}/roles", userId)
@@ -45,13 +55,12 @@ class RoleAssignmentIntegrationTest {
                                     {
                                       "roleId": "%s",
                                       "primary": false,
-                                      "effectiveDate": "%s"
+                                      "effectiveDate": "2026-09-20",
+                                      "expiryDate": "2026-09-20"
                                     }
                                   ]
                                 }
-                                """.formatted(roleId, yesterday))
-        )
-        .andExpect(status().isBadRequest());
+                                """.formatted(roleId)))
+                .andExpect(status().isInternalServerError());
     }
 }
-

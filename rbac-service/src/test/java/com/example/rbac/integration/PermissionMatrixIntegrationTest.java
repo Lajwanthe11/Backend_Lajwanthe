@@ -7,12 +7,14 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.http.MediaType;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.web.servlet.MockMvc;
 
 @SpringBootTest
@@ -22,8 +24,21 @@ class PermissionMatrixIntegrationTest {
     @Autowired
     private MockMvc mockMvc;
 
+    /*
+     * Redis is not required for these tests.
+     * Mock RedisConnectionFactory so the Spring context
+     * can start without a real Redis server.
+     */
     @MockBean
     private RedisConnectionFactory redisConnectionFactory;
+
+    /*
+     * JWT authentication is not required for these tests.
+     * Mock JwtDecoder so SecurityConfig does not attempt
+     * to create a decoder using the invalid test JWT secret.
+     */
+    @MockBean
+    private JwtDecoder jwtDecoder;
 
     /*
      * TC-S2-07
@@ -59,18 +74,16 @@ class PermissionMatrixIntegrationTest {
         mockMvc.perform(
                 put("/api/v1/roles/{roleId}/permissions/batch", roleId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(request)
-        )
-        .andExpect(result -> {
-            int responseStatus = result.getResponse().getStatus();
+                        .content(request))
+                .andExpect(result -> {
+                    int responseStatus = result.getResponse().getStatus();
 
-            if (responseStatus < 400 || responseStatus >= 500) {
-                throw new AssertionError(
-                        "Invalid permission batch must not succeed. "
-                        + "Received HTTP " + responseStatus
-                );
-            }
-        });
+                    if (responseStatus < 400 || responseStatus >= 500) {
+                        throw new AssertionError(
+                                "Invalid permission batch must not succeed. "
+                                        + "Received HTTP " + responseStatus);
+                    }
+                });
     }
 
     @Test
@@ -85,9 +98,8 @@ class PermissionMatrixIntegrationTest {
                                   "permissions": [],
                                   "expectedVersion": 0
                                 }
-                                """)
-        )
-        .andExpect(status().isBadRequest());
+                                """))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -106,9 +118,8 @@ class PermissionMatrixIntegrationTest {
                                     }
                                   ]
                                 }
-                                """.formatted(UUID.randomUUID()))
-        )
-        .andExpect(status().isBadRequest());
+                                """.formatted(UUID.randomUUID())))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -128,9 +139,8 @@ class PermissionMatrixIntegrationTest {
                                   ],
                                   "expectedVersion": 0
                                 }
-                                """)
-        )
-        .andExpect(status().isBadRequest());
+                                """))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -150,8 +160,7 @@ class PermissionMatrixIntegrationTest {
                                   ],
                                   "expectedVersion": 0
                                 }
-                                """.formatted(UUID.randomUUID()))
-        )
-        .andExpect(status().isBadRequest());
+                                """.formatted(UUID.randomUUID())))
+                .andExpect(status().isBadRequest());
     }
 }
