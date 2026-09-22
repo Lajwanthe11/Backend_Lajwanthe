@@ -1,8 +1,16 @@
 package com.example.rbac.controller;
 
-import com.example.rbac.controller.RbacPermissionController;
-import com.example.rbac.service.PermissionCacheService;
-import com.example.rbac.service.PermissionCheckService;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.util.Set;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -11,11 +19,8 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.Set;
-
-import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import com.example.rbac.service.PermissionCacheService;
+import com.example.rbac.service.PermissionCheckService;
 
 @WebMvcTest(RbacPermissionController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -29,6 +34,10 @@ class RbacPermissionControllerTest {
 
     @MockBean
     private PermissionCacheService permissionCacheService;
+
+    // ============================================================
+    // POST /api/v1/auth/permissions/check
+    // ============================================================
 
     @Test
     void shouldReturnAllowedTrueWhenPermissionExists()
@@ -85,7 +94,18 @@ class RbacPermissionControllerTest {
         )
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.allowed").value(false));
+
+        verify(permissionCheckService)
+                .hasPermission(
+                        "user-001",
+                        "tenant-001",
+                        "EMPLOYEE_DELETE"
+                );
     }
+
+    // ============================================================
+    // VALIDATION
+    // ============================================================
 
     @Test
     void shouldRejectRequestWhenPermissionCodeIsBlank()
@@ -166,18 +186,24 @@ class RbacPermissionControllerTest {
         verifyNoInteractions(permissionCheckService);
     }
 
+    // ============================================================
+    // GET /api/v1/users/{userId}/permissions/resolved
+    // ============================================================
+
     @Test
     void shouldReturnResolvedPermissions()
             throws Exception {
 
-        when(permissionCheckService.getResolvedPermissions(
-                "user-001",
-                "tenant-001"
-        )).thenReturn(Set.of(
+        Set<String> permissions = Set.of(
                 "USER_VIEW",
                 "EMPLOYEE_VIEW",
                 "EMPLOYEE_UPDATE"
-        ));
+        );
+
+        when(permissionCheckService.getResolvedPermissions(
+                "user-001",
+                "tenant-001"
+        )).thenReturn(permissions);
 
         mockMvc.perform(
                 get("/api/v1/users/user-001/permissions/resolved")
@@ -185,7 +211,14 @@ class RbacPermissionControllerTest {
         )
         .andExpect(status().isOk())
         .andExpect(jsonPath("$").isArray())
-        .andExpect(jsonPath("$").isNotEmpty());
+        .andExpect(jsonPath("$").isNotEmpty())
+        .andExpect(jsonPath("$").value(
+                org.hamcrest.Matchers.containsInAnyOrder(
+                        "USER_VIEW",
+                        "EMPLOYEE_VIEW",
+                        "EMPLOYEE_UPDATE"
+                )
+        ));
 
         verify(permissionCheckService)
                 .getResolvedPermissions(
@@ -210,7 +243,17 @@ class RbacPermissionControllerTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$").isArray())
         .andExpect(jsonPath("$").isEmpty());
+
+        verify(permissionCheckService)
+                .getResolvedPermissions(
+                        "user-002",
+                        "tenant-001"
+                );
     }
+
+    // ============================================================
+    // POST /api/v1/users/{userId}/permissions/cache/clear
+    // ============================================================
 
     @Test
     void shouldClearUserPermissionCache()
@@ -235,6 +278,10 @@ class RbacPermissionControllerTest {
                         "tenant-001"
                 );
     }
+
+    // ============================================================
+    // REQUIRED TENANT ID
+    // ============================================================
 
     @Test
     void shouldRequireTenantIdForResolvedPermissions()

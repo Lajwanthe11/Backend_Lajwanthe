@@ -19,9 +19,8 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.Authentication;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -31,7 +30,6 @@ import com.example.rbac.service.PermissionMatrixService;
 import com.example.rbac.service.RolePermissionBatchService;
 import com.example.rbac.service.RolePermissionService;
 
-@ExtendWith(MockitoExtension.class)
 class RolePermissionControllerTest {
 
     private MockMvc mockMvc;
@@ -41,6 +39,8 @@ class RolePermissionControllerTest {
     private RolePermissionBatchService rolePermissionBatchService;
 
     private PermissionMatrixService permissionMatrixService;
+
+    private Authentication authentication;
 
     private final UUID roleId = UUID.randomUUID();
 
@@ -60,6 +60,22 @@ class RolePermissionControllerTest {
         permissionMatrixService =
                 mock(PermissionMatrixService.class);
 
+        /*
+         * IMPORTANT:
+         * The controller expects the current principal to be a
+         * Spring Security Authentication object.
+         *
+         * Do not use:
+         *
+         * .principal(() -> userId.toString())
+         *
+         * because that creates only a java.security.Principal.
+         */
+        authentication = mock(Authentication.class);
+
+        when(authentication.getName())
+                .thenReturn(userId.toString());
+
         RolePermissionController controller =
                 new RolePermissionController(
                         rolePermissionService,
@@ -71,7 +87,6 @@ class RolePermissionControllerTest {
                 .standaloneSetup(controller)
                 .build();
     }
-
 
     // ============================================================
     // GET ROLE PERMISSIONS
@@ -95,7 +110,6 @@ class RolePermissionControllerTest {
         verify(rolePermissionService)
                 .getPermissionsByRole(roleId);
     }
-
 
     // ============================================================
     // GRANT PERMISSION
@@ -125,7 +139,7 @@ class RolePermissionControllerTest {
                         "/api/v1/roles/{roleId}/permissions",
                         roleId
                 )
-                .principal(() -> userId.toString())
+                .principal(authentication)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody)
         )
@@ -138,7 +152,6 @@ class RolePermissionControllerTest {
                         any()
                 );
     }
-
 
     // ============================================================
     // REVOKE THROUGH POST
@@ -166,7 +179,7 @@ class RolePermissionControllerTest {
                         "/api/v1/roles/{roleId}/permissions",
                         roleId
                 )
-                .principal(() -> userId.toString())
+                .principal(authentication)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody)
         )
@@ -179,7 +192,6 @@ class RolePermissionControllerTest {
                         any()
                 );
     }
-
 
     // ============================================================
     // DELETE PERMISSION
@@ -201,7 +213,7 @@ class RolePermissionControllerTest {
                         roleId,
                         permissionId
                 )
-                .principal(() -> userId.toString())
+                .principal(authentication)
         )
         .andExpect(status().isNoContent());
 
@@ -212,7 +224,6 @@ class RolePermissionControllerTest {
                         any()
                 );
     }
-
 
     // ============================================================
     // BATCH UPDATE
@@ -252,7 +263,7 @@ class RolePermissionControllerTest {
                         "/api/v1/roles/{roleId}/permissions/batch",
                         roleId
                 )
-                .principal(() -> userId.toString())
+                .principal(authentication)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody)
         )
@@ -280,7 +291,6 @@ class RolePermissionControllerTest {
                 );
     }
 
-
     // ============================================================
     // GROUPED PERMISSIONS
     // ============================================================
@@ -304,7 +314,6 @@ class RolePermissionControllerTest {
         verify(permissionMatrixService)
                 .getGroupedPermissions(roleId);
     }
-
 
     // ============================================================
     // INVALID ROLE ID
@@ -331,3 +340,4 @@ class RolePermissionControllerTest {
         );
     }
 }
+

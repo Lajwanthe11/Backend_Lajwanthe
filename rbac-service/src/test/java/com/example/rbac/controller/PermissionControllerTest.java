@@ -1,6 +1,5 @@
 package com.example.rbac.controller;
 
-import com.example.rbac.controller.PermissionController;
 import com.example.rbac.dto.PermissionGroupResponseDto;
 import com.example.rbac.dto.PermissionResponseDto;
 import com.example.rbac.service.PermissionGroupService;
@@ -9,8 +8,8 @@ import com.example.rbac.service.PermissionService;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
 import org.springframework.data.domain.Page;
@@ -22,11 +21,15 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 import java.util.UUID;
 
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(PermissionController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -83,9 +86,7 @@ class PermissionControllerTest {
                         get("/api/v1/permissions")
                 )
                 .andExpect(status().isOk())
-                .andExpect(
-                        jsonPath("$.content").isArray()
-                )
+                .andExpect(jsonPath("$.content").isArray())
                 .andExpect(
                         jsonPath("$.content[0].permissionCode")
                                 .value("USER_CREATE")
@@ -99,11 +100,16 @@ class PermissionControllerTest {
                                 .value(true)
                 );
 
+        /*
+         * IMPORTANT:
+         * All four arguments are Mockito matchers.
+         * Do not use raw null/true together with any().
+         */
         verify(permissionService)
                 .listPermissions(
-                        null,
-                        null,
-                        true,
+                        isNull(),
+                        isNull(),
+                        eq(true),
                         any()
                 );
     }
@@ -148,24 +154,14 @@ class PermissionControllerTest {
 
         mockMvc.perform(
                         get("/api/v1/permissions")
-                                .param(
-                                        "groupId",
-                                        groupId.toString()
-                                )
-                                .param(
-                                        "module",
-                                        "USER_MGMT"
-                                )
-                                .param(
-                                        "activeOnly",
-                                        "true"
-                                )
+                                .param("groupId", groupId.toString())
+                                .param("module", "USER_MGMT")
+                                .param("activeOnly", "true")
                 )
                 .andExpect(status().isOk())
                 .andExpect(
-                        jsonPath(
-                                "$.content[0].permissionCode"
-                        ).value("USER_READ")
+                        jsonPath("$.content[0].permissionCode")
+                                .value("USER_READ")
                 );
 
         verify(permissionService)
@@ -258,18 +254,14 @@ class PermissionControllerTest {
                         get("/api/v1/permissions/groups")
                 )
                 .andExpect(status().isOk())
-                .andExpect(
-                        jsonPath("$").isArray()
-                )
+                .andExpect(jsonPath("$").isArray())
                 .andExpect(
                         jsonPath("$[0].groupId")
                                 .value(groupId.toString())
                 )
                 .andExpect(
                         jsonPath("$[0].groupName")
-                                .value(
-                                        "User Management Permissions"
-                                )
+                                .value("User Management Permissions")
                 )
                 .andExpect(
                         jsonPath("$[0].groupCode")
@@ -341,7 +333,8 @@ class PermissionControllerTest {
                                 .value("USER_MGMT_PERMS")
                 )
                 .andExpect(
-                        jsonPath("$.permissions").isArray()
+                        jsonPath("$.permissions")
+                                .isArray()
                 )
                 .andExpect(
                         jsonPath(
@@ -383,9 +376,7 @@ class PermissionControllerTest {
                                 .param("query", "USER")
                 )
                 .andExpect(status().isOk())
-                .andExpect(
-                        jsonPath("$").isArray()
-                )
+                .andExpect(jsonPath("$").isArray())
                 .andExpect(
                         jsonPath("$[0].permissionCode")
                                 .value("USER_CREATE")
@@ -428,9 +419,7 @@ class PermissionControllerTest {
                         )
                 )
                 .andExpect(status().isOk())
-                .andExpect(
-                        jsonPath("$").isArray()
-                )
+                .andExpect(jsonPath("$").isArray())
                 .andExpect(
                         jsonPath("$[0].permissionCode")
                                 .value("REPORT_VIEW")
@@ -470,11 +459,15 @@ class PermissionControllerTest {
                         get("/api/v1/permissions")
                 )
                 .andExpect(status().isOk())
-                .andExpect(
-                        jsonPath("$.content").isArray()
-                )
-                .andExpect(
-                        jsonPath("$.content").isEmpty()
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content").isEmpty());
+
+        verify(permissionService)
+                .listPermissions(
+                        isNull(),
+                        isNull(),
+                        eq(true),
+                        any()
                 );
     }
 
@@ -489,12 +482,11 @@ class PermissionControllerTest {
                         get("/api/v1/permissions/groups")
                 )
                 .andExpect(status().isOk())
-                .andExpect(
-                        jsonPath("$").isArray()
-                )
-                .andExpect(
-                        jsonPath("$").isEmpty()
-                );
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$").isEmpty());
+
+        verify(permissionGroupService)
+                .listGroups();
     }
 
     // =========================================================
@@ -514,3 +506,4 @@ class PermissionControllerTest {
                 .andExpect(status().isBadRequest());
     }
 }
+
