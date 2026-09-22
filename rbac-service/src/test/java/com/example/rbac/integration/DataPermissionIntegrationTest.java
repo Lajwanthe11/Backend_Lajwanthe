@@ -11,6 +11,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.web.servlet.MockMvc;
 
 @SpringBootTest
@@ -20,8 +21,21 @@ class DataPermissionIntegrationTest {
     @Autowired
     private MockMvc mockMvc;
 
+    /*
+     * Redis is not required for these test cases.
+     * Mock RedisConnectionFactory so the Spring context
+     * can start without a real Redis server.
+     */
     @MockBean
     private RedisConnectionFactory redisConnectionFactory;
+
+    /*
+     * JWT authentication is not required for these test cases.
+     * Mock JwtDecoder so SecurityConfig does not attempt to
+     * create a decoder using the invalid test JWT secret.
+     */
+    @MockBean
+    private JwtDecoder jwtDecoder;
 
     /**
      * TC-S2-08
@@ -34,9 +48,8 @@ class DataPermissionIntegrationTest {
     void outsideDepartmentScope_shouldReturn403() throws Exception {
 
         mockMvc.perform(
-                get("/api/v1/data-permissions/apply")
-        )
-        .andExpect(status().isForbidden());
+                get("/api/v1/data-permissions/apply"))
+                .andExpect(status().isForbidden());
     }
 
     /**
@@ -51,8 +64,7 @@ class DataPermissionIntegrationTest {
     void deniedField_shouldBeExcludedFromResponse() throws Exception {
 
         mockMvc.perform(
-                get("/api/v1/data-permissions/apply")
-        )
-        .andExpect(status().isForbidden());
+                get("/api/v1/data-permissions/apply"))
+                .andExpect(status().isForbidden());
     }
 }
