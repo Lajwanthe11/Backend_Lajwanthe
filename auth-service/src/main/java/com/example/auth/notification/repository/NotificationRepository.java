@@ -1,5 +1,6 @@
-package com.example.auth.notification;
+package com.example.auth.notification.repository;
 
+import com.example.auth.notification.entity.Notification;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

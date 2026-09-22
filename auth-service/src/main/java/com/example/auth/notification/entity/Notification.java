@@ -1,5 +1,8 @@
-package com.example.auth.notification;
+package com.example.auth.notification.entity;
 
+import com.example.auth.notification.NotificationChannel;
+import com.example.auth.notification.NotificationStatus;
+import com.example.auth.notification.NotificationType;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;

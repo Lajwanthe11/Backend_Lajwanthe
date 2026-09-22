@@ -1,4 +1,4 @@
-package com.example.auth.notification;
+package com.example.auth.notification.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

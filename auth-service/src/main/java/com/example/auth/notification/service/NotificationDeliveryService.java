@@ -1,5 +1,7 @@
-package com.example.auth.notification;
+package com.example.auth.notification.service;
 
+import com.example.auth.notification.NotificationStatus;
+import com.example.auth.notification.entity.Notification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
