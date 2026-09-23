@@ -121,10 +121,7 @@ public class RoleController extends AbstractController<Role, UUID, RoleRequestDt
     @RequirePermission("USER_READ")
     public ResponseEntity<byte[]> exportRoles(@RequestParam(defaultValue = "csv") String format) {
         byte[] data = roleService.exportRoles(format);
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=roles-export.csv")
-                .contentType(MediaType.parseMediaType("text/csv"))
-                .body(data);
+        return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION,"attachment; filename=roles-export.csv").contentType(MediaType.parseMediaType("text/csv")).body(data);
     }
 
     // GET /api/v1/roles/system — list all system (non-custom) roles

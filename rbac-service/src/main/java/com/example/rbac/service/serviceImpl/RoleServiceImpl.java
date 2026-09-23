@@ -4,16 +4,13 @@ import com.example.common.abstracts.AbstractService;
 import com.example.common.exception.BadRequestException;
 import com.example.rbac.exception.ResourceNotFoundException;
 import com.example.rbac.entity.RoleHistory;
-import com.example.rbac.repository.PermissionRepository;
+import com.example.rbac.repository.*;
 import com.example.rbac.exception.RoleNotFoundException;
 import com.example.rbac.dto.*;
 import com.example.rbac.entity.Permission;
 import com.example.rbac.entity.Role;
 import com.example.rbac.entity.RoleTemplate;
 import com.example.rbac.enums.RoleType;
-import com.example.rbac.repository.RoleHistoryRepository;
-import com.example.rbac.repository.RoleRepository;
-import com.example.rbac.repository.RoleTemplateRepository;
 import com.example.rbac.service.RoleExportService;
 import com.example.rbac.service.RoleService;
 import com.example.rbac.service.CurrentUserContext;
@@ -38,6 +35,7 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
         private final RoleHistoryRepository roleHistoryRepository;
         private final RoleExportService roleExportService;
         private final PermissionRepository permissionRepository;
+        private final RolePermissionRepository rolePermissionRepository;
 
         public RoleServiceImpl(
                         RoleRepository roleRepository,
@@ -45,7 +43,8 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
                         CurrentUserContext currentUser,
                         RoleHistoryRepository roleHistoryRepository,
                         RoleExportService roleExportService,
-                        PermissionRepository permissionRepository) {
+                        PermissionRepository permissionRepository,
+                        RolePermissionRepository rolePermissionRepository) {
 
                 super(roleRepository, "Role");
 
@@ -55,6 +54,7 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
                 this.roleHistoryRepository = roleHistoryRepository;
                 this.roleExportService = roleExportService;
                 this.permissionRepository = permissionRepository;
+                this.rolePermissionRepository = rolePermissionRepository;
         }
 
         // Convert current tenant ID from JWT String to UUID
@@ -372,7 +372,7 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
         @Override
         public List<RoleTemplateSummaryDto> listTemplates() {
                 List<RoleTemplate> templates = currentUser.hasRole("SUPER_ADMIN")
-                        ? roleTemplateRepository.findAll()
+                        ? roleTemplateRepository.findAllWithPermissions()
                         : roleTemplateRepository.findAllByHiddenFalse();
 
                 return templates.stream()
@@ -380,7 +380,7 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
                                 t.getId(),
                                 t.getName(),
                                 t.getDescription(),
-                                0,
+                                t.getPermissions().size(),
                                 t.getRecommendedFor()))
                         .toList();
         }
@@ -440,7 +440,6 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
         @Transactional
         public RoleResponseDto cloneRole(UUID sourceRoleId, RoleCloneRequest request) {
                 UUID tenantId = getCurrentTenantUuid();
-                System.out.println("Current tenant: " + currentUser.getTenantId());
                 Role source = roleRepository.findByIdAndTenantId(sourceRoleId, tenantId)
                                 .orElseThrow(() -> new RoleNotFoundException(sourceRoleId));
 
@@ -451,10 +450,18 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
                 clone.setRoleType(RoleType.CUSTOM); // always CUSTOM, even cloning a SYSTEM role
                 clone.setRoleCode(generateUniqueRoleCode(tenantId, request.getNewName()));
                 clone.setClonedFromRoleId(source.getId());
-                clone.setPermissions(new HashSet<>(source.getPermissions()));
                 clone.setStatus("ACTIVE");
 
                 Role saved = roleRepository.save(clone);
+
+                for (Permission permission : source.getPermissions()) {
+                        rolePermissionRepository.insertRolePermission(
+                                saved.getId(),
+                                permission.getPermissionId(),
+                                tenantId,
+                                "SYSTEM"
+                        );
+                        }
 
                 recordHistory(saved.getId(), "CREATED", "role",
                                 null, "Cloned from '" + source.getRoleName() + "'");
@@ -466,6 +473,7 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
         // compareRoles()
         // ---------------------------------------------------------------
         @Override
+        @Transactional(readOnly = true)
         public RoleCompareResponse compareRoles(UUID role1Id, UUID role2Id) {
                 UUID tenantId = getCurrentTenantUuid();
                 System.out.println(tenantId);

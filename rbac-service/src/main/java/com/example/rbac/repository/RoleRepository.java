@@ -5,6 +5,7 @@ import com.example.rbac.enums.RoleType;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -53,6 +54,7 @@ public interface RoleRepository extends JpaRepository<Role, UUID> {
 
     List<Role> findAllByTenantId(UUID tenantId);
 
+    @EntityGraph(attributePaths = "permissions")
     @Query("SELECT r FROM Role r WHERE r.tenantId = :tenantId AND r.roleType = :type")
     List<Role> findAllByTenantIdAndType(@Param("tenantId") UUID tenantId, @Param("type") RoleType type);
 

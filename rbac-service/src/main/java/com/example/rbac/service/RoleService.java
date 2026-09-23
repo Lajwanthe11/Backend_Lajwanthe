@@ -25,7 +25,7 @@ public interface RoleService extends BaseService<Role, UUID, RoleRequestDto, Rol
 
     List<RoleResponseDto> listSystemRoles();
 
-    RoleResponseDto cloneRole(UUID sourceRoleId, RoleCloneRequest request);
+    RoleResponseDto cloneRole(UUID roleId, RoleCloneRequest request);
 
     RoleCompareResponse compareRoles(UUID role1Id, UUID role2Id);
 
