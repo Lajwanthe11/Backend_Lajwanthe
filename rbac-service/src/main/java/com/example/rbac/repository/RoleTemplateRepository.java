@@ -4,8 +4,9 @@ import com.example.rbac.entity.RoleTemplate;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.UUID;
 
-public interface RoleTemplateRepository extends JpaRepository<RoleTemplate, String> {
+public interface RoleTemplateRepository extends JpaRepository<RoleTemplate, UUID> {
 
     // Library view for Org Admin / general use — hidden templates excluded
     List<RoleTemplate> findAllByHiddenFalse();

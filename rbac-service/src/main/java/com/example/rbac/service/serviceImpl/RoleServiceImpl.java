@@ -59,7 +59,7 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
 
         // Convert current tenant ID from JWT String to UUID
         private UUID getCurrentTenantUuid() {
-                return currentUser.getTenantId() != null ? UUID.fromString(currentUser.getTenantId()) : null;
+                return currentUser.getTenantId() != null ? currentUser.getTenantId() : null;
         }
 
         // Convert request DTO to Role entity
@@ -91,7 +91,7 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
                 if (dto.getTemplateId() != null) {
                         role.setCreatedFromTemplateId(dto.getTemplateId().toString());
                         if (dto.getPermissionCodes() == null || dto.getPermissionCodes().isEmpty()) {
-                                roleTemplateRepository.findById(dto.getTemplateId().toString()).ifPresent(template -> {
+                                roleTemplateRepository.findById(dto.getTemplateId()).ifPresent(template -> {
                                         Set<String> codes = template.getPermissions().stream()
                                                         .map(Permission::getPermissionCode)
                                                         .collect(Collectors.toSet());
@@ -372,22 +372,26 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
         @Override
         public List<RoleTemplateSummaryDto> listTemplates() {
                 List<RoleTemplate> templates = currentUser.hasRole("SUPER_ADMIN")
-                                ? roleTemplateRepository.findAll()
-                                : roleTemplateRepository.findAllByHiddenFalse();
+                        ? roleTemplateRepository.findAll()
+                        : roleTemplateRepository.findAllByHiddenFalse();
 
                 return templates.stream()
-                                .map(t -> new RoleTemplateSummaryDto(
-                                                t.getId(), t.getName(), t.getDescription(),
-                                                t.getPermissions().size(), t.getRecommendedFor()))
-                                .toList();
+                        .map(t -> new RoleTemplateSummaryDto(
+                                t.getId(),
+                                t.getName(),
+                                t.getDescription(),
+                                0,
+                                t.getRecommendedFor()))
+                        .toList();
         }
 
         // ---------------------------------------------------------------
         // getTemplateDetail()
         // ---------------------------------------------------------------
         @Override
+        @Transactional(readOnly = true)
         public RoleTemplateDetailDto getTemplateDetail(UUID templateId) {
-                RoleTemplate template = roleTemplateRepository.findById(String.valueOf(templateId))
+                RoleTemplate template = roleTemplateRepository.findById(templateId)
                                 .orElseThrow(() -> new ResourceNotFoundException("Template not found: " + templateId));
 
                 Set<String> permissionCodes = template.getPermissions().stream()
@@ -408,7 +412,7 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
         @Override
         @Transactional
         public void updateTemplateVisibility(UUID templateId, boolean hidden) {
-                RoleTemplate template = roleTemplateRepository.findById(String.valueOf(templateId))
+                RoleTemplate template = roleTemplateRepository.findById(templateId)
                                 .orElseThrow(() -> new ResourceNotFoundException("Template not found: " + templateId));
                 template.setHidden(hidden);
                 roleTemplateRepository.save(template);
@@ -434,9 +438,9 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
         // ---------------------------------------------------------------
         @Override
         @Transactional
-        public RoleResponseDto cloneRole(String sourceRoleId, RoleCloneRequest request) {
+        public RoleResponseDto cloneRole(UUID sourceRoleId, RoleCloneRequest request) {
                 UUID tenantId = getCurrentTenantUuid();
-
+                System.out.println("Current tenant: " + currentUser.getTenantId());
                 Role source = roleRepository.findByIdAndTenantId(sourceRoleId, tenantId)
                                 .orElseThrow(() -> new RoleNotFoundException(sourceRoleId));
 
@@ -448,10 +452,11 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
                 clone.setRoleCode(generateUniqueRoleCode(tenantId, request.getNewName()));
                 clone.setClonedFromRoleId(source.getId());
                 clone.setPermissions(new HashSet<>(source.getPermissions()));
+                clone.setStatus("ACTIVE");
 
                 Role saved = roleRepository.save(clone);
 
-                recordHistory(saved.getId().toString(), "CREATED", "role",
+                recordHistory(saved.getId(), "CREATED", "role",
                                 null, "Cloned from '" + source.getRoleName() + "'");
 
                 return toDto(saved);
@@ -461,9 +466,9 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
         // compareRoles()
         // ---------------------------------------------------------------
         @Override
-        public RoleCompareResponse compareRoles(String role1Id, String role2Id) {
+        public RoleCompareResponse compareRoles(UUID role1Id, UUID role2Id) {
                 UUID tenantId = getCurrentTenantUuid();
-
+                System.out.println(tenantId);
                 Role role1 = roleRepository.findByIdAndTenantId(role1Id, tenantId)
                                 .orElseThrow(() -> new RoleNotFoundException(role1Id));
                 Role role2 = roleRepository.findByIdAndTenantId(role2Id, tenantId)
@@ -497,7 +502,7 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
         // getHistory()
         // ---------------------------------------------------------------
         @Override
-        public List<RoleHistoryDto> getHistory(String roleId) {
+        public List<RoleHistoryDto> getHistory(UUID roleId) {
                 UUID tenantId = getCurrentTenantUuid();
 
                 // Confirms the role belongs to the caller's tenant before returning
@@ -543,7 +548,7 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
                 return candidate;
         }
 
-        private void recordHistory(String roleId, String changeType, String fieldName,
+        private void recordHistory(UUID roleId, String changeType, String fieldName,
                         String oldValue, String newValue) {
                 RoleHistory history = new RoleHistory();
                 history.setRoleId(roleId);

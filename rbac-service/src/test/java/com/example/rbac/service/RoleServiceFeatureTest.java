@@ -75,7 +75,7 @@ class RoleServiceFeatureTest {
         tenantId = UUID.randomUUID();
 
         lenient().when(currentUserContext.getTenantId())
-                .thenReturn(tenantId.toString());
+                .thenReturn(tenantId);
 
         roleService = new RoleServiceImpl(
                 roleRepository,
@@ -136,7 +136,7 @@ class RoleServiceFeatureTest {
                 .existsByRoleCodeIgnoreCaseAndTenantIdAndIsDeletedFalse(
                         anyString(), eq(tenantId)))
                 .thenReturn(false);
-        when(roleTemplateRepository.findById(templateId.toString()))
+        when(roleTemplateRepository.findById(templateId))
                 .thenReturn(java.util.Optional.of(template));
         when(permissionRepository.findByPermissionCodeIn(any()))
                 .thenReturn(List.of(empView));
@@ -195,7 +195,7 @@ class RoleServiceFeatureTest {
             template.setHidden(false);
             template.setPermissions(new HashSet<>());
 
-            when(roleTemplateRepository.findById(String.valueOf(templateId)))
+            when(roleTemplateRepository.findById(templateId))
                     .thenReturn(java.util.Optional.of(template));
 
             when(roleTemplateRepository.save(any(RoleTemplate.class)))
@@ -205,7 +205,7 @@ class RoleServiceFeatureTest {
 
             assertTrue(template.isHidden());
 
-            verify(roleTemplateRepository).findById(String.valueOf(templateId));
+            verify(roleTemplateRepository).findById(templateId);
             verify(roleTemplateRepository).save(template);
     }
 
@@ -270,7 +270,7 @@ class RoleServiceFeatureTest {
                 .thenReturn(java.util.Optional.of(role2));
 
         RoleCompareResponse response =
-                roleService.compareRoles(role1Id.toString(), role2Id.toString());
+                roleService.compareRoles(role1Id, role2Id);
 
         assertTrue(response.getSharedPermissions().contains("USER_READ"));
         assertTrue(response.getOnlyInRole1().contains("USER_WRITE"));
@@ -288,7 +288,7 @@ class RoleServiceFeatureTest {
 
         assertThrows(
                 RoleNotFoundException.class,
-                () -> roleService.compareRoles(role1Id.toString(), role2Id.toString()));
+                () -> roleService.compareRoles(role1Id, role2Id));
     }
 
     @Test
@@ -315,7 +315,7 @@ class RoleServiceFeatureTest {
                 });
 
         RoleCloneRequest request = new RoleCloneRequest("Admin Copy");
-        RoleResponseDto result = roleService.cloneRole(sourceId.toString(), request);
+        RoleResponseDto result = roleService.cloneRole(sourceId, request);
 
         ArgumentCaptor<Role> captor = ArgumentCaptor.forClass(Role.class);
         verify(roleRepository).save(captor.capture());
@@ -337,7 +337,7 @@ class RoleServiceFeatureTest {
 
         assertThrows(
                 RoleNotFoundException.class,
-                () -> roleService.cloneRole(sourceId.toString(), new RoleCloneRequest("X")));
+                () -> roleService.cloneRole(sourceId, new RoleCloneRequest("X")));
     }
 
     @Test
@@ -349,10 +349,10 @@ class RoleServiceFeatureTest {
 
         when(roleRepository.findByIdAndTenantId(roleId.toString(), tenantId))
                 .thenReturn(java.util.Optional.of(role));
-        when(roleHistoryRepository.findAllByRoleIdOrderByChangedAtDesc(roleId.toString()))
+        when(roleHistoryRepository.findAllByRoleIdOrderByChangedAtDesc(roleId))
                 .thenReturn(List.of());
 
-        var history = roleService.getHistory(roleId.toString());
+        var history = roleService.getHistory(roleId);
 
         assertTrue(history.isEmpty());
     }
@@ -365,7 +365,7 @@ class RoleServiceFeatureTest {
 
         assertThrows(
                 RoleNotFoundException.class,
-                () -> roleService.getHistory(roleId.toString()));
+                () -> roleService.getHistory(roleId));
     }
 
     // =================================================================

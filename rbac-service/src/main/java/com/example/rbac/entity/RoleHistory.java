@@ -16,7 +16,7 @@ public class RoleHistory {
     // Stored/queried as String to match findAllByRoleIdOrderByChangedAtDesc(String)
     // used in the service — role id is converted to String at the call site.
     @Column(name = "role_id", nullable = false)
-    private String roleId;
+    private UUID roleId;
 
     @Column(name = "changed_by_user_id", nullable = false)
     private String changedByUserId;
@@ -42,8 +42,8 @@ public class RoleHistory {
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
 
-    public String getRoleId() { return roleId; }
-    public void setRoleId(String roleId) { this.roleId = roleId; }
+    public UUID getRoleId() { return roleId; }
+    public void setRoleId(UUID roleId) { this.roleId = roleId; }
 
     public String getChangedByUserId() { return changedByUserId; }
     public void setChangedByUserId(String changedByUserId) { this.changedByUserId = changedByUserId; }

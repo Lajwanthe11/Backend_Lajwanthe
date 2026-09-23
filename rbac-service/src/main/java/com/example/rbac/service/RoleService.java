@@ -25,11 +25,11 @@ public interface RoleService extends BaseService<Role, UUID, RoleRequestDto, Rol
 
     List<RoleResponseDto> listSystemRoles();
 
-    RoleResponseDto cloneRole(String sourceRoleId, RoleCloneRequest request);
+    RoleResponseDto cloneRole(UUID sourceRoleId, RoleCloneRequest request);
 
-    RoleCompareResponse compareRoles(String role1Id, String role2Id);
+    RoleCompareResponse compareRoles(UUID role1Id, UUID role2Id);
 
-    List<RoleHistoryDto> getHistory(String roleId);
+    List<RoleHistoryDto> getHistory(UUID roleId);
 
     byte[] exportRoles(String format);
 
