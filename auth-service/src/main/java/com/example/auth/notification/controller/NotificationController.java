@@ -1,25 +1,29 @@
 package com.example.auth.notification.controller;
 
+import com.example.auth.notification.dto.CreateNotificationRequest;
+import com.example.auth.notification.dto.NotificationResponse;
 import com.example.auth.notification.entity.Notification;
 import com.example.auth.notification.service.NotificationDeliveryService;
 import com.example.auth.notification.service.NotificationService;
-import com.example.auth.notification.dto.CreateNotificationRequest;
-import com.example.auth.notification.dto.NotificationResponse;
+import com.example.common.abstracts.AbstractController;
+import com.example.common.response.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/notifications")
-public class NotificationController {
+@SecurityRequirement(name = "bearerAuth")
+public class NotificationController extends AbstractController<
+        Notification,
+        Long,
+        CreateNotificationRequest,
+        NotificationResponse> {
 
     private final NotificationService notificationService;
     private final NotificationDeliveryService notificationDeliveryService;
@@ -28,220 +32,170 @@ public class NotificationController {
             NotificationService notificationService,
             NotificationDeliveryService notificationDeliveryService) {
 
+        super(notificationService);
+
         this.notificationService = notificationService;
-        this.notificationDeliveryService = notificationDeliveryService;
+        this.notificationDeliveryService =
+                notificationDeliveryService;
     }
 
     /**
-     * Create a new notification and attempt delivery.
+     * Create notification and attempt delivery.
+     *
+     * We override the generic AbstractController create()
+     * because notification creation has an additional
+     * delivery workflow.
      */
+    @Override
     @PostMapping
-    public ResponseEntity<NotificationResponse> createNotification(
+    public ResponseEntity<ApiResponse<NotificationResponse>> create(
             @Valid @RequestBody CreateNotificationRequest request) {
 
+        NotificationResponse created =
+                notificationService.create(request);
+
         Notification notification =
-                notificationService.createNotification(
-                        request.userId(),
-                        request.username(),
-                        request.type(),
-                        request.channel(),
-                        request.title(),
-                        request.message(),
-                        request.alertId()
+                notificationService.getNotification(
+                        created.id()
                 );
 
-        /*
-         * Attempt delivery after the notification has been stored.
-         */
         notification =
-                notificationDeliveryService.deliver(notification);
+                notificationDeliveryService.deliver(
+                        notification
+                );
+
+        NotificationResponse response =
+                notificationService.toResponseForController(
+                        notification
+                );
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(toResponse(notification));
+                .body(
+                        ApiResponse.created(
+                                "Notification created successfully",
+                                response
+                        )
+                );
     }
 
     /**
-     * Get all notifications for a user.
+     * Get notifications for a specific user.
      *
-     * ADMIN-only: there is currently no verified link between the
-     * authenticated principal and this numeric userId (auth-service's
-     * JWT carries username/roles/tenantId only, not a user id), so this
-     * cannot yet be safely opened up as a self-service "my notifications"
-     * endpoint. Restricting to ROLE_ADMIN until that identity link exists.
+     * ADMIN-only because the current JWT does not provide
+     * a verified numeric user-id mapping.
      */
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<NotificationResponse>> getUserNotifications(
+    public ResponseEntity<List<NotificationResponse>>
+    getUserNotifications(
             @PathVariable Long userId) {
 
         List<NotificationResponse> notifications =
                 notificationService
                         .getUserNotifications(userId)
                         .stream()
-                        .map(this::toResponse)
+                        .map(
+                                notificationService
+                                        ::toResponseForController
+                        )
                         .toList();
 
         return ResponseEntity.ok(notifications);
     }
 
     /**
-     * Get unread notifications for a user.
-     *
-     * ADMIN-only — see the note on getUserNotifications() above.
+     * Get unread notifications for a specific user.
      */
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/user/{userId}/unread")
-    public ResponseEntity<List<NotificationResponse>> getUnreadNotifications(
+    public ResponseEntity<List<NotificationResponse>>
+    getUnreadNotifications(
             @PathVariable Long userId) {
 
         List<NotificationResponse> notifications =
                 notificationService
                         .getUnreadNotifications(userId)
                         .stream()
-                        .map(this::toResponse)
+                        .map(
+                                notificationService
+                                        ::toResponseForController
+                        )
                         .toList();
 
         return ResponseEntity.ok(notifications);
     }
 
     /**
-     * Mark notification as read.
-     *
-     * Ownership check: allowed for the notification's own creator
-     * (authenticated username == notification.username) or ROLE_ADMIN.
-     * Without this, any authenticated user in the same tenant could
-     * mutate another user's notification just by guessing its id.
+     * Mark notification as READ.
      */
     @PatchMapping("/{notificationId}/read")
     public ResponseEntity<NotificationResponse> markAsRead(
             @PathVariable Long notificationId) {
 
-        authorizeAccess(notificationService.getNotification(notificationId));
-
         Notification notification =
-                notificationService.markAsRead(notificationId);
+                notificationService.markAsRead(
+                        notificationId
+                );
 
-        return ResponseEntity.ok(toResponse(notification));
+        return ResponseEntity.ok(
+                notificationService
+                        .toResponseForController(notification)
+        );
     }
 
     /**
-     * Mark notification as successfully sent.
-     *
-     * Ownership check — see the note on markAsRead() above.
+     * Mark notification as SENT.
      */
     @PatchMapping("/{notificationId}/sent")
     public ResponseEntity<NotificationResponse> markAsSent(
             @PathVariable Long notificationId) {
 
-        authorizeAccess(notificationService.getNotification(notificationId));
-
         Notification notification =
-                notificationService.markAsSent(notificationId);
+                notificationService.markAsSent(
+                        notificationId
+                );
 
-        return ResponseEntity.ok(toResponse(notification));
+        return ResponseEntity.ok(
+                notificationService
+                        .toResponseForController(notification)
+        );
     }
 
     /**
-     * Mark notification as failed.
-     *
-     * Ownership check — see the note on markAsRead() above.
+     * Mark notification as FAILED.
      */
     @PatchMapping("/{notificationId}/failed")
     public ResponseEntity<NotificationResponse> markAsFailed(
             @PathVariable Long notificationId) {
 
-        authorizeAccess(notificationService.getNotification(notificationId));
-
         Notification notification =
-                notificationService.markAsFailed(notificationId);
+                notificationService.markAsFailed(
+                        notificationId
+                );
 
-        return ResponseEntity.ok(toResponse(notification));
+        return ResponseEntity.ok(
+                notificationService
+                        .toResponseForController(notification)
+        );
     }
 
     /**
      * Retry a failed notification.
-     *
-     * Ownership check — see the note on markAsRead() above.
      */
     @PostMapping("/{notificationId}/retry")
-    public ResponseEntity<NotificationResponse> retryNotification(
-            @PathVariable Long notificationId) {
-
-        authorizeAccess(notificationService.getNotification(notificationId));
-
-        Notification notification =
-                notificationDeliveryService.retry(notificationId);
-
-        return ResponseEntity.ok(toResponse(notification));
-    }
-
-    /**
-     * Get a single notification.
-     *
-     * Ownership check — see the note on markAsRead() above.
-     */
-    @GetMapping("/{notificationId}")
-    public ResponseEntity<NotificationResponse> getNotification(
+    public ResponseEntity<NotificationResponse>
+    retryNotification(
             @PathVariable Long notificationId) {
 
         Notification notification =
-                notificationService.getNotification(notificationId);
+                notificationDeliveryService.retry(
+                        notificationId
+                );
 
-        authorizeAccess(notification);
-
-        return ResponseEntity.ok(toResponse(notification));
-    }
-
-    /**
-     * Allows access only to the notification's own creator (by username)
-     * or a caller with ROLE_ADMIN. Tenant scoping already happened inside
-     * notificationService.getNotification() — this is a second, narrower
-     * check on top of that, so a same-tenant user can no longer act on a
-     * different user's notification just by knowing/guessing its id.
-     */
-    private void authorizeAccess(Notification notification) {
-
-        Authentication authentication =
-                SecurityContextHolder.getContext().getAuthentication();
-
-        boolean isAdmin = authentication != null && authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .anyMatch("ROLE_ADMIN"::equals);
-
-        boolean isOwner = authentication != null
-                && authentication.getName() != null
-                && authentication.getName().equals(notification.getUsername());
-
-        if (!isAdmin && !isOwner) {
-            throw new AccessDeniedException(
-                    "You do not have permission to access this notification");
-        }
-    }
-
-    /**
-     * Converts entity to API response.
-     */
-    /**
-     * Converts entity to API response.
-     */
-    private NotificationResponse toResponse(Notification notification) {
-
-        return new NotificationResponse(
-                notification.getId(),
-                notification.getUserId(),
-                notification.getTenantId(),
-                notification.getUsername(),
-                notification.getType(),
-                notification.getChannel(),
-                notification.getStatus(),
-                notification.getTitle(),
-                notification.getMessage(),
-                notification.getAlertId(),
-                notification.isRead(),
-                notification.getCreatedAt(),
-                notification.getSentAt(),
-                notification.getReadAt()
+        return ResponseEntity.ok(
+                notificationService
+                        .toResponseForController(notification)
         );
     }
 }

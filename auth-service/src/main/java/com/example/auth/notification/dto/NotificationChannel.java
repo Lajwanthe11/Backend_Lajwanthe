@@ -1,4 +1,4 @@
-package com.example.auth.notification;
+package com.example.auth.notification.dto;
 
 public enum NotificationChannel {
 
