@@ -1,7 +1,7 @@
 package com.example.rbac.service.serviceImpl;
 
 import com.example.rbac.service.RoleExpiryNotificationService;
-import com.example.rbac.dto.ExpiryNotificationResponse;
+import com.example.rbac.dto.response.ExpiryNotificationResponse;
 import com.example.rbac.entity.Role;
 import com.example.rbac.entity.UserRole;
 import com.example.rbac.repository.RoleRepository;

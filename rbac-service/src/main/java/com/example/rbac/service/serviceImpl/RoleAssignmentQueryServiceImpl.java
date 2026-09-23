@@ -1,9 +1,9 @@
 package com.example.rbac.service.serviceImpl;
 
 import com.example.rbac.service.UserAssignmentSupportService;
-import com.example.rbac.dto.DepartmentRoleDistribution;
-import com.example.rbac.dto.ExpiringRoleAssignment;
-import com.example.rbac.dto.RoleAssignmentReportRow;
+import com.example.rbac.dto.response.DepartmentRoleDistribution;
+import com.example.rbac.dto.response.ExpiringRoleAssignment;
+import com.example.rbac.dto.response.RoleAssignmentReportRow;
 import com.example.rbac.entity.Role;
 import com.example.rbac.entity.UserRole;
 import com.example.rbac.enums.RoleType;

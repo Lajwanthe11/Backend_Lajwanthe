@@ -2,9 +2,9 @@ package com.example.rbac.controller;
 
 import com.example.rbac.config.SecurityContextUtil;
 import com.example.rbac.dto.AuthenticatedUser;
-import com.example.rbac.dto.DepartmentRoleDistribution;
-import com.example.rbac.dto.ExpiryNotificationResponse;
-import com.example.rbac.dto.RoleAssignmentReportRow;
+import com.example.rbac.dto.response.DepartmentRoleDistribution;
+import com.example.rbac.dto.response.ExpiryNotificationResponse;
+import com.example.rbac.dto.response.RoleAssignmentReportRow;
 import com.example.rbac.exception.GlobalExceptionHandler;
 import com.example.rbac.service.RoleAssignmentExportService;
 import com.example.rbac.service.RoleAssignmentQueryService;

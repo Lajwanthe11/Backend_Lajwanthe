@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import com.example.rbac.dto.AccessDeniedResponse;
-import com.example.rbac.dto.ApiErrorResponse;
+import com.example.rbac.dto.response.ApiErrorResponse;
 import org.springframework.stereotype.Component;
 
 @Component("rbacGlobalExceptionHandler")

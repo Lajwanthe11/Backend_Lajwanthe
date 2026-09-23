@@ -2,10 +2,10 @@ package com.example.rbac.controller;
 
 import com.example.rbac.config.SecurityContextUtil;
 import com.example.rbac.dto.AuthenticatedUser;
-import com.example.rbac.dto.BulkOperationResponse;
-import com.example.rbac.dto.BulkRoleAssignmentRequest;
-import com.example.rbac.dto.BulkRoleRevokeRequest;
-import com.example.rbac.dto.CsvImportResponse;
+import com.example.rbac.dto.response.BulkOperationResponse;
+import com.example.rbac.dto.request.BulkRoleAssignmentRequest;
+import com.example.rbac.dto.request.BulkRoleRevokeRequest;
+import com.example.rbac.dto.response.CsvImportResponse;
 import com.example.rbac.service.BulkRoleAssignmentService;
 import com.example.rbac.service.CsvRoleImportService;
 

@@ -1,4 +1,4 @@
-package com.example.rbac.dto;
+package com.example.rbac.dto.response;
 
 import java.time.Instant;
 import java.util.Map;

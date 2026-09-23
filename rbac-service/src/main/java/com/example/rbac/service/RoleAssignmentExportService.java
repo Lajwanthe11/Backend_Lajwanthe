@@ -1,6 +1,6 @@
 package com.example.rbac.service;
 
-import com.example.rbac.dto.RoleAssignmentReportRow;
+import com.example.rbac.dto.response.RoleAssignmentReportRow;
 
 import java.util.List;
 

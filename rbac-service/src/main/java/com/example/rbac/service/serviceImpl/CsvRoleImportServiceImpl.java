@@ -3,7 +3,7 @@ package com.example.rbac.service.serviceImpl;
 import com.example.rbac.service.RoleAuditService;
 import com.example.rbac.service.UserAssignmentSupportService;
 import com.example.rbac.dto.CsvImportError;
-import com.example.rbac.dto.CsvImportResponse;
+import com.example.rbac.dto.response.CsvImportResponse;
 import com.example.rbac.entity.Role;
 import com.example.rbac.entity.UserRole;
 import com.example.rbac.exception.InvalidCsvImportException;
