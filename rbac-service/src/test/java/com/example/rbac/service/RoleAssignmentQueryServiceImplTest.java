@@ -2,16 +2,15 @@ package com.example.rbac.service;
 
 import com.example.rbac.service.serviceImpl.RoleAssignmentQueryServiceImpl;
 
-import com.example.rbac.dto.DepartmentRoleDistribution;
-import com.example.rbac.dto.ExpiringRoleAssignment;
-import com.example.rbac.dto.RoleAssignmentReportRow;
+import com.example.rbac.dto.response.DepartmentRoleDistribution;
+import com.example.rbac.dto.response.ExpiringRoleAssignment;
+import com.example.rbac.dto.response.RoleAssignmentReportRow;
 import com.example.rbac.entity.Role;
 import com.example.rbac.entity.UserRole;
 import com.example.rbac.enums.RoleType;
 import com.example.rbac.exception.RoleAssignmentValidationException;
 import com.example.rbac.repository.RoleRepository;
 import com.example.rbac.repository.UserRoleRepository;
-import com.example.rbac.service.UserAssignmentSupportService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

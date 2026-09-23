@@ -1,8 +1,8 @@
 package com.example.rbac.service;
 
-import com.example.rbac.dto.DepartmentRoleDistribution;
-import com.example.rbac.dto.ExpiringRoleAssignment;
-import com.example.rbac.dto.RoleAssignmentReportRow;
+import com.example.rbac.dto.response.DepartmentRoleDistribution;
+import com.example.rbac.dto.response.ExpiringRoleAssignment;
+import com.example.rbac.dto.response.RoleAssignmentReportRow;
 import com.example.rbac.enums.RoleType;
 
 import java.util.List;

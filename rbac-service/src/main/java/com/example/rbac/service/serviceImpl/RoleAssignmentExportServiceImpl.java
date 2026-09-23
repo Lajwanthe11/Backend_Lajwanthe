@@ -1,6 +1,6 @@
 package com.example.rbac.service.serviceImpl;
 
-import com.example.rbac.dto.RoleAssignmentReportRow;
+import com.example.rbac.dto.response.RoleAssignmentReportRow;
 import com.example.rbac.service.RoleAssignmentExportService;
 import com.lowagie.text.Document;
 import com.lowagie.text.Font;

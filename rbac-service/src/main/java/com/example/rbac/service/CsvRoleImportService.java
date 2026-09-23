@@ -1,6 +1,6 @@
 package com.example.rbac.service;
 
-import com.example.rbac.dto.CsvImportResponse;
+import com.example.rbac.dto.response.CsvImportResponse;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.UUID;

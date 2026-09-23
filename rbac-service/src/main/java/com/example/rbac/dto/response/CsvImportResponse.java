@@ -1,4 +1,6 @@
-package com.example.rbac.dto;
+package com.example.rbac.dto.response;
+
+import com.example.rbac.dto.CsvImportError;
 
 import java.util.List;
 

@@ -1,6 +1,6 @@
 package com.example.rbac.service;
 
-import com.example.rbac.dto.ExpiryNotificationResponse;
+import com.example.rbac.dto.response.ExpiryNotificationResponse;
 
 import java.util.UUID;
 

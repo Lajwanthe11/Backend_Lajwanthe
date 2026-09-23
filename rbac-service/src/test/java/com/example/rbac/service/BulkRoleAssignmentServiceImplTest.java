@@ -1,15 +1,12 @@
 package com.example.rbac.service;
 
-import com.example.rbac.dto.BulkOperationResponse;
-import com.example.rbac.dto.BulkRoleAssignmentRequest;
-import com.example.rbac.dto.BulkRoleRevokeRequest;
+import com.example.rbac.dto.response.BulkOperationResponse;
+import com.example.rbac.dto.request.BulkRoleAssignmentRequest;
+import com.example.rbac.dto.request.BulkRoleRevokeRequest;
 import com.example.rbac.entity.Role;
 import com.example.rbac.entity.UserRole;
 import com.example.rbac.exception.RoleAssignmentValidationException;
 import com.example.rbac.repository.UserRoleRepository;
-import com.example.rbac.service.RoleAuditService;
-import com.example.rbac.service.RoleLookupService;
-import com.example.rbac.service.UserAssignmentSupportService;
 import com.example.rbac.service.serviceImpl.BulkRoleAssignmentServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

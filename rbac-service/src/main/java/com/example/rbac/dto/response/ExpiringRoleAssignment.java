@@ -1,19 +1,19 @@
-package com.example.rbac.dto;
+package com.example.rbac.dto.response;
 
-import java.time.LocalDateTime;
+import com.example.rbac.enums.RoleType;
+
 import java.time.LocalDate;
 import java.util.UUID;
 
-public record RoleAssignmentReportRow(
+public record ExpiringRoleAssignment(
         UUID userRoleId,
         UUID userId,
         UUID roleId,
         String roleCode,
         String roleName,
+        RoleType roleType,
         LocalDate effectiveDate,
         LocalDate expiryDate,
-        String status,
-        boolean primaryRole,
-        LocalDateTime assignedAt
+        long daysToExpiry
 ) {
 }

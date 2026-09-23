@@ -2,12 +2,11 @@ package com.example.rbac.service;
 
 import com.example.rbac.service.serviceImpl.RoleExpiryServiceImpl;
 
-import com.example.rbac.dto.ExpiryNotificationResponse;
+import com.example.rbac.dto.response.ExpiryNotificationResponse;
 import com.example.rbac.entity.Role;
 import com.example.rbac.entity.UserRole;
 import com.example.rbac.repository.RoleRepository;
 import com.example.rbac.repository.UserRoleRepository;
-import com.example.rbac.service.RoleExpiryNotificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
