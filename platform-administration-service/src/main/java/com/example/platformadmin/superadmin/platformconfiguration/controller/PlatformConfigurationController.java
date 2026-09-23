@@ -9,6 +9,7 @@ import com.example.platformadmin.superadmin.platformconfiguration.service.Platfo
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -33,7 +34,8 @@ import java.util.UUID;
  * REST Controller for Platform Configuration management APIs (FR-001.2).
  */
 @RestController
-@RequestMapping("/api/v1/platform-configurations")
+@RequestMapping("/v1/platform-configurations")
+@SecurityRequirement(name = "bearerAuth")  
 @Tag(name = "Platform Configuration", description = "Platform configuration management APIs (FRS: FR-001.2)")
 public class PlatformConfigurationController {
 
