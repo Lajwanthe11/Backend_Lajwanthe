@@ -11,7 +11,7 @@ spring:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/microservice_db}
     driver-class-name: org.postgresql.Driver
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
-    password: ${SPRING_DATASOURCE_PASSWORD:wiz@linux}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
     hikari:
       minimum-idle: ${DB_POOL_MIN_IDLE:5}
       maximum-pool-size: ${DB_POOL_MAX_SIZE:20}
@@ -104,7 +104,7 @@ app:
     refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}  # 7 days
   oauth2:
     # : backend-served callback.html.
-    authorized-redirect-uris: ${APP_OAUTH2_AUTHORIZED_REDIRECT_URIS:http://localhost:8081/api/callback.html,http://localhost:8081/api/auth/oauth2/success}
+    authorized-redirect-uris: ${APP_OAUTH2_AUTHORIZED_REDIRECT_URIS:http://localhost:8081/api/callback.html,http://localhost:3000/oauth2/redirect,http://localhost:8081/api/auth/oauth2/success}
 
 # Springdoc OpenAPI / Swagger UI
 springdoc:
