@@ -50,7 +50,8 @@ public class AuthController {
     public AuthController(AuthService authService,
                           PasswordResetService passwordResetService,
                           TokenDenylistService tokenDenylistService,
-                          JwtTokenProvider tokenProvider, SessionManagementService sessionManagementService) {
+                          JwtTokenProvider tokenProvider,
+                          SessionManagementService sessionManagementService) {
         this.authService = authService;
         this.passwordResetService = passwordResetService;
         this.tokenDenylistService = tokenDenylistService;
@@ -69,35 +70,16 @@ public class AuthController {
     )
     public ResponseEntity<ApiResponse<AuthResponseDTO>> login(
             @Valid @RequestBody LoginRequestDTO loginRequest,
-
-            // Read the User-Agent header from the HTTP request automatically.
-            // This tells us what browser/OS the login is coming from
-            // so we can auto-detect deviceName, deviceType, and operatingSystem
-            // without the client having to send them explicitly.
-            // required = false means login still works even if User-Agent is missing
-            // (e.g. raw curl calls or non-browser clients).
             @RequestHeader(value = "User-Agent", required = false) String userAgent) {
 
-        // Set the User-Agent on the login request DTO so AuthService
-        // can pass it through to DeviceService.registerDevice()
-        // after successful authentication — that's where the actual
-        // device name/type/OS detection happens.
         loginRequest.setUserAgent(userAgent);
-
         AuthResponseDTO response = authService.login(loginRequest);
         return ResponseEntity.ok(ApiResponse.ok("Login successful", response));
     }
-    public ResponseEntity<ApiResponse<AuthResponseDTO>> login(
-            @Valid @RequestBody LoginRequestDTO loginRequest) {
 
-        AuthResponseDTO response = authService.login(loginRequest);
-        return ResponseEntity.ok(ApiResponse.ok("Login successful", response));
-    }
     @GetMapping("/session/{sessionId}")
     public ResponseEntity<?> checkSession(@PathVariable String sessionId) {
-
         boolean active = sessionManagementService.isSessionActive(sessionId);
-
         return ResponseEntity.ok(active);
     }
 
@@ -126,11 +108,12 @@ public class AuthController {
     @Operation(
             summary = "Logout",
             description = "Revoke the caller's current JWT access token. " +
-                          "The token must be passed in the Authorization header as 'Bearer <token>'. " +
-                          "Once revoked, the token is rejected on all subsequent requests.",
+                    "The token must be passed in the Authorization header as 'Bearer <token>'. " +
+                    "Once revoked, the token is rejected on all subsequent requests.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
-    public ResponseEntity<ApiResponse<Void>> logout(HttpServletRequest request,@RequestParam String sessionId) {
+    public ResponseEntity<ApiResponse<Void>> logout(HttpServletRequest request,
+                                                    @RequestParam String sessionId) {
         String bearerToken = request.getHeader("Authorization");
 
         if (!StringUtils.hasText(bearerToken) || !bearerToken.startsWith("Bearer ")) {
@@ -147,12 +130,12 @@ public class AuthController {
 
         Date expiry = tokenProvider.getExpiryFromJWT(jwt);
         tokenDenylistService.revokeToken(jwt, expiry);
-
         sessionManagementService.invalidateSession(sessionId);
 
         return ResponseEntity.ok(ApiResponse.ok("Logged out successfully", null));
     }
 
+    // ---------------------------------------------------------------
     // Token Refresh
     // ---------------------------------------------------------------
 
@@ -176,8 +159,8 @@ public class AuthController {
     @Operation(
             summary = "Request Password Reset",
             description = "Generate a time-limited password reset token for the given username. " +
-                          "In production this token would be sent by email; " +
-                          "it is returned directly in the response for developer convenience."
+                    "In production this token would be sent by email; " +
+                    "it is returned directly in the response for developer convenience."
     )
     public ResponseEntity<ApiResponse<PasswordResetResponseDTO>> requestPasswordReset(
             @Valid @RequestBody PasswordResetRequestDTO resetRequest) {
@@ -194,7 +177,7 @@ public class AuthController {
     @Operation(
             summary = "Confirm Password Reset",
             description = "Validate the reset token received from /password-reset/request " +
-                          "and set a new password. The token is single-use and expires in 15 minutes."
+                    "and set a new password. The token is single-use and expires in 15 minutes."
     )
     public ResponseEntity<ApiResponse<Void>> confirmPasswordReset(
             @Valid @RequestBody PasswordResetConfirmDTO confirmRequest) {
@@ -204,11 +187,12 @@ public class AuthController {
     }
 
     // ---------------------------------------------------------------
-    // OAuth2 Success Landing (unchanged)
+    // OAuth2 Success Landing
     // ---------------------------------------------------------------
 
     @GetMapping("/oauth2/success")
-    @Operation(summary = "OAuth2 Callback Landing Endpoint", description = "Displays successful OAuth2 login details")
+    @Operation(summary = "OAuth2 Callback Landing Endpoint",
+            description = "Displays successful OAuth2 login details")
     public ResponseEntity<ApiResponse<String>> oauth2Success(
             @RequestParam("token") String token,
             @RequestParam("refreshToken") String refreshToken,
