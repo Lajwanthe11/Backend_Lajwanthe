@@ -30,6 +30,33 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Value("${app.security.lockout.duration-minutes:15}")
     private int lockDurationMinutes;
+    // ---------------------------------------------------------------
+// MFA Statistics support
+// ---------------------------------------------------------------
+
+    public long countMfaEnrolledUsers(String organizationId) {
+        return users.values()
+                .stream()
+                .filter(user ->
+                        organizationId == null
+                                || organizationId.equals(user.getTenantId())
+                )
+                .filter(UserPrincipal::isMfaEnabled)
+                .distinct()
+                .count();
+    }
+
+    public long countMfaPendingUsers(String organizationId) {
+        return users.values()
+                .stream()
+                .filter(user ->
+                        organizationId == null
+                                || organizationId.equals(user.getTenantId())
+                )
+                .filter(user -> !user.isMfaEnabled())
+                .distinct()
+                .count();
+    }
 
     public CustomUserDetailsService(PasswordEncoder passwordEncoder) {
         // Seed default admin and user for out-of-the-box testing

@@ -5,6 +5,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.core.user.OAuth2User;
+
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
@@ -24,8 +25,12 @@ public class UserPrincipal implements UserDetails, OAuth2User {
     private final String tenantId;
     private final Collection<? extends GrantedAuthority> authorities;
     private final Map<String, Object> attributes;
+
     private int failedAttempts = 0;
     private LocalDateTime lockedUntil;
+
+    // MFA status
+    private boolean mfaEnabled;
 
     public UserPrincipal(String id, String username, String email, String password, String tenantId,
                          Collection<? extends GrantedAuthority> authorities,
@@ -34,7 +39,9 @@ public class UserPrincipal implements UserDetails, OAuth2User {
         this.username = username;
         this.email = email;
         this.password = password;
-        this.tenantId = (tenantId != null && !tenantId.isBlank()) ? tenantId : TenantContext.DEFAULT_TENANT_ID;
+        this.tenantId = (tenantId != null && !tenantId.isBlank())
+                ? tenantId
+                : TenantContext.DEFAULT_TENANT_ID;
         this.authorities = authorities;
         this.attributes = attributes != null ? attributes : Collections.emptyMap();
     }
@@ -50,10 +57,14 @@ public class UserPrincipal implements UserDetails, OAuth2User {
         return create(username, email, password, roles, TenantContext.getTenantId());
     }
 
-    public static UserPrincipal create(String username, String email, String password, List<String> roles, String tenantId) {
+    public static UserPrincipal create(String username, String email, String password,
+                                       List<String> roles, String tenantId) {
         List<GrantedAuthority> authorities = (roles == null || roles.isEmpty())
                 ? List.of(new SimpleGrantedAuthority("ROLE_USER"))
-                : roles.stream().map(SimpleGrantedAuthority::new).map(GrantedAuthority.class::cast).toList();
+                : roles.stream()
+                .map(SimpleGrantedAuthority::new)
+                .map(GrantedAuthority.class::cast)
+                .toList();
 
         return UserPrincipal.builder()
                 .id(username)
@@ -99,24 +110,36 @@ public class UserPrincipal implements UserDetails, OAuth2User {
     // --- OAuth2User ---
 
     @Override
-    public Map<String, Object> getAttributes() { return attributes; }
+    public Map<String, Object> getAttributes() {
+        return attributes;
+    }
 
     @Override
-    public String getName() { return username; }
+    public String getName() {
+        return username;
+    }
 
     // --- UserDetails ---
 
     @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() { return authorities; }
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return authorities;
+    }
 
     @Override
-    public String getPassword() { return password; }
+    public String getPassword() {
+        return password;
+    }
 
     @Override
-    public String getUsername() { return username; }
+    public String getUsername() {
+        return username;
+    }
 
     @Override
-    public boolean isAccountNonExpired() { return true; }
+    public boolean isAccountNonExpired() {
+        return true;
+    }
 
     @Override
     public boolean isAccountNonLocked() {
@@ -124,26 +147,57 @@ public class UserPrincipal implements UserDetails, OAuth2User {
     }
 
     @Override
-    public boolean isCredentialsNonExpired() { return true; }
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
 
     @Override
-    public boolean isEnabled() { return true; }
+    public boolean isEnabled() {
+        return true;
+    }
 
     // --- Domain accessors ---
 
-    public String getId() { return id; }
-    public String getEmail() { return email; }
-    public String getTenantId() { return tenantId; }
+    public String getId() {
+        return id;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public String getTenantId() {
+        return tenantId;
+    }
 
     // --- Account lockout accessors (additive) ---
 
-    public int getFailedAttempts() { return failedAttempts; }
+    public int getFailedAttempts() {
+        return failedAttempts;
+    }
 
-    public void setFailedAttempts(int failedAttempts) { this.failedAttempts = failedAttempts; }
+    public void setFailedAttempts(int failedAttempts) {
+        this.failedAttempts = failedAttempts;
+    }
 
-    public LocalDateTime getLockedUntil() { return lockedUntil; }
+    public LocalDateTime getLockedUntil() {
+        return lockedUntil;
+    }
 
-    public void setLockedUntil(LocalDateTime lockedUntil) { this.lockedUntil = lockedUntil; }
+    public void setLockedUntil(LocalDateTime lockedUntil) {
+        this.lockedUntil = lockedUntil;
+    }
+
+    // --- MFA status ---
+
+    public boolean isMfaEnabled() {
+        return mfaEnabled;
+    }
+
+    public void setMfaEnabled(boolean mfaEnabled) {
+        this.mfaEnabled = mfaEnabled;
+    }
+
     // --- Builder ---
 
     public static class UserPrincipalBuilder {
@@ -155,16 +209,51 @@ public class UserPrincipal implements UserDetails, OAuth2User {
         private Collection<? extends GrantedAuthority> authorities;
         private Map<String, Object> attributes;
 
-        public UserPrincipalBuilder id(String id) { this.id = id; return this; }
-        public UserPrincipalBuilder username(String username) { this.username = username; return this; }
-        public UserPrincipalBuilder email(String email) { this.email = email; return this; }
-        public UserPrincipalBuilder password(String password) { this.password = password; return this; }
-        public UserPrincipalBuilder tenantId(String tenantId) { this.tenantId = tenantId; return this; }
-        public UserPrincipalBuilder authorities(Collection<? extends GrantedAuthority> authorities) { this.authorities = authorities; return this; }
-        public UserPrincipalBuilder attributes(Map<String, Object> attributes) { this.attributes = attributes; return this; }
+        public UserPrincipalBuilder id(String id) {
+            this.id = id;
+            return this;
+        }
+
+        public UserPrincipalBuilder username(String username) {
+            this.username = username;
+            return this;
+        }
+
+        public UserPrincipalBuilder email(String email) {
+            this.email = email;
+            return this;
+        }
+
+        public UserPrincipalBuilder password(String password) {
+            this.password = password;
+            return this;
+        }
+
+        public UserPrincipalBuilder tenantId(String tenantId) {
+            this.tenantId = tenantId;
+            return this;
+        }
+
+        public UserPrincipalBuilder authorities(Collection<? extends GrantedAuthority> authorities) {
+            this.authorities = authorities;
+            return this;
+        }
+
+        public UserPrincipalBuilder attributes(Map<String, Object> attributes) {
+            this.attributes = attributes;
+            return this;
+        }
 
         public UserPrincipal build() {
-            return new UserPrincipal(id, username, email, password, tenantId, authorities, attributes);
+            return new UserPrincipal(
+                    id,
+                    username,
+                    email,
+                    password,
+                    tenantId,
+                    authorities,
+                    attributes
+            );
         }
     }
 }
