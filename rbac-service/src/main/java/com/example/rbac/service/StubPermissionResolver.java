@@ -17,7 +17,7 @@ public class StubPermissionResolver implements PermissionResolver {
         // "HR manager" style user
         permissionsByUserId.put("user-hr-1", Set.of(
                 "USER_READ", "USER_CREATE", "USER_UPDATE",
-                "REPORT_VIEW"));
+                "REPORT_VIEW","ROLE_READ", "ROLE_CREATE"));
         // read-only user
         permissionsByUserId.put("user-readonly-1", Set.of(
                 "USER_READ", "REPORT_VIEW"));
