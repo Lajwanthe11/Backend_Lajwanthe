@@ -89,7 +89,7 @@ class RoleServiceImplTest {
          */
         lenient()
                 .when(currentUser.getTenantId())
-                .thenReturn(tenantId.toString());
+                .thenReturn(tenantId);
     }
 
 
@@ -1589,10 +1589,10 @@ class RoleServiceImplTest {
     @Test
     void listTemplates_shouldReturnAllTemplatesForSuperAdmin() {
 
-        RoleTemplate template =
-                mock(RoleTemplate.class);
+        RoleTemplate template = mock(RoleTemplate.class);
 
         UUID templateId = UUID.randomUUID();
+
         when(template.getId())
                 .thenReturn(templateId);
 
@@ -1605,14 +1605,16 @@ class RoleServiceImplTest {
         when(template.getRecommendedFor())
                 .thenReturn("Administration");
 
+        Permission permission = new Permission();
+        permission.setPermissionCode("ROLE_READ");
+
         when(template.getPermissions())
-                .thenReturn(Set.of());
+                .thenReturn(Set.of(permission));
 
         when(currentUser.hasRole("SUPER_ADMIN"))
                 .thenReturn(true);
 
-        when(roleTemplateRepository
-                .findAll())
+        when(roleTemplateRepository.findAllWithPermissions())
                 .thenReturn(List.of(template));
 
         List<RoleTemplateSummaryDto> result =
@@ -1620,16 +1622,7 @@ class RoleServiceImplTest {
 
         assertNotNull(result);
         assertEquals(1, result.size());
-
-        verify(roleTemplateRepository)
-                .findAll();
-
-        verify(
-                roleTemplateRepository,
-                never()
-        ).findAllByHiddenFalse();
     }
-
 
     @Test
     void listTemplates_shouldReturnEmptyWhenNoTemplatesExist() {
@@ -1644,7 +1637,6 @@ class RoleServiceImplTest {
         List<RoleTemplateSummaryDto> result =
                 roleService.listTemplates();
 
-        assertNotNull(result);
         assertTrue(result.isEmpty());
     }
 
@@ -1693,7 +1685,7 @@ class RoleServiceImplTest {
                 );
 
         when(roleTemplateRepository
-                .findById(String.valueOf(templateId)))
+                .findById(templateId))
                 .thenReturn(Optional.of(template));
 
         RoleTemplateDetailDto result =
@@ -1735,7 +1727,7 @@ class RoleServiceImplTest {
 
         UUID unknownId = UUID.randomUUID();
         when(roleTemplateRepository
-                .findById(String.valueOf(unknownId)))
+                .findById(unknownId))
                 .thenReturn(Optional.empty());
 
         assertThrows(

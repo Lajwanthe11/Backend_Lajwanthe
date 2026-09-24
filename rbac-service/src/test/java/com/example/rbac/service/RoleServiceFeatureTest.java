@@ -11,10 +11,7 @@ import com.example.rbac.entity.RoleHistory;
 import com.example.rbac.entity.RoleTemplate;
 import com.example.rbac.enums.RoleType;
 import com.example.rbac.exception.RoleNotFoundException;
-import com.example.rbac.repository.PermissionRepository;
-import com.example.rbac.repository.RoleHistoryRepository;
-import com.example.rbac.repository.RoleRepository;
-import com.example.rbac.repository.RoleTemplateRepository;
+import com.example.rbac.repository.*;
 import com.example.rbac.service.serviceImpl.RoleServiceImpl;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -63,6 +60,10 @@ class RoleServiceFeatureTest {
     @Mock
     private RoleExportService roleExportService;
 
+    @Mock
+    private RolePermissionRepository rolePermissionRepository;
+
+    @Mock
     private RoleServiceImpl roleService;
 
     private UUID roleId;
@@ -77,13 +78,15 @@ class RoleServiceFeatureTest {
         lenient().when(currentUserContext.getTenantId())
                 .thenReturn(tenantId);
 
+
         roleService = new RoleServiceImpl(
                 roleRepository,
                 roleTemplateRepository,
                 currentUserContext,
                 roleHistoryRepository,
                 roleExportService,
-                permissionRepository
+                permissionRepository,
+                rolePermissionRepository
         );
     }
 
