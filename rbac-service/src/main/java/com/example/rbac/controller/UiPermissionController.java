@@ -1,5 +1,6 @@
 package com.example.rbac.controller;
 
+import com.example.rbac.config.PublicEndpoint;
 import com.example.rbac.config.SecurityContextUtil;
 import com.example.rbac.dto.AuthenticatedUser;
 import com.example.rbac.dto.ModuleAccess;
@@ -36,6 +37,9 @@ public class UiPermissionController {
 
     // GET /api/v1/auth/me/permissions — returns all permissions of the current user
     // as a UI response.
+    // Every authenticated user may view their own permissions; JWT auth is enforced
+    // upstream by Spring Security — no extra RBAC permission check is required here.
+    @PublicEndpoint(reason = "Self-service endpoint: any authenticated user may read their own permissions")
     @GetMapping("/permissions")
     public UiPermissionResponse getMyPermissions() {
         AuthenticatedUser user = securityContextUtil.currentUser();
@@ -45,6 +49,7 @@ public class UiPermissionController {
 
     // GET /api/v1/auth/me/modules — returns only the module-level access map for
     // the current user.
+    @PublicEndpoint(reason = "Self-service endpoint: any authenticated user may read their own module access")
     @GetMapping("/modules")
     public Map<String, ModuleAccess> getMyModules() {
         return getMyPermissions().modules();
