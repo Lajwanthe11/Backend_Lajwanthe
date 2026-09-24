@@ -66,7 +66,7 @@ public class RoleController extends AbstractController<Role, UUID, RoleRequestDt
     // Only Super Admin can view templates per security responsibilities.
     @GetMapping("/templates")
     @RequirePermission("ROLE_READ")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    //@PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<List<RoleTemplateSummaryDto>> listTemplates() {
         return ResponseEntity.ok(roleService.listTemplates());
     }
@@ -74,7 +74,7 @@ public class RoleController extends AbstractController<Role, UUID, RoleRequestDt
     // GET /api/v1/roles/templates/{id} — get template detail with permissions list
     @GetMapping("/templates/{id}")
     @RequirePermission("ROLE_READ")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    //@PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<RoleTemplateDetailDto> getTemplateDetail(@PathVariable UUID id) {
         return ResponseEntity.ok(roleService.getTemplateDetail(id));
     }
@@ -82,7 +82,7 @@ public class RoleController extends AbstractController<Role, UUID, RoleRequestDt
     // Super Admin only — hide/show a template in the library (never deletes it)
     @PatchMapping("/templates/{id}/visibility")
     @RequirePermission("ROLE_READ")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    //@PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<Void> updateTemplateVisibility(
             @PathVariable UUID id,
             @RequestParam boolean hidden) {
