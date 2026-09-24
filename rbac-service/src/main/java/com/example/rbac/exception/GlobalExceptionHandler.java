@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+import com.example.common.exception.AppException;
 import com.example.rbac.dto.AccessDeniedResponse;
 import com.example.rbac.dto.response.ApiErrorResponse;
 import org.springframework.stereotype.Component;
@@ -32,6 +33,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(PermissionDeniedException.class)
     public ResponseEntity<AccessDeniedResponse> handlePermissionDenied(PermissionDeniedException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(AccessDeniedResponse.standard());
+    }
+
+    @ExceptionHandler(AppException.class)
+    public ResponseEntity<ApiErrorResponse> handleAppException(AppException ex) {
+        HttpStatus status = ex.getStatus() != null ? ex.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
+        return build(status, ex.getMessage(), Map.of());
     }
 
     @ExceptionHandler({ RoleAssignmentValidationException.class,

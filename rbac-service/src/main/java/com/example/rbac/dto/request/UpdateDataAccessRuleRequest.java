@@ -1,21 +1,19 @@
-package com.example.rbac.dto;
+package com.example.rbac.dto.request;
 
 import com.example.rbac.enums.ConditionOperator;
 import com.example.rbac.enums.RuleType;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Size;
 
 import java.util.UUID;
 
-public record CreateDataAccessRuleRequest(
+public record UpdateDataAccessRuleRequest(
 
-        @NotNull
         UUID roleId,
 
-        @NotBlank
         @Size(max = 50)
         String resourceType,
 
-        @NotNull
         RuleType ruleType,
 
         @Size(max = 100)
@@ -30,6 +28,8 @@ public record CreateDataAccessRuleRequest(
         String[] deniedFields,
 
         @Min(0)
-        Integer priority
+        Integer priority,
+
+        Boolean active
 ) {
 }

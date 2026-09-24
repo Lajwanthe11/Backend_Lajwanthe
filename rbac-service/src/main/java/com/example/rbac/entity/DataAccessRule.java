@@ -53,10 +53,10 @@ public class DataAccessRule {
     @Column(name = "condition_value", columnDefinition = "TEXT")
     private String conditionValue;
 
-    @Column(name = "allowed_fields", columnDefinition = "TEXT[]")
+    @Column(name = "allowed_fields")
     private String[] allowedFields;
 
-    @Column(name = "denied_fields", columnDefinition = "TEXT[]")
+    @Column(name = "denied_fields")
     private String[] deniedFields;
 
     @Column(name = "is_active", nullable = false)

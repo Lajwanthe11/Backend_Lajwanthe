@@ -1,8 +1,8 @@
 package com.example.rbac.service;
 
-import com.example.rbac.dto.DataAccessRuleResponse;
-import com.example.rbac.dto.RuleTestRequest;
-import com.example.rbac.dto.RuleTestResponse;
+import com.example.rbac.dto.request.RuleTestRequest;
+import com.example.rbac.dto.response.DataAccessRuleResponse;
+import com.example.rbac.dto.response.RuleTestResponse;
 import com.example.rbac.entity.DataAccessRule;
 import com.example.rbac.evaluator.*;
 import com.example.rbac.evaluator.FieldLevelRuleEvaluator.FieldEvaluationResult;

@@ -1,4 +1,4 @@
-package com.example.rbac.dto;
+package com.example.rbac.dto.response;
 
 import com.example.rbac.enums.ConditionOperator;
 import com.example.rbac.enums.RuleType;

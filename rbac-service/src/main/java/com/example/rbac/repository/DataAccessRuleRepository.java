@@ -1,4 +1,4 @@
-package com.example.rbac.repository;
+ package com.example.rbac.repository;
 
 import com.example.rbac.entity.DataAccessRule;
 import com.example.rbac.enums.RuleType;
