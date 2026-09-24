@@ -65,7 +65,7 @@ public class RoleController extends AbstractController<Role, UUID, RoleRequestDt
     // GET /api/v1/roles/templates — list all available role templates.
     // Only Super Admin can view templates per security responsibilities.
     @GetMapping("/templates")
-    @RequirePermission("USER_READ")
+    @RequirePermission("ROLE_READ")
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<List<RoleTemplateSummaryDto>> listTemplates() {
         return ResponseEntity.ok(roleService.listTemplates());
@@ -73,7 +73,7 @@ public class RoleController extends AbstractController<Role, UUID, RoleRequestDt
 
     // GET /api/v1/roles/templates/{id} — get template detail with permissions list
     @GetMapping("/templates/{id}")
-    @RequirePermission("USER_READ")
+    @RequirePermission("ROLE_READ")
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<RoleTemplateDetailDto> getTemplateDetail(@PathVariable UUID id) {
         return ResponseEntity.ok(roleService.getTemplateDetail(id));
@@ -81,7 +81,7 @@ public class RoleController extends AbstractController<Role, UUID, RoleRequestDt
 
     // Super Admin only — hide/show a template in the library (never deletes it)
     @PatchMapping("/templates/{id}/visibility")
-    @RequirePermission("USER_UPDATE")
+    @RequirePermission("ROLE_READ")
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<Void> updateTemplateVisibility(
             @PathVariable UUID id,
@@ -92,7 +92,7 @@ public class RoleController extends AbstractController<Role, UUID, RoleRequestDt
 
     // POST /api/v1/roles/{roleId}/clone — clone an existing role as a new role
     @PostMapping("/{roleId}/clone")
-    @RequirePermission("USER_CREATE")
+    @RequirePermission("ROLE_CREATE")
     public ResponseEntity<RoleResponseDto> cloneRole(
             @PathVariable UUID roleId,
             @Valid @RequestBody RoleCloneRequest request) {
@@ -101,7 +101,7 @@ public class RoleController extends AbstractController<Role, UUID, RoleRequestDt
 
     // GET /api/v1/roles/compare?role1Id=&role2Id= — compare permissions of two roles
     @GetMapping("/compare")
-    @RequirePermission("USER_READ")
+    @RequirePermission("ROLE_READ")
     public ResponseEntity<RoleCompareResponse> compareRoles(
             @RequestParam UUID role1Id,
             @RequestParam UUID role2Id) {
@@ -110,7 +110,7 @@ public class RoleController extends AbstractController<Role, UUID, RoleRequestDt
 
     // GET /api/v1/roles/{roleId}/history — get audit history of a specific role
     @GetMapping("/{roleId}/history")
-    @RequirePermission("USER_READ")
+    @RequirePermission("ROLE_READ")
     public ResponseEntity<List<RoleHistoryDto>> getHistory(@PathVariable UUID roleId) {
         return ResponseEntity.ok(roleService.getHistory(roleId));
     }
@@ -118,7 +118,7 @@ public class RoleController extends AbstractController<Role, UUID, RoleRequestDt
     // GET /api/v1/roles/export — export role list and permissions summary
     // Endpoint produces role and permission data only — never other tenants' data.
     @GetMapping("/export")
-    @RequirePermission("USER_READ")
+    @RequirePermission("ROLE_READ")
     public ResponseEntity<byte[]> exportRoles(@RequestParam(defaultValue = "csv") String format) {
         byte[] data = roleService.exportRoles(format);
         return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION,"attachment; filename=roles-export.csv").contentType(MediaType.parseMediaType("text/csv")).body(data);
@@ -126,7 +126,7 @@ public class RoleController extends AbstractController<Role, UUID, RoleRequestDt
 
     // GET /api/v1/roles/system — list all system (non-custom) roles
     @GetMapping("/system")
-    @RequirePermission("USER_READ")
+    @RequirePermission("ROLE_READ")
     public ResponseEntity<List<RoleResponseDto>> listSystemRoles() {
         return ResponseEntity.ok(roleService.listSystemRoles());
     }

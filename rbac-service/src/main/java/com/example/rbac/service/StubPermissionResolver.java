@@ -24,7 +24,7 @@ public class StubPermissionResolver implements PermissionResolver {
         // admin
         permissionsByUserId.put("user-admin-1", Set.of(
                 "USER_READ", "USER_CREATE", "USER_UPDATE", "USER_DELETE",
-                "REPORT_VIEW", "REPORT_EXPORT", "SECURITY_EVENTS_VIEW"));
+                "REPORT_VIEW", "REPORT_EXPORT", "SECURITY_EVENTS_VIEW", "ROLE_READ", "ROLE_CREATE"));
 
         permissionsByUserId.put("svc-internal-1", Set.of("INTERNAL_SERVICE"));
     }
