@@ -1,6 +1,6 @@
 package com.example.auth.service;
 
-import com.example.auth.audit.AuthAuditService;
+import com.example.auth.audit.service.AuditService;
 import com.example.auth.dto.AuthResponseDTO;
 import com.example.auth.dto.LoginRequestDTO;
 import com.example.auth.dto.RegisterRequestDTO;
@@ -40,23 +40,22 @@ public class AuthService {
 
     // NEW: password strength validation added for registration flow
     private final PasswordValidator passwordValidator;
-    private final SessionManagementService sessionManagementService;
 
     // Audit & Compliance
-    private final AuthAuditService authAuditService;
+    private final AuditService AuditService;
 
     public AuthService(AuthenticationManager authenticationManager,
                        CustomUserDetailsService customUserDetailsService,
                        PasswordEncoder passwordEncoder,
                        JwtTokenProvider tokenProvider,
                        PasswordValidator passwordValidator,
-                       AuthAuditService authAuditService) {
+                       AuditService AuditService) {
         this.authenticationManager = authenticationManager;
         this.customUserDetailsService = customUserDetailsService;
         this.passwordEncoder = passwordEncoder;
         this.tokenProvider = tokenProvider;
         this.passwordValidator = passwordValidator;
-        this.authAuditService = authAuditService;
+        this.AuditService = AuditService;
     }
 
     public AuthResponseDTO login(LoginRequestDTO loginRequest) {
@@ -107,7 +106,7 @@ public class AuthService {
                 }
             }
 
-            authAuditService.accountLocked(
+            AuditService.accountLocked(
                     loginRequest.getUsername(),
                     tenantId
             );
@@ -122,7 +121,7 @@ public class AuthService {
                     tenantId
             );
 
-            authAuditService.loginFailed(
+            AuditService.loginFailed(
                     loginRequest.getUsername(),
                     tenantId
             );
@@ -140,7 +139,7 @@ public class AuthService {
                 .setAuthentication(authentication);
 
         // Audit successful login
-        authAuditService.loginSuccess(
+        AuditService.loginSuccess(
                 loginRequest.getUsername(),
                 tenantId
         );
@@ -170,7 +169,7 @@ public class AuthService {
                 .username(loginRequest.getUsername())
                 .tenantId(tenantId)
                 .roles(roles)
-                .sessionId(sessionId)
+
                 .build();
     }
 
@@ -211,7 +210,7 @@ public class AuthService {
         );
 
         // Audit successful registration
-        authAuditService.userRegistered(
+        AuditService.userRegistered(
                 registerRequest.getUsername(),
                 tenantId
         );
@@ -260,7 +259,7 @@ public class AuthService {
                 );
 
         // Audit token refresh
-        authAuditService.tokenRefresh(
+        AuditService.tokenRefresh(
                 username,
                 tenantId
         );
