@@ -1,4 +1,5 @@
 package com.example.rbac.controller;
+import com.example.rbac.config.PublicEndpoint;
 
 import com.example.rbac.dto.PermissionGroupResponseDto;
 import com.example.rbac.dto.PermissionResponseDto;
@@ -13,6 +14,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
+@PublicEndpoint(reason = "Permission registry endpoint")
 @RequestMapping("/api/v1/permissions")
 public class PermissionController {
 
@@ -40,7 +42,6 @@ public class PermissionController {
     public PermissionResponseDto getPermission(@PathVariable UUID permId) {
         return permissionService.getById(permId);
     }
-
     // GET /api/v1/permissions/groups
     @GetMapping("/groups")
     public List<PermissionGroupResponseDto> listGroups() {
@@ -48,7 +49,7 @@ public class PermissionController {
     }
 
     // GET /api/v1/permissions/groups/{groupId}
-    @GetMapping("/groups/{groupId}")
+    @GetMapping("/groups/{groupId}") 
     public PermissionGroupResponseDto getGroup(@PathVariable UUID groupId) {
         return permissionGroupService.getGroupWithPermissions(groupId);
     }

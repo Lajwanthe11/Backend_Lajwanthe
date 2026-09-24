@@ -22,7 +22,7 @@ public interface PermissionRepository extends JpaRepository<Permission, UUID> {
     @Query("""
             SELECT p FROM Permission p
             WHERE (:groupId IS NULL OR p.group.groupId = :groupId)
-              AND (:module IS NULL OR LOWER(p.module) = LOWER(:module))
+              AND LOWER(p.module) = LOWER(COALESCE(:module, p.module))
               AND (:activeOnly = false OR p.active = true)
             """)
     Page<Permission> filter(@Param("groupId") UUID groupId,
