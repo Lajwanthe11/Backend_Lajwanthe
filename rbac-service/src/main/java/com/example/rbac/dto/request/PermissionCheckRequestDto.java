@@ -1,4 +1,4 @@
-package com.example.rbac.dto;
+package com.example.rbac.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 

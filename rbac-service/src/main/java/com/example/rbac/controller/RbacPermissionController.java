@@ -1,7 +1,7 @@
 package com.example.rbac.controller;
 
 import com.example.rbac.config.PublicEndpoint;
-import com.example.rbac.dto.PermissionCheckRequestDto;
+import com.example.rbac.dto.request.PermissionCheckRequestDto;
 import com.example.rbac.service.PermissionCacheService;
 import com.example.rbac.service.PermissionCheckService;
 import jakarta.validation.Valid;
