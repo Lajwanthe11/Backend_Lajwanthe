@@ -1,7 +1,6 @@
 package com.example.rbac.entity;
 
 import jakarta.persistence.*;
-import java.time.Instant;
 import java.util.*;
 
 @Entity
@@ -21,7 +20,6 @@ public class RoleTemplate {
     @Column(name = "recommended_for", length = 150)
     private String recommendedFor;
 
-    // Templates are never deleted, only hidden from the library by Super Admin.
     @Column(nullable = false)
     private boolean hidden = false;
 

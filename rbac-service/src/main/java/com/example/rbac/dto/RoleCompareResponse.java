@@ -1,7 +1,6 @@
 package com.example.rbac.dto;
 
 import java.util.UUID;
-
 import java.util.Set;
 
 public class RoleCompareResponse {

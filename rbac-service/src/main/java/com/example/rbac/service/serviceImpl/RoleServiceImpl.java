@@ -366,9 +366,7 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
                                 "customRoles", customRoles);
         }
 
-        // ---------------------------------------------------------------
-        // listTemplates()
-        // ---------------------------------------------------------------
+        // Returns all templates for Super Admins, or just visible ones for everyone else, mapped to a summary DTO.
         @Override
         public List<RoleTemplateSummaryDto> listTemplates() {
                 List<RoleTemplate> templates = currentUser.hasRole("SUPER_ADMIN")
@@ -385,9 +383,7 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
                         .toList();
         }
 
-        // ---------------------------------------------------------------
-        // getTemplateDetail()
-        // ---------------------------------------------------------------
+        // Fetches one template by ID and returns its details plus permission codes.
         @Override
         @Transactional(readOnly = true)
         public RoleTemplateDetailDto getTemplateDetail(UUID templateId) {
@@ -403,12 +399,7 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
                                 template.getRecommendedFor(), permissionCodes);
         }
 
-        // ---------------------------------------------------------------
-        // updateTemplateVisibility()
-        // Templates are never deleted — only hidden/shown in the library.
-        // Endpoint-level @PreAuthorize restricts this to Super Admin already;
-        // no additional role check needed here.
-        // ---------------------------------------------------------------
+        // Toggles a template's hidden/shown flag without deleting it.
         @Override
         @Transactional
         public void updateTemplateVisibility(UUID templateId, boolean hidden) {
@@ -418,9 +409,7 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
                 roleTemplateRepository.save(template);
         }
 
-        // ---------------------------------------------------------------
-        // listSystemRoles()
-        // ---------------------------------------------------------------
+        // Returns all SYSTEM-type roles for the current tenant.
         @Override
         public List<RoleResponseDto> listSystemRoles() {
                 UUID tenantId = getCurrentTenantUuid();
@@ -430,12 +419,7 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
                                 .toList();
         }
 
-        // ---------------------------------------------------------------
-        // cloneRole()
-        // NOTE: takes String ids (not UUID) — matches the current real service
-        // signature confirmed by your compile errors. Ids are parsed with
-        // UUID.fromString at the point they're actually needed as UUID.
-        // ---------------------------------------------------------------
+        // Clones a role's permissions into a new CUSTOM role with a unique code, and logs the action.
         @Override
         @Transactional
         public RoleResponseDto cloneRole(UUID sourceRoleId, RoleCloneRequest request) {
@@ -469,9 +453,7 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
                 return toDto(saved);
         }
 
-        // ---------------------------------------------------------------
-        // compareRoles()
-        // ---------------------------------------------------------------
+        // Compares two roles' permissions and returns shared and unique permissions between them.
         @Override
         @Transactional(readOnly = true)
         public RoleCompareResponse compareRoles(UUID role1Id, UUID role2Id) {
@@ -482,8 +464,6 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
                 Role role2 = roleRepository.findByIdAndTenantId(role2Id, tenantId)
                                 .orElseThrow(() -> new RoleNotFoundException(role2Id));
 
-                // Permission sets default to empty (never null) so roles with zero
-                // permissions compare cleanly instead of NPE-ing.
                 Set<String> perms1 = role1.getPermissions().stream()
                                 .map(Permission::getPermissionCode)
                                 .collect(Collectors.toCollection(HashSet::new));
@@ -506,9 +486,7 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
                                 shared, onlyIn1, onlyIn2);
         }
 
-        // ---------------------------------------------------------------
-        // getHistory()
-        // ---------------------------------------------------------------
+        // Returns the audit history of changes for a given role.
         @Override
         public List<RoleHistoryDto> getHistory(UUID roleId) {
                 UUID tenantId = getCurrentTenantUuid();
@@ -526,9 +504,7 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
                                 .toList();
         }
 
-        // ---------------------------------------------------------------
-        // exportRoles()
-        // ---------------------------------------------------------------
+        // Exports all of the tenant's roles in the requested file format.
         @Override
         public byte[] exportRoles(String format) {
                 UUID tenantId = getCurrentTenantUuid();
@@ -538,14 +514,14 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
                 return roleExportService.export(roles, format);
         }
 
-        // --- helpers ---
-
+        // Converts permission code strings into actual Permission entities.
         private Set<Permission> resolvePermissionsByCode(Set<String> codes) {
                 if (codes == null || codes.isEmpty())
                         return new HashSet<>();
                 return new HashSet<>(permissionRepository.findByPermissionCodeIn(new ArrayList<>(codes)));
         }
 
+        // Generates a unique, sanitized role code from a name.
         private String generateUniqueRoleCode(UUID tenantId, String baseName) {
                 String base = baseName.trim().toUpperCase().replaceAll("[^A-Z0-9]+", "_");
                 String candidate = base;
@@ -556,6 +532,7 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
                 return candidate;
         }
 
+        //Saves one audit-log entry for a role change.
         private void recordHistory(UUID roleId, String changeType, String fieldName,
                         String oldValue, String newValue) {
                 RoleHistory history = new RoleHistory();

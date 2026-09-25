@@ -69,11 +69,9 @@ public class Role {
 
     private Set<Permission> permissions = new HashSet<>();
 
-    // Source role this was cloned from, if any
     @Column(name = "cloned_from_role_id")
     private UUID clonedFromRoleId;
 
-    // Template this role was created from, if any
     @Column(name = "created_from_template_id")
     private String createdFromTemplateId;
 

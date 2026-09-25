@@ -1,6 +1,5 @@
 package com.example.rbac.entity;
 
-import com.example.common.abstracts.BaseEntity;
 import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.UUID;
@@ -13,8 +12,6 @@ public class RoleHistory {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    // Stored/queried as String to match findAllByRoleIdOrderByChangedAtDesc(String)
-    // used in the service — role id is converted to String at the call site.
     @Column(name = "role_id", nullable = false)
     private UUID roleId;
 
