@@ -14,17 +14,19 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.RedisTemplate;
 
+import com.example.rbac.service.serviceImpl.PermissionCacheServiceImpl;
+
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 @ExtendWith(MockitoExtension.class)
-class PermissionCacheServiceTest {
+class PermissionCacheServiceImplTest {
 
     @Mock
     private RedisTemplate<String, String> redisTemplate;
 
     private SimpleMeterRegistry meterRegistry;
 
-    private PermissionCacheService permissionCacheService;
+    private PermissionCacheServiceImpl permissionCacheService;
 
     @BeforeEach
     void setUp() {
@@ -32,7 +34,7 @@ class PermissionCacheServiceTest {
         meterRegistry = new SimpleMeterRegistry();
 
         permissionCacheService =
-                new PermissionCacheService(
+                new PermissionCacheServiceImpl(
                         redisTemplate,
                         meterRegistry);
     }

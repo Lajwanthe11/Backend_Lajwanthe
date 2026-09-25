@@ -19,18 +19,20 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import com.example.common.tenant.TenantContext;
+import com.example.rbac.service.serviceImpl.PermissionCheckServiceImpl;
 
 @ExtendWith(MockitoExtension.class)
-class PermissionCheckServiceTest {
-  
- @Mock
+class PermissionCheckServiceImplTest {
+
+    @Mock
     private PermissionResolver permissionResolver;
 
-    private PermissionCheckService permissionCheckService;
+    private PermissionCheckServiceImpl permissionCheckService;
 
     @BeforeEach
     void setUp() {
-        permissionCheckService = new PermissionCheckService(permissionResolver);
+        permissionCheckService =
+                new PermissionCheckServiceImpl(permissionResolver);
     }
 
     @AfterEach
@@ -110,9 +112,10 @@ class PermissionCheckServiceTest {
         when(permissionResolver.resolvePermissions("user1", "tenant1"))
                 .thenReturn(permissions);
 
-        Set<String> result = permissionCheckService.getResolvedPermissions(
-                "user1",
-                "tenant1");
+        Set<String> result =
+                permissionCheckService.getResolvedPermissions(
+                        "user1",
+                        "tenant1");
 
         assertEquals(permissions, result);
     }
@@ -145,7 +148,8 @@ class PermissionCheckServiceTest {
                 "tenant1"))
                 .thenReturn(Set.of("USER_READ"));
 
-        boolean result = permissionCheckService.hasPermission("USER_READ");
+        boolean result =
+                permissionCheckService.hasPermission("USER_READ");
 
         assertTrue(result);
     }
@@ -174,7 +178,8 @@ class PermissionCheckServiceTest {
                 "tenant1"))
                 .thenReturn(Set.of("USER_READ"));
 
-        boolean result = permissionCheckService.hasPermission("USER_DELETE");
+        boolean result =
+                permissionCheckService.hasPermission("USER_DELETE");
 
         assertFalse(result);
     }
@@ -184,7 +189,8 @@ class PermissionCheckServiceTest {
 
         SecurityContextHolder.clearContext();
 
-        boolean result = permissionCheckService.hasPermission("USER_READ");
+        boolean result =
+                permissionCheckService.hasPermission("USER_READ");
 
         assertFalse(result);
     }
@@ -203,9 +209,9 @@ class PermissionCheckServiceTest {
 
         SecurityContextHolder.setContext(securityContext);
 
-        boolean result = permissionCheckService.hasPermission("USER_READ");
+        boolean result =
+                permissionCheckService.hasPermission("USER_READ");
 
         assertFalse(result);
     }
-
 }

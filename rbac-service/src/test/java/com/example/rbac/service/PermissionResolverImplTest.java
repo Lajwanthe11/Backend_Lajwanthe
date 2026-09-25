@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -21,6 +20,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -38,13 +38,17 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 @ExtendWith(MockitoExtension.class)
 class PermissionResolverImplTest {
 
-    private static final String USER_ID = "550e8400-e29b-41d4-a716-446655440000";
+    private static final String USER_ID =
+            "550e8400-e29b-41d4-a716-446655440000";
 
-    private static final String ADMIN_ID = "550e8400-e29b-41d4-a716-446655440001";
+    private static final String ADMIN_ID =
+            "550e8400-e29b-41d4-a716-446655440001";
 
-    private static final String TENANT_1 = "550e8400-e29b-41d4-a716-446655440010";
+    private static final String TENANT_1 =
+            "550e8400-e29b-41d4-a716-446655440010";
 
-    private static final String TENANT_2 = "550e8400-e29b-41d4-a716-446655440011";
+    private static final String TENANT_2 =
+            "550e8400-e29b-41d4-a716-446655440011";
 
     @Mock
     private JdbcTemplate jdbcTemplate;
@@ -90,9 +94,10 @@ class PermissionResolverImplTest {
                 "perms:" + TENANT_1 + ":" + USER_ID))
                 .thenReturn(cachedPermissions);
 
-        Set<String> result = permissionResolver.resolvePermissions(
-                USER_ID,
-                TENANT_1);
+        Set<String> result =
+                permissionResolver.resolvePermissions(
+                        USER_ID,
+                        TENANT_1);
 
         assertEquals(cachedPermissions, result);
 
@@ -119,16 +124,17 @@ class PermissionResolverImplTest {
 
         when(jdbcTemplate.query(
                 anyString(),
-                any(RowMapper.class),
+                ArgumentMatchers.<RowMapper<String>>any(),
                 eq(UUID.fromString(USER_ID)),
                 eq(UUID.fromString(TENANT_1))))
                 .thenReturn(List.of(
                         "USER_READ",
                         "USER_CREATE"));
 
-        Set<String> result = permissionResolver.resolvePermissions(
-                USER_ID,
-                TENANT_1);
+        Set<String> result =
+                permissionResolver.resolvePermissions(
+                        USER_ID,
+                        TENANT_1);
 
         assertEquals(
                 Set.of("USER_READ", "USER_CREATE"),
@@ -149,15 +155,16 @@ class PermissionResolverImplTest {
                 eq(UUID.fromString(TENANT_1))))
                 .thenReturn(1);
 
-        Set<String> result = permissionResolver.resolvePermissions(
-                ADMIN_ID,
-                TENANT_1);
+        Set<String> result =
+                permissionResolver.resolvePermissions(
+                        ADMIN_ID,
+                        TENANT_1);
 
         assertEquals(Set.of("*"), result);
 
         verify(jdbcTemplate, never()).query(
                 anyString(),
-                any(RowMapper.class),
+                ArgumentMatchers.<RowMapper<String>>any(),
                 eq(UUID.fromString(ADMIN_ID)),
                 eq(UUID.fromString(TENANT_1)));
     }
@@ -179,16 +186,19 @@ class PermissionResolverImplTest {
 
         when(jdbcTemplate.query(
                 anyString(),
-                any(RowMapper.class),
+                ArgumentMatchers.<RowMapper<String>>any(),
                 eq(UUID.fromString(USER_ID)),
                 eq(UUID.fromString(TENANT_1))))
                 .thenReturn(List.of("USER_READ"));
 
-        Set<String> result = permissionResolver.resolvePermissions(
-                USER_ID,
-                TENANT_1);
+        Set<String> result =
+                permissionResolver.resolvePermissions(
+                        USER_ID,
+                        TENANT_1);
 
-        assertEquals(Set.of("USER_READ"), result);
+        assertEquals(
+                Set.of("USER_READ"),
+                result);
 
         assertEquals(
                 1.0,
@@ -213,11 +223,12 @@ class PermissionResolverImplTest {
                         new RuntimeException(
                                 "Database unavailable"));
 
-        ResponseStatusException exception = assertThrows(
-                ResponseStatusException.class,
-                () -> permissionResolver.resolvePermissions(
-                        USER_ID,
-                        TENANT_1));
+        ResponseStatusException exception =
+                assertThrows(
+                        ResponseStatusException.class,
+                        () -> permissionResolver.resolvePermissions(
+                                USER_ID,
+                                TENANT_1));
 
         assertTrue(
                 exception.getStatusCode()
@@ -240,16 +251,19 @@ class PermissionResolverImplTest {
 
         when(jdbcTemplate.query(
                 anyString(),
-                any(RowMapper.class),
+                ArgumentMatchers.<RowMapper<String>>any(),
                 eq(UUID.fromString(USER_ID)),
                 eq(UUID.fromString(TENANT_1))))
                 .thenReturn(List.of("USER_READ"));
 
-        Set<String> result = permissionResolver.resolvePermissions(
-                USER_ID,
-                TENANT_1);
+        Set<String> result =
+                permissionResolver.resolvePermissions(
+                        USER_ID,
+                        TENANT_1);
 
-        assertEquals(Set.of("USER_READ"), result);
+        assertEquals(
+                Set.of("USER_READ"),
+                result);
 
         verify(setOperations).add(
                 "perms:" + TENANT_1 + ":" + USER_ID,
@@ -276,14 +290,15 @@ class PermissionResolverImplTest {
 
         when(jdbcTemplate.query(
                 anyString(),
-                any(RowMapper.class),
+                ArgumentMatchers.<RowMapper<String>>any(),
                 eq(UUID.fromString(USER_ID)),
                 eq(UUID.fromString(TENANT_1))))
                 .thenReturn(List.of());
 
-        Set<String> result = permissionResolver.resolvePermissions(
-                USER_ID,
-                TENANT_1);
+        Set<String> result =
+                permissionResolver.resolvePermissions(
+                        USER_ID,
+                        TENANT_1);
 
         assertTrue(result.isEmpty());
 
@@ -303,9 +318,10 @@ class PermissionResolverImplTest {
                 "perms:" + TENANT_1 + ":" + USER_ID))
                 .thenReturn(Set.of("__NO_PERMISSIONS__"));
 
-        Set<String> result = permissionResolver.resolvePermissions(
-                USER_ID,
-                TENANT_1);
+        Set<String> result =
+                permissionResolver.resolvePermissions(
+                        USER_ID,
+                        TENANT_1);
 
         assertTrue(result.isEmpty());
 
@@ -325,9 +341,10 @@ class PermissionResolverImplTest {
                 "perms:" + TENANT_1 + ":" + USER_ID))
                 .thenReturn(Set.of("USER_READ"));
 
-        boolean result = permissionResolver.hasPermission(
-                USER_ID,
-                "USER_READ");
+        boolean result =
+                permissionResolver.hasPermission(
+                        USER_ID,
+                        "USER_READ");
 
         assertTrue(result);
     }
@@ -341,9 +358,10 @@ class PermissionResolverImplTest {
                 "perms:" + TENANT_1 + ":" + USER_ID))
                 .thenReturn(Set.of("USER_READ"));
 
-        boolean result = permissionResolver.hasPermission(
-                USER_ID,
-                "USER_DELETE");
+        boolean result =
+                permissionResolver.hasPermission(
+                        USER_ID,
+                        "USER_DELETE");
 
         assertFalse(result);
     }
@@ -357,9 +375,10 @@ class PermissionResolverImplTest {
                 "perms:" + TENANT_1 + ":" + ADMIN_ID))
                 .thenReturn(Set.of("*"));
 
-        boolean result = permissionResolver.hasPermission(
-                ADMIN_ID,
-                "ANY_PERMISSION");
+        boolean result =
+                permissionResolver.hasPermission(
+                        ADMIN_ID,
+                        "ANY_PERMISSION");
 
         assertTrue(result);
     }
@@ -373,9 +392,10 @@ class PermissionResolverImplTest {
                 "perms:" + TENANT_2 + ":" + USER_ID))
                 .thenReturn(Set.of("USER_READ"));
 
-        boolean result = permissionResolver.hasPermission(
-                USER_ID,
-                "USER_READ");
+        boolean result =
+                permissionResolver.hasPermission(
+                        USER_ID,
+                        "USER_READ");
 
         assertTrue(result);
 

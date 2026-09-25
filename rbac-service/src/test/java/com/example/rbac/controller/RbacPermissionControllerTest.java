@@ -15,8 +15,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.example.rbac.service.PermissionCacheService;
@@ -29,10 +29,10 @@ class RbacPermissionControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @MockitoBean
     private PermissionCheckService permissionCheckService;
 
-    @MockBean
+    @MockitoBean
     private PermissionCacheService permissionCacheService;
 
     // ============================================================
@@ -46,29 +46,27 @@ class RbacPermissionControllerTest {
         when(permissionCheckService.hasPermission(
                 "user-001",
                 "tenant-001",
-                "EMPLOYEE_VIEW"
-        )).thenReturn(true);
+                "EMPLOYEE_VIEW"))
+                .thenReturn(true);
 
         mockMvc.perform(
                 post("/api/v1/auth/permissions/check")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "userId": "user-001",
-                                  "tenantId": "tenant-001",
-                                  "permissionCode": "EMPLOYEE_VIEW"
+                                    "userId": "user-001",
+                                    "tenantId": "tenant-001",
+                                    "permissionCode": "EMPLOYEE_VIEW"
                                 }
-                                """)
-        )
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.allowed").value(true));
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.allowed").value(true));
 
         verify(permissionCheckService)
                 .hasPermission(
                         "user-001",
                         "tenant-001",
-                        "EMPLOYEE_VIEW"
-                );
+                        "EMPLOYEE_VIEW");
     }
 
     @Test
@@ -78,29 +76,27 @@ class RbacPermissionControllerTest {
         when(permissionCheckService.hasPermission(
                 "user-001",
                 "tenant-001",
-                "EMPLOYEE_DELETE"
-        )).thenReturn(false);
+                "EMPLOYEE_DELETE"))
+                .thenReturn(false);
 
         mockMvc.perform(
                 post("/api/v1/auth/permissions/check")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "userId": "user-001",
-                                  "tenantId": "tenant-001",
-                                  "permissionCode": "EMPLOYEE_DELETE"
+                                    "userId": "user-001",
+                                    "tenantId": "tenant-001",
+                                    "permissionCode": "EMPLOYEE_DELETE"
                                 }
-                                """)
-        )
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.allowed").value(false));
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.allowed").value(false));
 
         verify(permissionCheckService)
                 .hasPermission(
                         "user-001",
                         "tenant-001",
-                        "EMPLOYEE_DELETE"
-                );
+                        "EMPLOYEE_DELETE");
     }
 
     // ============================================================
@@ -116,13 +112,12 @@ class RbacPermissionControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "userId": "user-001",
-                                  "tenantId": "tenant-001",
-                                  "permissionCode": ""
+                                    "userId": "user-001",
+                                    "tenantId": "tenant-001",
+                                    "permissionCode": ""
                                 }
-                                """)
-        )
-        .andExpect(status().isBadRequest());
+                                """))
+                .andExpect(status().isBadRequest());
 
         verifyNoInteractions(permissionCheckService);
     }
@@ -136,12 +131,11 @@ class RbacPermissionControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "userId": "user-001",
-                                  "tenantId": "tenant-001"
+                                    "userId": "user-001",
+                                    "tenantId": "tenant-001"
                                 }
-                                """)
-        )
-        .andExpect(status().isBadRequest());
+                                """))
+                .andExpect(status().isBadRequest());
 
         verifyNoInteractions(permissionCheckService);
     }
@@ -155,13 +149,12 @@ class RbacPermissionControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "userId": null,
-                                  "tenantId": "tenant-001",
-                                  "permissionCode": "EMPLOYEE_VIEW"
+                                    "userId": null,
+                                    "tenantId": "tenant-001",
+                                    "permissionCode": "EMPLOYEE_VIEW"
                                 }
-                                """)
-        )
-        .andExpect(status().isBadRequest());
+                                """))
+                .andExpect(status().isBadRequest());
 
         verifyNoInteractions(permissionCheckService);
     }
@@ -175,13 +168,12 @@ class RbacPermissionControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "userId": "user-001",
-                                  "tenantId": null,
-                                  "permissionCode": "EMPLOYEE_VIEW"
+                                    "userId": "user-001",
+                                    "tenantId": null,
+                                    "permissionCode": "EMPLOYEE_VIEW"
                                 }
-                                """)
-        )
-        .andExpect(status().isBadRequest());
+                                """))
+                .andExpect(status().isBadRequest());
 
         verifyNoInteractions(permissionCheckService);
     }
@@ -197,34 +189,29 @@ class RbacPermissionControllerTest {
         Set<String> permissions = Set.of(
                 "USER_VIEW",
                 "EMPLOYEE_VIEW",
-                "EMPLOYEE_UPDATE"
-        );
+                "EMPLOYEE_UPDATE");
 
         when(permissionCheckService.getResolvedPermissions(
                 "user-001",
-                "tenant-001"
-        )).thenReturn(permissions);
+                "tenant-001"))
+                .thenReturn(permissions);
 
         mockMvc.perform(
                 get("/api/v1/users/user-001/permissions/resolved")
-                        .param("tenantId", "tenant-001")
-        )
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$").isArray())
-        .andExpect(jsonPath("$").isNotEmpty())
-        .andExpect(jsonPath("$").value(
-                org.hamcrest.Matchers.containsInAnyOrder(
-                        "USER_VIEW",
-                        "EMPLOYEE_VIEW",
-                        "EMPLOYEE_UPDATE"
-                )
-        ));
+                        .param("tenantId", "tenant-001"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$").isNotEmpty())
+                .andExpect(jsonPath("$").value(
+                        org.hamcrest.Matchers.containsInAnyOrder(
+                                "USER_VIEW",
+                                "EMPLOYEE_VIEW",
+                                "EMPLOYEE_UPDATE")));
 
         verify(permissionCheckService)
                 .getResolvedPermissions(
                         "user-001",
-                        "tenant-001"
-                );
+                        "tenant-001");
     }
 
     @Test
@@ -233,22 +220,20 @@ class RbacPermissionControllerTest {
 
         when(permissionCheckService.getResolvedPermissions(
                 "user-002",
-                "tenant-001"
-        )).thenReturn(Set.of());
+                "tenant-001"))
+                .thenReturn(Set.of());
 
         mockMvc.perform(
                 get("/api/v1/users/user-002/permissions/resolved")
-                        .param("tenantId", "tenant-001")
-        )
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$").isArray())
-        .andExpect(jsonPath("$").isEmpty());
+                        .param("tenantId", "tenant-001"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$").isEmpty());
 
         verify(permissionCheckService)
                 .getResolvedPermissions(
                         "user-002",
-                        "tenant-001"
-                );
+                        "tenant-001");
     }
 
     // ============================================================
@@ -263,20 +248,17 @@ class RbacPermissionControllerTest {
                 .when(permissionCacheService)
                 .clearUserPermissionsCache(
                         "user-001",
-                        "tenant-001"
-                );
+                        "tenant-001");
 
         mockMvc.perform(
                 post("/api/v1/users/user-001/permissions/cache/clear")
-                        .param("tenantId", "tenant-001")
-        )
-        .andExpect(status().isNoContent());
+                        .param("tenantId", "tenant-001"))
+                .andExpect(status().isNoContent());
 
         verify(permissionCacheService)
                 .clearUserPermissionsCache(
                         "user-001",
-                        "tenant-001"
-                );
+                        "tenant-001");
     }
 
     // ============================================================
@@ -288,9 +270,8 @@ class RbacPermissionControllerTest {
             throws Exception {
 
         mockMvc.perform(
-                get("/api/v1/users/user-001/permissions/resolved")
-        )
-        .andExpect(status().isBadRequest());
+                get("/api/v1/users/user-001/permissions/resolved"))
+                .andExpect(status().isBadRequest());
 
         verifyNoInteractions(permissionCheckService);
     }
@@ -300,9 +281,8 @@ class RbacPermissionControllerTest {
             throws Exception {
 
         mockMvc.perform(
-                post("/api/v1/users/user-001/permissions/cache/clear")
-        )
-        .andExpect(status().isBadRequest());
+                post("/api/v1/users/user-001/permissions/cache/clear"))
+                .andExpect(status().isBadRequest());
 
         verifyNoInteractions(permissionCacheService);
     }
