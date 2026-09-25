@@ -1,9 +1,11 @@
 package com.example.rbac.dto;
 
 import java.time.Instant;
+import java.util.UUID;
 
 public class RoleHistoryDto {
 
+    private UUID id;
     private String changedByName;
     private Instant changedAt;
     private String changeType;
@@ -11,8 +13,9 @@ public class RoleHistoryDto {
     private String oldValue;
     private String newValue;
 
-    public RoleHistoryDto(String changedByName, Instant changedAt, String changeType,
+    public RoleHistoryDto(UUID id ,String changedByName, Instant changedAt, String changeType,
                           String fieldName, String oldValue, String newValue) {
+        this.id = id;
         this.changedByName = changedByName;
         this.changedAt = changedAt;
         this.changeType = changeType;

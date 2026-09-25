@@ -499,7 +499,7 @@ public class RoleServiceImpl extends AbstractService<Role, UUID, RoleRequestDto,
                 return roleHistoryRepository.findAllByRoleIdOrderByChangedAtDesc(roleId)
                                 .stream()
                                 .map(h -> new RoleHistoryDto(
-                                                h.getChangedByName(), h.getChangedAt(), h.getChangeType(),
+                                                h.getId(),h.getChangedByName(), h.getChangedAt(), h.getChangeType(),
                                                 h.getFieldName(), h.getOldValue(), h.getNewValue()))
                                 .toList();
         }
