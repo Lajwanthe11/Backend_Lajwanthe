@@ -3,16 +3,19 @@
 package com.example.rbac.service.serviceImpl;
 
 import com.example.common.tenant.TenantContext;
-import com.example.rbac.dto.CustomRoleRequest;
+import com.example.rbac.dto.request.CustomRoleRequest;
+
 import com.example.rbac.dto.CustomRoleResponse;
 import com.example.rbac.entity.CustomRoleConfig;
 import com.example.rbac.entity.CustomRoleVersion;
+import com.example.rbac.entity.Permission;
 import com.example.rbac.entity.Role;
 import com.example.rbac.enums.CustomRoleStatus;
 import com.example.rbac.enums.RoleType;
 import com.example.rbac.repository.CustomRoleConfigRepository;
 import com.example.rbac.repository.CustomRoleDataRepository;
 import com.example.rbac.repository.CustomRoleVersionRepository;
+import com.example.rbac.repository.PermissionRepository;
 import com.example.rbac.service.CustomRoleService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -21,9 +24,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -32,13 +39,15 @@ public class CustomRoleServiceImpl implements CustomRoleService {
     private final CustomRoleDataRepository roleRepository;
     private final CustomRoleConfigRepository configRepository;
     private final CustomRoleVersionRepository versionRepository;
+    private final PermissionRepository permissionRepository;
     private final ObjectMapper objectMapper;
 
-    public CustomRoleServiceImpl(CustomRoleDataRepository roleRepository, CustomRoleConfigRepository configRepository, CustomRoleVersionRepository versionRepository, ObjectMapper objectMapper) {
+    public CustomRoleServiceImpl(CustomRoleDataRepository roleRepository, CustomRoleConfigRepository configRepository, CustomRoleVersionRepository versionRepository, PermissionRepository permissionRepository, ObjectMapper objectMapper) {
 
         this.roleRepository = roleRepository;
         this.configRepository = configRepository;
         this.versionRepository = versionRepository;
+        this.permissionRepository = permissionRepository;
         this.objectMapper = objectMapper;
     }
 
@@ -62,7 +71,7 @@ public class CustomRoleServiceImpl implements CustomRoleService {
 
         String tenantId = tenant();
 
-        if (roleRepository.existsByRoleNameIgnoreCaseAndTenantId(request.getRoleName(), tenantId)) {
+        if (roleRepository.existsByRoleNameIgnoreCaseAndTenantId(request.getRoleName(), tenantId, RoleType.CUSTOM)) {
 
             throw new IllegalArgumentException("Role name already exists");
         }
@@ -74,25 +83,23 @@ public class CustomRoleServiceImpl implements CustomRoleService {
             roleCode = request.getRoleName().trim().toUpperCase().replaceAll("[^A-Z0-9]+", "_");
         }
 
-        if (roleRepository.existsByRoleCodeIgnoreCaseAndTenantId(roleCode, tenantId)) {
+        if (roleRepository.existsByRoleCodeIgnoreCaseAndTenantId(roleCode, tenantId, RoleType.CUSTOM)) {
 
             throw new IllegalArgumentException("Role code already exists");
         }
 
+        List<UUID> permissionIds = normalizePermissions(request.getPermissionIds());
+
+        validatePermissions(permissionIds);
+
         Role role = new Role();
 
         role.setRoleName(request.getRoleName().trim());
-
         role.setRoleCode(roleCode.trim().toUpperCase());
-
         role.setRoleType(RoleType.CUSTOM);
-
         role.setDescription(request.getDescription());
-
         role.setStatus("DRAFT");
-
         role.setIsDeleted(false);
-
         role.setTenantId(UUID.fromString(tenantId));
 
         role = roleRepository.save(role);
@@ -100,24 +107,18 @@ public class CustomRoleServiceImpl implements CustomRoleService {
         CustomRoleConfig config = new CustomRoleConfig();
 
         config.setRoleId(role.getId());
-
         config.setTenantId(tenantId);
-
         config.setDraftVersion(1);
-
         config.setPublishedVersion(0);
-
         config.setStatus(CustomRoleStatus.DRAFT);
-
         config.setCreatedBy(currentUser());
-
         config.setCreatedAt(LocalDateTime.now());
 
         config = configRepository.save(config);
 
-        saveVersion(role.getId(), tenantId, 1, request.getPermissionIds(), CustomRoleStatus.DRAFT, request.getPublishNotes());
+        saveVersion(role.getId(), tenantId, 1, permissionIds, CustomRoleStatus.DRAFT, request.getPublishNotes());
 
-        return response(role, config, request.getPermissionIds());
+        return response(role, config, permissionIds);
     }
 
     @Override
@@ -132,7 +133,7 @@ public class CustomRoleServiceImpl implements CustomRoleService {
 
         for (CustomRoleConfig config : configs) {
 
-            Role role = roleRepository.findByIdAndTenantId(config.getRoleId(), tenantId).orElse(null);
+            Role role = roleRepository.findByIdAndTenantIdAndRoleType(config.getRoleId(), tenantId, RoleType.CUSTOM).orElse(null);
 
             if (role == null) {
                 continue;
@@ -145,15 +146,12 @@ public class CustomRoleServiceImpl implements CustomRoleService {
             Integer version;
 
             if (config.getStatus() == CustomRoleStatus.PUBLISHED) {
-
                 version = config.getPublishedVersion();
-
             } else {
-
                 version = config.getDraftVersion();
             }
 
-            List<Long> permissions = getPermissions(role.getId(), tenantId, version);
+            List<UUID> permissions = getPermissions(role.getId(), tenantId, version);
 
             result.add(response(role, config, permissions));
         }
@@ -171,13 +169,12 @@ public class CustomRoleServiceImpl implements CustomRoleService {
         CustomRoleConfig config = getConfig(roleId, tenantId);
 
         if (config.getStatus() == CustomRoleStatus.ARCHIVED) {
-
             throw new IllegalStateException("Archived custom role cannot be updated");
         }
 
         if (!role.getRoleName().equalsIgnoreCase(request.getRoleName())) {
 
-            if (roleRepository.existsByRoleNameIgnoreCaseAndTenantId(request.getRoleName(), tenantId)) {
+            if (roleRepository.existsByRoleNameIgnoreCaseAndTenantId(request.getRoleName(), tenantId, RoleType.CUSTOM)) {
 
                 throw new IllegalArgumentException("Role name already exists");
             }
@@ -189,7 +186,7 @@ public class CustomRoleServiceImpl implements CustomRoleService {
 
         if (request.getRoleCode() != null && !request.getRoleCode().isBlank() && !role.getRoleCode().equalsIgnoreCase(request.getRoleCode())) {
 
-            if (roleRepository.existsByRoleCodeIgnoreCaseAndTenantId(request.getRoleCode(), tenantId)) {
+            if (roleRepository.existsByRoleCodeIgnoreCaseAndTenantId(request.getRoleCode(), tenantId, RoleType.CUSTOM)) {
 
                 throw new IllegalArgumentException("Role code already exists");
             }
@@ -197,30 +194,28 @@ public class CustomRoleServiceImpl implements CustomRoleService {
             role.setRoleCode(request.getRoleCode().trim().toUpperCase());
         }
 
+        List<UUID> permissionIds = normalizePermissions(request.getPermissionIds());
+
+        validatePermissions(permissionIds);
+
         int version = nextVersion(roleId, tenantId);
 
-        saveVersion(roleId, tenantId, version, request.getPermissionIds(), CustomRoleStatus.DRAFT, request.getPublishNotes());
+        saveVersion(roleId, tenantId, version, permissionIds, CustomRoleStatus.DRAFT, request.getPublishNotes());
 
         config.setDraftVersion(version);
-
         config.setStatus(CustomRoleStatus.DRAFT);
-
         config.setPublishNotes(request.getPublishNotes());
 
         if (config.getPublishedVersion() > 0) {
-
             role.setStatus("ACTIVE");
-
         } else {
-
             role.setStatus("DRAFT");
         }
 
         roleRepository.save(role);
-
         configRepository.save(config);
 
-        return response(role, config, request.getPermissionIds());
+        return response(role, config, permissionIds);
     }
 
     @Override
@@ -284,12 +279,16 @@ public class CustomRoleServiceImpl implements CustomRoleService {
 
         CustomRoleConfig config = getConfig(roleId, tenantId);
 
+        if (config.getStatus() == CustomRoleStatus.ARCHIVED) {
+
+            throw new IllegalStateException("Custom role is already archived");
+        }
+
         config.setStatus(CustomRoleStatus.ARCHIVED);
 
         configRepository.save(config);
 
         role.setStatus("ARCHIVED");
-
         role.setIsDeleted(true);
 
         roleRepository.save(role);
@@ -340,9 +339,16 @@ public class CustomRoleServiceImpl implements CustomRoleService {
 
         CustomRoleConfig config = getConfig(roleId, tenantId);
 
+        if (config.getStatus() == CustomRoleStatus.ARCHIVED) {
+
+            throw new IllegalStateException("Archived custom role cannot be reverted");
+        }
+
         CustomRoleVersion oldVersion = versionRepository.findByRoleIdAndTenantIdAndVersionNumber(roleId, tenantId, versionNumber).orElseThrow(() -> new IllegalArgumentException("Version not found"));
 
-        List<Long> permissions = readPermissions(oldVersion.getPermissionSnapshot());
+        List<UUID> permissions = readPermissions(oldVersion.getPermissionSnapshot());
+
+        validatePermissions(permissions);
 
         int newVersion = nextVersion(roleId, tenantId);
 
@@ -377,16 +383,13 @@ public class CustomRoleServiceImpl implements CustomRoleService {
         return Map.of("tenantId", tenantId, "currentCustomRoles", count, "limit", "LICENSE_INTEGRATION_PENDING");
     }
 
-    private void saveVersion(UUID roleId, String tenantId, int number, List<Long> permissions, CustomRoleStatus status, String notes) {
+    private void saveVersion(UUID roleId, String tenantId, int number, List<UUID> permissions, CustomRoleStatus status, String notes) {
 
         CustomRoleVersion version = new CustomRoleVersion();
 
         version.setRoleId(roleId);
-
         version.setTenantId(tenantId);
-
         version.setVersionNumber(number);
-
         version.setStatus(status);
 
         version.setPermissionSnapshot(writePermissions(permissions));
@@ -405,10 +408,9 @@ public class CustomRoleServiceImpl implements CustomRoleService {
         return versionRepository.findTopByRoleIdAndTenantIdOrderByVersionNumberDesc(roleId, tenantId).map(version -> version.getVersionNumber() + 1).orElse(1);
     }
 
-    private List<Long> getPermissions(UUID roleId, String tenantId, Integer version) {
+    private List<UUID> getPermissions(UUID roleId, String tenantId, Integer version) {
 
         if (version == null || version == 0) {
-
             return new ArrayList<>();
         }
 
@@ -417,7 +419,7 @@ public class CustomRoleServiceImpl implements CustomRoleService {
 
     private Role getRole(UUID roleId, String tenantId) {
 
-        return roleRepository.findByIdAndTenantId(roleId, tenantId).orElseThrow(() -> new IllegalArgumentException("Custom role not found"));
+        return roleRepository.findByIdAndTenantIdAndRoleType(roleId, tenantId, RoleType.CUSTOM).orElseThrow(() -> new IllegalArgumentException("Custom role not found"));
     }
 
     private CustomRoleConfig getConfig(UUID roleId, String tenantId) {
@@ -425,7 +427,40 @@ public class CustomRoleServiceImpl implements CustomRoleService {
         return configRepository.findByRoleIdAndTenantId(roleId, tenantId).orElseThrow(() -> new IllegalArgumentException("Custom role configuration not found"));
     }
 
-    private String writePermissions(List<Long> permissions) {
+    private List<UUID> normalizePermissions(List<UUID> permissionIds) {
+
+        if (permissionIds == null || permissionIds.isEmpty()) {
+
+            return new ArrayList<>();
+        }
+
+        return new ArrayList<>(new LinkedHashSet<>(permissionIds));
+    }
+
+    private void validatePermissions(List<UUID> permissionIds) {
+
+        if (permissionIds == null || permissionIds.isEmpty()) {
+
+            return;
+        }
+
+        List<Permission> permissions = permissionRepository.findAllById(permissionIds);
+
+        Set<UUID> activePermissionIds = permissions.stream().filter(Permission::isActive).map(Permission::getPermissionId).collect(Collectors.toSet());
+
+        Set<UUID> requestedPermissionIds = new HashSet<>(permissionIds);
+
+        if (!activePermissionIds.containsAll(requestedPermissionIds)) {
+
+            Set<UUID> invalidPermissionIds = new HashSet<>(requestedPermissionIds);
+
+            invalidPermissionIds.removeAll(activePermissionIds);
+
+            throw new IllegalArgumentException("One or more permissions are invalid or inactive: " + invalidPermissionIds);
+        }
+    }
+
+    private String writePermissions(List<UUID> permissions) {
 
         try {
 
@@ -437,7 +472,7 @@ public class CustomRoleServiceImpl implements CustomRoleService {
         }
     }
 
-    private List<Long> readPermissions(String snapshot) {
+    private List<UUID> readPermissions(String snapshot) {
 
         try {
 
@@ -446,7 +481,7 @@ public class CustomRoleServiceImpl implements CustomRoleService {
                 return new ArrayList<>();
             }
 
-            return objectMapper.readValue(snapshot, new TypeReference<List<Long>>() {
+            return objectMapper.readValue(snapshot, new TypeReference<List<UUID>>() {
             });
 
         } catch (Exception e) {
@@ -455,7 +490,7 @@ public class CustomRoleServiceImpl implements CustomRoleService {
         }
     }
 
-    private CustomRoleResponse response(Role role, CustomRoleConfig config, List<Long> permissions) {
+    private CustomRoleResponse response(Role role, CustomRoleConfig config, List<UUID> permissions) {
 
         CustomRoleResponse response = new CustomRoleResponse();
 
@@ -476,6 +511,12 @@ public class CustomRoleServiceImpl implements CustomRoleService {
         response.setPermissionIds(permissions == null ? new ArrayList<>() : permissions);
 
         response.setPermissionCount(permissions == null ? 0 : permissions.size());
+
+        response.setPublishNotes(config.getPublishNotes());
+
+        response.setPublishedBy(config.getPublishedBy());
+
+        response.setPublishedAt(config.getPublishedAt());
 
         response.setCreatedAt(role.getCreatedAt());
 

@@ -8,7 +8,6 @@ import java.util.UUID;
 
 public class CustomRoleResponse {
 
-    //private Long roleId;
     private UUID roleId;
 
     private String roleName;
@@ -25,7 +24,7 @@ public class CustomRoleResponse {
 
     private Integer versionNumber;
 
-    private List<Long> permissionIds;
+    private List<UUID> permissionIds;
 
     private Integer permissionCount;
 
@@ -110,11 +109,11 @@ public class CustomRoleResponse {
     }
 
 
-    public List<Long> getPermissionIds() {
+    public List<UUID> getPermissionIds() {
         return permissionIds;
     }
 
-    public void setPermissionIds(List<Long> permissionIds) {
+    public void setPermissionIds(List<UUID> permissionIds) {
         this.permissionIds = permissionIds;
     }
 

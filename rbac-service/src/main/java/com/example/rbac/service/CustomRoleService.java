@@ -1,6 +1,8 @@
 package com.example.rbac.service;
 
-import com.example.rbac.dto.CustomRoleRequest;
+import com.example.rbac.dto.CustomRoleResponse;
+
+import com.example.rbac.dto.request.CustomRoleRequest;
 import com.example.rbac.dto.CustomRoleResponse;
 
 import java.util.List;
@@ -12,17 +14,32 @@ public interface CustomRoleService {
 
     List<CustomRoleResponse> getAll();
 
-    CustomRoleResponse update(UUID roleId, CustomRoleRequest request);
+    CustomRoleResponse update(
+            UUID roleId,
+            CustomRoleRequest request
+    );
 
-    CustomRoleResponse publish(UUID roleId, String publishNotes);
+    CustomRoleResponse publish(
+            UUID roleId,
+            String publishNotes
+    );
 
-    CustomRoleResponse archive(UUID roleId);
+    CustomRoleResponse archive(
+            UUID roleId
+    );
 
-    List<CustomRoleResponse> getVersions(UUID roleId);
+    List<CustomRoleResponse> getVersions(
+            UUID roleId
+    );
 
-    CustomRoleResponse revert(UUID roleId, Integer version);
+    CustomRoleResponse revert(
+            UUID roleId,
+            Integer version
+    );
 
-    Object getImpact(UUID roleId);
+    Object getImpact(
+            UUID roleId
+    );
 
     Object getLimits();
 }

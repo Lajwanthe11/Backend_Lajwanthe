@@ -1,11 +1,10 @@
-// CustomRoleRequest.java
-
-package com.example.rbac.dto;
+package com.example.rbac.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 import java.util.List;
+import java.util.UUID;
 
 public class CustomRoleRequest {
 
@@ -19,8 +18,9 @@ public class CustomRoleRequest {
     @Size(max = 500, message = "Description cannot exceed 500 characters")
     private String description;
 
-    private List<Long> permissionIds;
+    private List<UUID> permissionIds;
 
+    @Size(max = 1000, message = "Publish notes cannot exceed 1000 characters")
     private String publishNotes;
 
     public String getRoleName() {
@@ -47,11 +47,11 @@ public class CustomRoleRequest {
         this.description = description;
     }
 
-    public List<Long> getPermissionIds() {
+    public List<UUID> getPermissionIds() {
         return permissionIds;
     }
 
-    public void setPermissionIds(List<Long> permissionIds) {
+    public void setPermissionIds(List<UUID> permissionIds) {
         this.permissionIds = permissionIds;
     }
 
