@@ -66,6 +66,7 @@ public class SecurityConfig {
                                 "/error"
                         ).permitAll()
 
+
                         // All application APIs require JWT
                         .anyRequest().authenticated()
                 )
