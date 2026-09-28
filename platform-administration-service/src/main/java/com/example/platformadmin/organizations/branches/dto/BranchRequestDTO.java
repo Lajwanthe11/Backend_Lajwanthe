@@ -2,7 +2,9 @@ package com.example.platformadmin.organizations.branches.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import lombok.Data;
 
+@Data
 public class BranchRequestDTO {
 
     @NotBlank(message = "Branch code is required")
@@ -19,36 +21,4 @@ public class BranchRequestDTO {
     @NotBlank(message = "Status is required")
     @Size(max = 20, message = "Status must not exceed 20 characters")
     private String status;
-
-    public String getBranchCode() {
-        return branchCode;
-    }
-
-    public void setBranchCode(String branchCode) {
-        this.branchCode = branchCode;
-    }
-
-    public String getBranchName() {
-        return branchName;
-    }
-
-    public void setBranchName(String branchName) {
-        this.branchName = branchName;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
 }
