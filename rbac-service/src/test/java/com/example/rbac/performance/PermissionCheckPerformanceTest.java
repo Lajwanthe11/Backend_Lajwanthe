@@ -2,6 +2,7 @@ package com.example.rbac.performance;
 
 import com.example.rbac.service.PermissionCheckService;
 import com.example.rbac.service.PermissionResolver;
+import com.example.rbac.service.serviceImpl.PermissionCheckServiceImpl;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -36,9 +37,8 @@ class PermissionCheckPerformanceTest {
 
     @BeforeEach
     void setUp() {
-
         permissionCheckService =
-                new PermissionCheckService(permissionResolver);
+                new PermissionCheckServiceImpl(permissionResolver);
     }
 
     @Test
@@ -60,8 +60,7 @@ class PermissionCheckPerformanceTest {
             boolean result = permissionCheckService.hasPermission(
                     USER_ID,
                     TENANT_ID,
-                    PERMISSION_CODE
-            );
+                    PERMISSION_CODE);
 
             long endTime = System.nanoTime();
 
@@ -91,8 +90,7 @@ class PermissionCheckPerformanceTest {
         assertTrue(
                 p95Milliseconds < 10,
                 "Cache permission check P95 should be below 10 ms, but was "
-                        + p95Milliseconds + " ms"
-        );
+                        + p95Milliseconds + " ms");
     }
 
     @Test
@@ -114,8 +112,7 @@ class PermissionCheckPerformanceTest {
             boolean result = permissionCheckService.hasPermission(
                     USER_ID,
                     TENANT_ID,
-                    "USER_DELETE"
-            );
+                    "USER_DELETE");
 
             long endTime = System.nanoTime();
 
@@ -136,8 +133,7 @@ class PermissionCheckPerformanceTest {
         assertTrue(
                 p95Milliseconds < 10,
                 "Denied permission check P95 should be below 10 ms, but was "
-                        + p95Milliseconds + " ms"
-        );
+                        + p95Milliseconds + " ms");
     }
 
     @Test
@@ -159,8 +155,7 @@ class PermissionCheckPerformanceTest {
             boolean result = permissionCheckService.hasPermission(
                     USER_ID,
                     TENANT_ID,
-                    "ANY_PERMISSION"
-            );
+                    "ANY_PERMISSION");
 
             long endTime = System.nanoTime();
 
@@ -181,8 +176,7 @@ class PermissionCheckPerformanceTest {
         assertTrue(
                 p95Milliseconds < 10,
                 "Wildcard permission check P95 should be below 10 ms, but was "
-                        + p95Milliseconds + " ms"
-        );
+                        + p95Milliseconds + " ms");
     }
 
     @Test
@@ -209,26 +203,22 @@ class PermissionCheckPerformanceTest {
         boolean userOneAllowed = permissionCheckService.hasPermission(
                 userOne,
                 tenantOne,
-                "USER_READ"
-        );
+                "USER_READ");
 
         boolean userOneWrongPermission = permissionCheckService.hasPermission(
                 userOne,
                 tenantOne,
-                "USER_DELETE"
-        );
+                "USER_DELETE");
 
         boolean userTwoAllowed = permissionCheckService.hasPermission(
                 userTwo,
                 tenantTwo,
-                "USER_DELETE"
-        );
+                "USER_DELETE");
 
         boolean userTwoWrongPermission = permissionCheckService.hasPermission(
                 userTwo,
                 tenantTwo,
-                "USER_READ"
-        );
+                "USER_READ");
 
         long endTime = System.nanoTime();
 
@@ -242,8 +232,7 @@ class PermissionCheckPerformanceTest {
 
         assertTrue(
                 executionTimeMilliseconds < 10,
-                "Tenant and user isolation checks should complete quickly"
-        );
+                "Tenant and user isolation checks should complete quickly");
     }
 
     @Test
@@ -261,8 +250,7 @@ class PermissionCheckPerformanceTest {
                 "ROLE_UPDATE",
                 "ROLE_DELETE",
                 "PERMISSION_READ",
-                "PERMISSION_UPDATE"
-        );
+                "PERMISSION_UPDATE");
 
         when(permissionResolver.resolvePermissions(USER_ID, TENANT_ID))
                 .thenReturn(permissions);
@@ -278,8 +266,7 @@ class PermissionCheckPerformanceTest {
             Set<String> result =
                     permissionCheckService.getResolvedPermissions(
                             USER_ID,
-                            TENANT_ID
-                    );
+                            TENANT_ID);
 
             long endTime = System.nanoTime();
 
@@ -300,14 +287,14 @@ class PermissionCheckPerformanceTest {
         assertTrue(
                 p95Milliseconds < 10,
                 "Resolved permission retrieval P95 should be below 10 ms, but was "
-                        + p95Milliseconds + " ms"
-        );
+                        + p95Milliseconds + " ms");
     }
 
     @Test
     @DisplayName("Database fallback permission check should be within 100 milliseconds")
     @Timeout(value = 10, unit = TimeUnit.SECONDS)
-    void databaseFallbackPermissionCheck_shouldBeWithinOneHundredMilliseconds() {
+    void databaseFallbackPermissionCheck_shouldBeWithinOneHundredMilliseconds()
+            throws InterruptedException {
 
         /*
          * This test simulates the database fallback path.
@@ -332,8 +319,7 @@ class PermissionCheckPerformanceTest {
         boolean result = permissionCheckService.hasPermission(
                 USER_ID,
                 TENANT_ID,
-                PERMISSION_CODE
-        );
+                PERMISSION_CODE);
 
         long endTime = System.nanoTime();
 
@@ -348,8 +334,7 @@ class PermissionCheckPerformanceTest {
         assertTrue(
                 executionTimeMilliseconds < 100,
                 "Database fallback permission check should be below 100 ms, but was "
-                        + executionTimeMilliseconds + " ms"
-        );
+                        + executionTimeMilliseconds + " ms");
     }
 
     private void warmUp() {
@@ -359,8 +344,7 @@ class PermissionCheckPerformanceTest {
             permissionCheckService.hasPermission(
                     USER_ID,
                     TENANT_ID,
-                    PERMISSION_CODE
-            );
+                    PERMISSION_CODE);
         }
     }
 }
