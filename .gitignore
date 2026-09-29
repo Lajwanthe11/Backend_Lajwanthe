@@ -1,15 +1,82 @@
+# ==============================
+# Maven / Java build
+# ==============================
 target/
 **/target/
 *.class
-*.log
-effective-pom.xml
+
+
+# Build / error output
 build-error.txt
 build-errors.txt
 errors.txt
 
-.idea/
+# ==============================
+# Logs
+# ==============================
+*.log
+logs/
+**/logs/
 
+# ==============================
+# IntelliJ IDEA
+# ==============================
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# ==============================
+# Eclipse
+# ==============================
+# Eclipse
+.metadata/
+**/.metadata/
 .classpath
+**/.classpath
 .project
+**/.project
 .settings/
-custom-role-error.txt
+**/.settings/
+.factorypath
+**/.factorypath
+
+# SonarLint
+.sonarlint/
+**/.sonarlint/
+# ==============================
+# VS Code
+# ==============================
+.vscode/
+
+# ==============================
+# SonarLint / SonarQube
+# ==============================
+.sonarlint/
+**/.sonarlint/
+.sonar/
+**/.sonar/
+
+# ==============================
+# Java / Spring temporary files
+# ==============================
+*.tmp
+*.temp
+*.swp
+*.swo
+*.bak
+*.orig
+
+# ==============================
+# OS generated files
+# ==============================
+.DS_Store
+**/.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ==============================
+# Spring Boot generated files
+# ==============================
+spring.log
