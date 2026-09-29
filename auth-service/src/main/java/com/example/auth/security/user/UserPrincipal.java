@@ -1,3 +1,160 @@
+//package com.example.auth.security.user;
+//
+//import com.example.common.tenant.TenantContext;
+//import org.springframework.security.core.GrantedAuthority;
+//import org.springframework.security.core.authority.SimpleGrantedAuthority;
+//import org.springframework.security.core.userdetails.UserDetails;
+//import org.springframework.security.oauth2.core.user.OAuth2User;
+//
+//import java.util.Collection;
+//import java.util.Collections;
+//import java.util.List;
+//import java.util.Map;
+//
+///**
+// * Universal UserPrincipal implementing both UserDetails (for form/JWT login)
+// * and OAuth2User (for Google/GitHub OAuth2 login) with Multi-Tenancy support.
+// */
+//public class UserPrincipal implements UserDetails, OAuth2User {
+//
+//    private final String id;
+//    private final String username;
+//    private final String email;
+//    private final String password;
+//    private final String tenantId;
+//    private final Collection<? extends GrantedAuthority> authorities;
+//    private final Map<String, Object> attributes;
+//
+//    public UserPrincipal(String id, String username, String email, String password, String tenantId,
+//                         Collection<? extends GrantedAuthority> authorities,
+//                         Map<String, Object> attributes) {
+//        this.id = id;
+//        this.username = username;
+//        this.email = email;
+//        this.password = password;
+//        this.tenantId = (tenantId != null && !tenantId.isBlank()) ? tenantId : TenantContext.DEFAULT_TENANT_ID;
+//        this.authorities = authorities;
+//        this.attributes = attributes != null ? attributes : Collections.emptyMap();
+//    }
+//
+//    public static UserPrincipalBuilder builder() {
+//        return new UserPrincipalBuilder();
+//    }
+//
+//    // --- Factory methods ---
+//
+//    /** Create a UserPrincipal from username/password credentials. */
+//    public static UserPrincipal create(String username, String email, String password, List<String> roles) {
+//        return create(username, email, password, roles, TenantContext.getTenantId());
+//    }
+//
+//    public static UserPrincipal create(String username, String email, String password, List<String> roles, String tenantId) {
+//        List<GrantedAuthority> authorities = (roles == null || roles.isEmpty())
+//                ? List.of(new SimpleGrantedAuthority("ROLE_USER"))
+//                : roles.stream().map(SimpleGrantedAuthority::new).map(GrantedAuthority.class::cast).toList();
+//
+//        return UserPrincipal.builder()
+//                .id(username)
+//                .username(username)
+//                .email(email != null ? email : username)
+//                .password(password)
+//                .tenantId(tenantId != null ? tenantId : TenantContext.getTenantId())
+//                .authorities(authorities)
+//                .attributes(Collections.emptyMap())
+//                .build();
+//    }
+//
+//    /** Create a UserPrincipal from an OAuth2 provider response. Handles GitHub and Google. */
+//    public static UserPrincipal create(OAuth2User oAuth2User, String registrationId) {
+//        return create(oAuth2User, registrationId, TenantContext.getTenantId());
+//    }
+//
+//    public static UserPrincipal create(OAuth2User oAuth2User, String registrationId, String tenantId) {
+//        Map<String, Object> attributes = oAuth2User.getAttributes();
+//        String username;
+//        String email;
+//
+//        if ("github".equalsIgnoreCase(registrationId)) {
+//            username = (String) attributes.getOrDefault("login", "github_user");
+//            email = (String) attributes.getOrDefault("email", username + "@github.com");
+//        } else {
+//            // Default: Google / standard OIDC
+//            email = (String) attributes.getOrDefault("email", "oauth2_user");
+//            username = email;
+//        }
+//
+//        return UserPrincipal.builder()
+//                .id(username)
+//                .username(username)
+//                .email(email)
+//                .password("")
+//                .tenantId(tenantId != null ? tenantId : TenantContext.getTenantId())
+//                .authorities(List.of(new SimpleGrantedAuthority("ROLE_USER")))
+//                .attributes(attributes)
+//                .build();
+//    }
+//
+//    // --- OAuth2User ---
+//
+//    @Override
+//    public Map<String, Object> getAttributes() { return attributes; }
+//
+//    @Override
+//    public String getName() { return username; }
+//
+//    // --- UserDetails ---
+//
+//    @Override
+//    public Collection<? extends GrantedAuthority> getAuthorities() { return authorities; }
+//
+//    @Override
+//    public String getPassword() { return password; }
+//
+//    @Override
+//    public String getUsername() { return username; }
+//
+//    @Override
+//    public boolean isAccountNonExpired() { return true; }
+//
+//    @Override
+//    public boolean isAccountNonLocked() { return true; }
+//
+//    @Override
+//    public boolean isCredentialsNonExpired() { return true; }
+//
+//    @Override
+//    public boolean isEnabled() { return true; }
+//
+//    // --- Domain accessors ---
+//
+//    public String getId() { return id; }
+//    public String getEmail() { return email; }
+//    public String getTenantId() { return tenantId; }
+//
+//    // --- Builder ---
+//
+//    public static class UserPrincipalBuilder {
+//        private String id;
+//        private String username;
+//        private String email;
+//        private String password;
+//        private String tenantId;
+//        private Collection<? extends GrantedAuthority> authorities;
+//        private Map<String, Object> attributes;
+//
+//        public UserPrincipalBuilder id(String id) { this.id = id; return this; }
+//        public UserPrincipalBuilder username(String username) { this.username = username; return this; }
+//        public UserPrincipalBuilder email(String email) { this.email = email; return this; }
+//        public UserPrincipalBuilder password(String password) { this.password = password; return this; }
+//        public UserPrincipalBuilder tenantId(String tenantId) { this.tenantId = tenantId; return this; }
+//        public UserPrincipalBuilder authorities(Collection<? extends GrantedAuthority> authorities) { this.authorities = authorities; return this; }
+//        public UserPrincipalBuilder attributes(Map<String, Object> attributes) { this.attributes = attributes; return this; }
+//
+//        public UserPrincipal build() {
+//            return new UserPrincipal(id, username, email, password, tenantId, authorities, attributes);
+//        }
+//    }
+//}
 package com.example.auth.security.user;
 
 import com.example.common.tenant.TenantContext;
@@ -5,6 +162,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.core.user.OAuth2User;
+
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
@@ -24,8 +182,12 @@ public class UserPrincipal implements UserDetails, OAuth2User {
     private final String tenantId;
     private final Collection<? extends GrantedAuthority> authorities;
     private final Map<String, Object> attributes;
+
     private int failedAttempts = 0;
     private LocalDateTime lockedUntil;
+
+    // MFA status
+    private boolean mfaEnabled;
 
     public UserPrincipal(String id, String username, String email, String password, String tenantId,
                          Collection<? extends GrantedAuthority> authorities,
@@ -34,9 +196,25 @@ public class UserPrincipal implements UserDetails, OAuth2User {
         this.username = username;
         this.email = email;
         this.password = password;
-        this.tenantId = (tenantId != null && !tenantId.isBlank()) ? tenantId : TenantContext.DEFAULT_TENANT_ID;
+        this.tenantId = (tenantId != null && !tenantId.isBlank())
+                ? tenantId
+                : TenantContext.DEFAULT_TENANT_ID;
         this.authorities = authorities;
         this.attributes = attributes != null ? attributes : Collections.emptyMap();
+    }
+
+    /**
+     * Copy-constructor used by SsoOidcUser to preserve all fields set by
+     * the provisioning path while adding the OidcUser contract.
+     */
+    public UserPrincipal(UserPrincipal other) {
+        this(other.id,
+                other.username,
+                other.email,
+                other.password,
+                other.tenantId,
+                other.authorities,
+                other.attributes);
     }
 
     public static UserPrincipalBuilder builder() {
@@ -50,10 +228,14 @@ public class UserPrincipal implements UserDetails, OAuth2User {
         return create(username, email, password, roles, TenantContext.getTenantId());
     }
 
-    public static UserPrincipal create(String username, String email, String password, List<String> roles, String tenantId) {
+    public static UserPrincipal create(String username, String email, String password,
+                                       List<String> roles, String tenantId) {
         List<GrantedAuthority> authorities = (roles == null || roles.isEmpty())
                 ? List.of(new SimpleGrantedAuthority("ROLE_USER"))
-                : roles.stream().map(SimpleGrantedAuthority::new).map(GrantedAuthority.class::cast).toList();
+                : roles.stream()
+                .map(SimpleGrantedAuthority::new)
+                .map(GrantedAuthority.class::cast)
+                .toList();
 
         return UserPrincipal.builder()
                 .id(username)
@@ -81,7 +263,8 @@ public class UserPrincipal implements UserDetails, OAuth2User {
             email = (String) attributes.getOrDefault("email", username + "@github.com");
         } else {
             // Default: Google / standard OIDC
-            email = (String) attributes.getOrDefault("email", "oauth2_user");
+            email = (String) attributes.getOrDefault("email",
+                    attributes.getOrDefault("preferred_username", "oauth2_user"));
             username = email;
         }
 
@@ -99,24 +282,36 @@ public class UserPrincipal implements UserDetails, OAuth2User {
     // --- OAuth2User ---
 
     @Override
-    public Map<String, Object> getAttributes() { return attributes; }
+    public Map<String, Object> getAttributes() {
+        return attributes;
+    }
 
     @Override
-    public String getName() { return username; }
+    public String getName() {
+        return username;
+    }
 
     // --- UserDetails ---
 
     @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() { return authorities; }
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return authorities;
+    }
 
     @Override
-    public String getPassword() { return password; }
+    public String getPassword() {
+        return password;
+    }
 
     @Override
-    public String getUsername() { return username; }
+    public String getUsername() {
+        return username;
+    }
 
     @Override
-    public boolean isAccountNonExpired() { return true; }
+    public boolean isAccountNonExpired() {
+        return true;
+    }
 
     @Override
     public boolean isAccountNonLocked() {
@@ -124,26 +319,57 @@ public class UserPrincipal implements UserDetails, OAuth2User {
     }
 
     @Override
-    public boolean isCredentialsNonExpired() { return true; }
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
 
     @Override
-    public boolean isEnabled() { return true; }
+    public boolean isEnabled() {
+        return true;
+    }
 
     // --- Domain accessors ---
 
-    public String getId() { return id; }
-    public String getEmail() { return email; }
-    public String getTenantId() { return tenantId; }
+    public String getId() {
+        return id;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public String getTenantId() {
+        return tenantId;
+    }
 
     // --- Account lockout accessors (additive) ---
 
-    public int getFailedAttempts() { return failedAttempts; }
+    public int getFailedAttempts() {
+        return failedAttempts;
+    }
 
-    public void setFailedAttempts(int failedAttempts) { this.failedAttempts = failedAttempts; }
+    public void setFailedAttempts(int failedAttempts) {
+        this.failedAttempts = failedAttempts;
+    }
 
-    public LocalDateTime getLockedUntil() { return lockedUntil; }
+    public LocalDateTime getLockedUntil() {
+        return lockedUntil;
+    }
 
-    public void setLockedUntil(LocalDateTime lockedUntil) { this.lockedUntil = lockedUntil; }
+    public void setLockedUntil(LocalDateTime lockedUntil) {
+        this.lockedUntil = lockedUntil;
+    }
+
+    // --- MFA status ---
+
+    public boolean isMfaEnabled() {
+        return mfaEnabled;
+    }
+
+    public void setMfaEnabled(boolean mfaEnabled) {
+        this.mfaEnabled = mfaEnabled;
+    }
+
     // --- Builder ---
 
     public static class UserPrincipalBuilder {
@@ -155,16 +381,51 @@ public class UserPrincipal implements UserDetails, OAuth2User {
         private Collection<? extends GrantedAuthority> authorities;
         private Map<String, Object> attributes;
 
-        public UserPrincipalBuilder id(String id) { this.id = id; return this; }
-        public UserPrincipalBuilder username(String username) { this.username = username; return this; }
-        public UserPrincipalBuilder email(String email) { this.email = email; return this; }
-        public UserPrincipalBuilder password(String password) { this.password = password; return this; }
-        public UserPrincipalBuilder tenantId(String tenantId) { this.tenantId = tenantId; return this; }
-        public UserPrincipalBuilder authorities(Collection<? extends GrantedAuthority> authorities) { this.authorities = authorities; return this; }
-        public UserPrincipalBuilder attributes(Map<String, Object> attributes) { this.attributes = attributes; return this; }
+        public UserPrincipalBuilder id(String id) {
+            this.id = id;
+            return this;
+        }
+
+        public UserPrincipalBuilder username(String username) {
+            this.username = username;
+            return this;
+        }
+
+        public UserPrincipalBuilder email(String email) {
+            this.email = email;
+            return this;
+        }
+
+        public UserPrincipalBuilder password(String password) {
+            this.password = password;
+            return this;
+        }
+
+        public UserPrincipalBuilder tenantId(String tenantId) {
+            this.tenantId = tenantId;
+            return this;
+        }
+
+        public UserPrincipalBuilder authorities(Collection<? extends GrantedAuthority> authorities) {
+            this.authorities = authorities;
+            return this;
+        }
+
+        public UserPrincipalBuilder attributes(Map<String, Object> attributes) {
+            this.attributes = attributes;
+            return this;
+        }
 
         public UserPrincipal build() {
-            return new UserPrincipal(id, username, email, password, tenantId, authorities, attributes);
+            return new UserPrincipal(
+                    id,
+                    username,
+                    email,
+                    password,
+                    tenantId,
+                    authorities,
+                    attributes
+            );
         }
     }
 }
