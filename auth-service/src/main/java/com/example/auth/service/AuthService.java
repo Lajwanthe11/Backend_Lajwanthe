@@ -172,6 +172,60 @@ public class AuthService {
 
                 .build();
     }
+    public AuthResponseDTO completeMfaLogin(String username, String tenantId) {
+
+        if (StringUtils.hasText(tenantId)) {
+            TenantContext.setTenantId(tenantId);
+        }
+
+        String effectiveTenantId = TenantContext.getTenantId();
+
+        UserDetails userDetails =
+                customUserDetailsService.loadUserByUsername(username);
+
+        Authentication authentication =
+                new UsernamePasswordAuthenticationToken(
+                        userDetails,
+                        null,
+                        userDetails.getAuthorities()
+                );
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        String sessionId = sessionManagementService.createSession(
+                username,
+                effectiveTenantId
+        );
+
+        String accessToken =
+                tokenProvider.generateAccessToken(
+                        authentication,
+                        sessionId
+                );
+
+        String refreshToken =
+                tokenProvider.generateRefreshToken(
+                        username,
+                        effectiveTenantId,
+                        sessionId
+                );
+
+        List<String> roles =
+                authentication.getAuthorities()
+                        .stream()
+                        .map(GrantedAuthority::getAuthority)
+                        .collect(Collectors.toList());
+
+        return AuthResponseDTO.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .tokenType("Bearer")
+                .username(username)
+                .tenantId(effectiveTenantId)
+                .roles(roles)
+                .sessionId(sessionId)
+                .build();
+    }
 
     public AuthResponseDTO register(RegisterRequestDTO registerRequest) {
 
