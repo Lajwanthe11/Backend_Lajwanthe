@@ -15,6 +15,7 @@ import com.example.auth.loginhistory.exception.LoginHistoryException;
 import com.example.auth.loginhistory.exception.LoginHistoryNotFoundException;
 import com.example.auth.loginhistory.repository.LoginHistoryRepository;
 import com.example.auth.loginhistory.service.LoginHistoryService;
+import com.example.common.tenant.TenantContext;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,7 +64,7 @@ public class LoginHistoryServiceImpl implements LoginHistoryService {
     private static final String OTHER = "Other";
 
     private static final List<String> CSV_HEADER = List.of(
-            "ID", "Username", "Email", "Employee ID", "Login Time", "Logout Time", "Status",
+            "ID", "Tenant ID", "Username", "Email", "Login Time", "Logout Time", "Status",
             "Authentication Method", "Provider", "Failure Reason", "Session Status", "Logout Type",
             "Session Duration (s)", "Work Hours Status", "Required Work Seconds",
             "IP Address", "Location", "Device Type", "Operating System", "Browser");
@@ -255,7 +256,9 @@ public class LoginHistoryServiceImpl implements LoginHistoryService {
             return;
         }
         try {
+            // Update the row the login created (same session_id): only an open SUCCESS row is closed
             loginHistoryRepository.findBySessionId(sessionId)
+                    .filter(entry -> entry.getStatus() == LoginStatus.SUCCESS)
                     .filter(entry -> entry.getLogoutTime() == null)
                     .ifPresent(entry -> closeSession(entry, LocalDateTime.now(), LogoutType.MANUAL));
         } catch (RuntimeException ex) {
@@ -341,6 +344,8 @@ public class LoginHistoryServiceImpl implements LoginHistoryService {
         ClientDetails client = ClientDetails.ofCurrentRequest();
 
         LoginHistory entry = new LoginHistory();
+        // Explicit, so the tenant_id FK value never depends on the @PrePersist fallback
+        entry.setTenantId(TenantContext.getTenantId());
         entry.setUsername(truncate(username, 255));
         entry.setStatus(status);
         entry.setAuthenticationMethod(method);
@@ -402,9 +407,9 @@ public class LoginHistoryServiceImpl implements LoginHistoryService {
 
         return new LoginHistoryResponseDto(
                 entry.getId(),
+                entry.getTenantId(),
                 entry.getUsername(),
                 entry.getEmail(),
-                entry.getEmployeeId(),
                 entry.getStatus(),
                 entry.getAuthenticationMethod(),
                 entry.getAuthProvider(),
@@ -478,9 +483,9 @@ public class LoginHistoryServiceImpl implements LoginHistoryService {
         for (LoginHistoryResponseDto record : records) {
             csv.append(csvRow(Arrays.asList(
                     text(record.id()),
+                    record.tenantId(),
                     record.username(),
                     record.email(),
-                    record.employeeId(),
                     text(record.loginTime()),
                     text(record.logoutTime()),
                     text(record.status()),

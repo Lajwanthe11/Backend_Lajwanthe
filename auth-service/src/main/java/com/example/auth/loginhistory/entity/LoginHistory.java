@@ -1,11 +1,16 @@
 package com.example.auth.loginhistory.entity;
 
+import com.example.auth.tenant.entity.Tenant;
 import com.example.common.abstracts.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.ForeignKey;
 import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 import java.time.LocalDateTime;
@@ -46,6 +51,18 @@ public class LoginHistory extends BaseEntity {
         AUTO,
         ADMIN_FORCED
     }
+
+    /**
+     * Foreign-key reference to {@code tenants.tenant_id}. It shares the {@code tenant_id} column that
+     * BaseEntity's {@code @TenantId} field writes, so it is read-only here: the value is always set
+     * through {@link #getTenantId()}/{@link #setTenantId(String)}, this mapping only adds the FK
+     * constraint and lets callers navigate to the Tenant.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tenant_id", referencedColumnName = "tenant_id",
+            insertable = false, updatable = false,
+            foreignKey = @ForeignKey(name = "fk_login_history_tenant"))
+    private Tenant tenant;
 
     @Column(name = "username", nullable = false)
     private String username;
@@ -105,6 +122,10 @@ public class LoginHistory extends BaseEntity {
 
     @Column(name = "browser", length = 50)
     private String browser;
+
+    // --- Getters / Setters ---
+
+    public Tenant getTenant() { return tenant; }
 
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }

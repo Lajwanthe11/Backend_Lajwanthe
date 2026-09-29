@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 
 /**
  * Response DTO returned for Login History API responses.
+ * tenantId is the tenant the record belongs to (FK to tenants.tenant_id).
  * sessionStatus is null for failed attempts; sessionDurationSeconds is null until logout.
  * logoutType is null while the session is still open.
  * workHoursStatus is null for failed attempts; it compares the time worked so far against the
@@ -15,9 +16,9 @@ import java.time.LocalDateTime;
  */
 public record LoginHistoryResponseDto(
         Long id,
+        String tenantId,
         String username,
         String email,
-        String employeeId,
         LoginStatus status,
         AuthenticationMethod authenticationMethod,
         String authProvider,

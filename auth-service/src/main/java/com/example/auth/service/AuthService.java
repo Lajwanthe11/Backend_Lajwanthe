@@ -4,14 +4,12 @@ import com.example.auth.dto.AuthResponseDTO;
 import com.example.auth.dto.LoginRequestDTO;
 import com.example.auth.dto.RegisterRequestDTO;
 import com.example.auth.dto.TokenRefreshRequestDTO;
+import com.example.auth.loginhistory.service.LoginHistoryService;
 import com.example.auth.security.jwt.JwtTokenProvider;
 import com.example.auth.security.user.CustomUserDetailsService;
-import com.example.common.exception.AccountLockedException;
 import com.example.common.exception.BadRequestException;
 import com.example.common.tenant.TenantContext;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -20,9 +18,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-import java.time.Duration;
-import java.time.LocalDateTime;
+
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -35,21 +33,21 @@ public class AuthService {
     private final CustomUserDetailsService customUserDetailsService;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider tokenProvider;
-    // NEW: password strength validation added for registration flow
     private final PasswordValidator passwordValidator;
-    private final SessionManagementService sessionManagementService;
+    private final LoginHistoryService loginHistoryService;
 
     public AuthService(AuthenticationManager authenticationManager,
                        CustomUserDetailsService customUserDetailsService,
                        PasswordEncoder passwordEncoder,
                        JwtTokenProvider tokenProvider,
-                       PasswordValidator passwordValidator,SessionManagementService sessionManagementService) {
+                       PasswordValidator passwordValidator,
+                       LoginHistoryService loginHistoryService) {
         this.authenticationManager = authenticationManager;
         this.customUserDetailsService = customUserDetailsService;
         this.passwordEncoder = passwordEncoder;
         this.tokenProvider = tokenProvider;
         this.passwordValidator = passwordValidator;
-        this.sessionManagementService = sessionManagementService;
+        this.loginHistoryService = loginHistoryService;
     }
 
     public AuthResponseDTO login(LoginRequestDTO loginRequest) {
@@ -57,51 +55,23 @@ public class AuthService {
             TenantContext.setTenantId(loginRequest.getTenantId());
         }
         String tenantId = TenantContext.getTenantId();
-        // Declared here (not inside try) since it's only assigned on success but needed below
-        Authentication authentication;
-        try {
-            authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            loginRequest.getUsername(),
-                            loginRequest.getPassword()
-                    )
-            );
-        } catch (LockedException ex) {
-            // NEW: account-lockout handling — fetch lock expiry to build a
-            // user-friendly "try again after X min Y sec" message
-            LocalDateTime lockedUntil = customUserDetailsService.getLockedUntil(loginRequest.getUsername(), tenantId);
 
-            String message = "Account is locked due to multiple failed login attempts. Please try again later.";
-            if (lockedUntil != null) {
-                Duration remaining = Duration.between(LocalDateTime.now(), lockedUntil);
-                if (!remaining.isNegative()) {
-                    long minutes = remaining.toMinutes();
-                    long seconds = remaining.minusMinutes(minutes).getSeconds();
-                    message = String.format(
-                            "Account locked after %d failed login attempts. Try again after %d min %d sec.",
-                            customUserDetailsService.getMaxAttempts(), minutes, seconds);
-                }
-            }
-            // NEW: custom exception so controller/advice can return a distinct
-            // "locked" response instead of a generic auth failure
-            throw new AccountLockedException(message);
-        } catch (BadCredentialsException ex) {
-            // NEW: Wrong password -> track the failed attempt, then rethrow so the
-            // existing "invalid credentials" behavior is unchanged for the caller.
-            customUserDetailsService.incrementFailedAttempts(loginRequest.getUsername(), tenantId);
-            throw ex;
-        }
-
-        // NEW: Successful login -> clear any prior failed-attempt count / lock state
-        customUserDetailsService.resetFailedAttempts(loginRequest.getUsername(), tenantId);
+        // Failed attempts are recorded by AuthController.login() (it catches the AuthenticationException)
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        loginRequest.getUsername(),
+                        loginRequest.getPassword()
+                )
+        );
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        String sessionId = sessionManagementService.createSession(
-                loginRequest.getUsername(),
-                tenantId
-        );
-        String accessToken = tokenProvider.generateAccessToken(authentication,sessionId);
-        String refreshToken = tokenProvider.generateRefreshToken(loginRequest.getUsername(), tenantId,sessionId);
+
+        // One id per login session, carried by both tokens so logout and refresh can find its history record
+        String sessionId = UUID.randomUUID().toString();
+        String accessToken = tokenProvider.generateAccessToken(authentication, sessionId);
+        String refreshToken = tokenProvider.generateRefreshToken(loginRequest.getUsername(), tenantId, sessionId);
+
+        // The login_history row is saved by AuthController (login / register), using the sid in these tokens
 
         List<String> roles = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
@@ -114,13 +84,11 @@ public class AuthService {
                 .username(loginRequest.getUsername())
                 .tenantId(tenantId)
                 .roles(roles)
-                .sessionId(sessionId)
                 .build();
     }
 
     public AuthResponseDTO register(RegisterRequestDTO registerRequest) {
 
-        // NEW: enforce password strength rules before creating the account
         passwordValidator.validate(registerRequest.getPassword());
 
         if (StringUtils.hasText(registerRequest.getTenantId())) {
@@ -160,15 +128,18 @@ public class AuthService {
         TenantContext.setTenantId(tenantId);
 
         UserDetails userDetails = customUserDetailsService.loadUserByUsername(username);
+        String sessionId = tokenProvider.getSessionIdFromJWT(token);
 
         String newAccessToken = tokenProvider.generateAccessToken(
                 username,
                 userDetails.getAuthorities().stream()
                         .map(GrantedAuthority::getAuthority)
                         .collect(Collectors.joining(",")),
-                tenantId
+                tenantId,
+                sessionId
         );
-        String newRefreshToken = tokenProvider.generateRefreshToken(username, tenantId);
+        String newRefreshToken = tokenProvider.generateRefreshToken(username, tenantId, sessionId);
+        loginHistoryService.recordTokenRefresh(sessionId, tokenProvider.getExpiryFromJWT(newRefreshToken));
 
         List<String> roles = userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
