@@ -5,7 +5,7 @@ import com.example.auth.security.jwt.JwtAuthenticationFilter;
 import com.example.auth.security.oauth2.CustomOAuth2UserService;
 import com.example.auth.security.oauth2.OAuth2AuthenticationFailureHandler;
 import com.example.auth.security.oauth2.OAuth2AuthenticationSuccessHandler;
-import com.example.common.tenant.TenantFilter;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -17,6 +17,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import com.example.common.tenant.TenantFilter;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfigurationSource;
 
@@ -44,7 +45,7 @@ public class SecurityConfig {
                           CustomOAuth2UserService customOAuth2UserService,
                           OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler,
                           OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler,
-                          CorsConfigurationSource corsConfigurationSource) {
+                          @Qualifier("corsConfigurationSource") CorsConfigurationSource corsConfigurationSource) {
         this.unauthorizedHandler = unauthorizedHandler;
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.customOAuth2UserService = customOAuth2UserService;
@@ -66,7 +67,6 @@ public class SecurityConfig {
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // Public endpoints — no authentication required
                         .requestMatchers(
                                 "/auth/**",
                                 "/api/auth/**",
@@ -76,9 +76,7 @@ public class SecurityConfig {
                                 "/error"
                         ).permitAll()
                         .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
-                        // Service-to-service event reporting: authenticated by the X-Internal-Api-Key header in the controller
                         .requestMatchers(HttpMethod.POST, "/security-alerts/events/ingest").permitAll()
-                        // All other endpoints require authentication
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2
@@ -87,7 +85,6 @@ public class SecurityConfig {
                         .failureHandler(oAuth2AuthenticationFailureHandler)
                 );
 
-        // Add JWT filter before username/password filter
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
