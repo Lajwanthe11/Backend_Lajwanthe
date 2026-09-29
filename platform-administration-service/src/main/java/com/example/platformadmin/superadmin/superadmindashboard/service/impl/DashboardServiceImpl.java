@@ -35,17 +35,31 @@ public class DashboardServiceImpl implements DashboardService {
         var userStats = userClient.getUserStatistics();
         var orgStats = orgClient.getOrganizationStatistics();
         var licenseStats = licenseClient.getLicenseStatistics();
+        var loginActivities = userClient.getRecentLoginActivities(5);
 
         // 1. Enterprise Platform Overview (#1)
         PlatformSummaryResponse summary = new PlatformSummaryResponse();
+        summary.setTotalUsers(userStats.totalUsers());
+        summary.setUserGrowthPercent(1.8);
         summary.setTotalTenants(orgStats.totalOrganizations());
         summary.setActiveTenants(orgStats.totalOrganizations());
         summary.setTotalOrganizations(orgStats.totalOrganizations());
+        summary.setOrgGrowthPercent(4.2);
         summary.setActiveUsers(userStats.activeUsers());
         summary.setOnlineUsers(userStats.onlineUsers());
         summary.setPlatformStatus(health.serverHealth());
+        // 2. System Status (Server, Database, API Gateway, Storage)
+        DashboardStatisticsResponse systemStatus = DashboardStatisticsResponse.builder()
+                .serverHealth(health.serverHealth())
+                .apiGatewayStatus(health.apiStatus())                 // "RUNNING"
+                .databaseStatus(health.databaseStatus())             // "CONNECTED"
+                .storageUtilizationPercent(health.storageUtilizationPercent()) // 68.0%
+                .cpuUsagePercent(health.cpuUsagePercent())
+                .memoryUsagePercent(health.memoryUsagePercent())
+                .lastUpdated(java.time.Instant.now())
+                .build();
 
-        // 2. Operational Statistics & Health (#7, #12)
+        // 3. Operational Statistics & Health (#7, #12)
         OperationalStatisticsResponse operational = new OperationalStatisticsResponse();
         operational.setCpuUtilization(health.cpuUsagePercent());
         operational.setMemoryUsage(health.memoryUsagePercent());
@@ -54,7 +68,7 @@ public class DashboardServiceImpl implements DashboardService {
         operational.setBackgroundJobs(48L);
         operational.setFailedJobs(1L);
 
-        // 3. Security Overview & Statistics (#12)
+        // 4. Security Overview & Statistics (#12)
         SecurityOverviewResponse security = new SecurityOverviewResponse();
         security.setFailedLoginAttempts(7L);
         security.setLockedAccounts(1L);
@@ -62,7 +76,7 @@ public class DashboardServiceImpl implements DashboardService {
         security.setActiveSessions(userStats.onlineUsers());
         security.setAuditEvents(580L);
 
-        // 4. Administrator Activity Monitoring (#8)
+        // 5. Administrator Activity Monitoring (#8)
         List<RecentActivityResponse> activities = List.of(
                 createActivity(1L, 101L, "superadmin", "SUPER_ADMIN", "Updated Platform Branding Logo", "Platform Branding", "SUCCESS", 10),
                 createActivity(2L, 101L, "superadmin", "SUPER_ADMIN", "Renewed Enterprise License #LIC-882", "License Management", "SUCCESS", 35),
@@ -70,7 +84,7 @@ public class DashboardServiceImpl implements DashboardService {
                 createActivity(4L, 103L, "secops.lead", "SECURITY_ADMIN", "Investigated 3 Failed Logins", "Security Operations", "WARNING", 120)
         );
 
-        // 5. Platform Notifications & Alerts (#11)
+        // 6. Platform Notifications & Alerts (#11)
         DashboardAlertResponse alert1 = new DashboardAlertResponse(
                 "ALT-101",
                 "Storage Utilization Warning",
@@ -90,20 +104,30 @@ public class DashboardServiceImpl implements DashboardService {
                 LocalDateTime.now().minusHours(2),
                 "/api/v1/licenses"
         );
-        List<DashboardAlertResponse> alerts = List.of(alert1, alert2);
+        DashboardAlertResponse alert3 = new DashboardAlertResponse(       // <-- ADDED to match picture
+                "ALT-103",
+                "Organizations Awaiting Approval",
+                "3 organizations awaiting activation approval.",
+                "WARNING",
+                "Organization Management",
+                LocalDateTime.now().minusHours(1),
+                "/api/v1/organizations"
+        );
+        List<DashboardAlertResponse> alerts = List.of(alert1, alert2,alert3);
 
-        // 6. Navigation Directory to All Platform Administration Modules (#2, #3, #4, #5, #6, #10)
+        // 7. Navigation Directory to All Platform Administration Modules (#2, #3, #4, #5, #6, #10)
         List<ModuleNavigationResponse> modules = getAllModules();
 
-        // 7. Software Licenses Summary (#5)
+        // 8. Software Licenses Summary (#5)
         Map<String, Object> licenseSummary = Map.of(
                 "activeLicenses", licenseStats.activeLicenses(),
                 "activeSubscriptions", licenseStats.activeSubscriptions(),
+                "expiringWithin30Days", 27,
                 "status", "ACTIVE",
                 "managementEndpoint", "/api/v1/licenses"
         );
 
-        // 8. Feature Management Summary (#6)
+        // 9. Feature Management Summary (#6)
         Map<String, Object> featureSummary = Map.of(
                 "totalFeatures", 18,
                 "activeFeatures", 15,
@@ -113,9 +137,11 @@ public class DashboardServiceImpl implements DashboardService {
 
         SuperAdminDashboardResponse response = new SuperAdminDashboardResponse();
         response.setPlatformSummary(summary);
+        response.setSystemStatus(systemStatus);
         response.setOperationalStatistics(operational);
         response.setSecurityOverview(security);
         response.setRecentActivities(activities);
+        response.setRecentLoginActivities(loginActivities);
         response.setNotificationsAndAlerts(alerts);
         response.setAdministrationModules(modules);
         response.setLicenseManagementSummary(licenseSummary);
@@ -144,6 +170,7 @@ public class DashboardServiceImpl implements DashboardService {
     private List<ModuleNavigationResponse> getAllModules() {
         return List.of(
                 new ModuleNavigationResponse("PLATFORM_CONFIG", "Platform Configuration", "Manage system-wide configuration keys, versions, and rollbacks", "System Settings", "/api/v1/platform-configurations", "/admin/configurations", "config-icon"),
+                new ModuleNavigationResponse("USER_MGMT", "User Management", "Invite, roles and access control", "Administration", "/api/v1/users", "/admin/users", "user-icon"),
                 new ModuleNavigationResponse("GLOBAL_SETTINGS", "Global Settings", "Configure platform properties, tenant defaults, and export CSV", "System Settings", "/api/v1/platform-settings", "/admin/settings", "settings-icon"),
                 new ModuleNavigationResponse("BRANDING", "Platform Branding", "Manage logos, favicons, login backgrounds, and color themes", "Customization", "/api/v1/branding", "/admin/branding", "palette-icon"),
                 new ModuleNavigationResponse("LICENSES", "Software License Management", "Create, assign, suspend, and renew software licenses", "Governance", "/api/v1/licenses", "/admin/licenses", "key-icon"),
