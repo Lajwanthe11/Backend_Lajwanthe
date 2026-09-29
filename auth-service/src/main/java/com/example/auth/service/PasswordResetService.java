@@ -1,5 +1,5 @@
 package com.example.auth.service;
-
+import com.example.auth.audit.service.AuditService;
 import com.example.auth.dto.PasswordResetConfirmDTO;
 import com.example.auth.dto.PasswordResetRequestDTO;
 import com.example.auth.dto.PasswordResetResponseDTO;
@@ -19,6 +19,7 @@ import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+
 
 /**
  * Handles the two-step password reset flow:
@@ -43,16 +44,18 @@ public class PasswordResetService {
     private final CustomUserDetailsService customUserDetailsService;
     private final PasswordEncoder passwordEncoder;
     private final PasswordValidator passwordValidator;
-
+    private final AuditService AuditService;
     /** In-memory store: resetToken → ResetEntry. */
     private final Map<String, ResetEntry> tokenStore = new ConcurrentHashMap<>();
 
     public PasswordResetService(CustomUserDetailsService customUserDetailsService,
                                 PasswordEncoder passwordEncoder,
-                                PasswordValidator passwordValidator) {
+                                PasswordValidator passwordValidator,
+                                AuditService AuditService) {
         this.customUserDetailsService = customUserDetailsService;
         this.passwordEncoder = passwordEncoder;
         this.passwordValidator = passwordValidator;
+        this.AuditService = AuditService;
     }
 
     // ---------------------------------------------------------------
@@ -125,6 +128,7 @@ public class PasswordResetService {
         TenantContext.setTenantId(entry.tenantId);
         String encodedPassword = passwordEncoder.encode(request.getNewPassword());
         customUserDetailsService.updatePassword(entry.username, entry.tenantId, encodedPassword);
+        AuditService.passwordReset(entry.username,entry.tenantId);
 
         // Invalidate the reset token immediately after use
         tokenStore.remove(request.getResetToken());
