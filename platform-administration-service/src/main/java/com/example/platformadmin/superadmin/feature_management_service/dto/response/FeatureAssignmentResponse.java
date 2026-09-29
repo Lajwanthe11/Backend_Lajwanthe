@@ -5,6 +5,7 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 import java.util.UUID;
+
 @Data
 public class FeatureAssignmentResponse {
 
@@ -33,6 +34,5 @@ public class FeatureAssignmentResponse {
     private UUID createdBy;
 
     private UUID updatedBy;
-
 
 }
