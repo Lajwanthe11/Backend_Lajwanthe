@@ -221,4 +221,24 @@ public class CustomUserDetailsService implements UserDetailsService {
     public int getLockDurationMinutes() {
         return lockDurationMinutes;
     }
+    // ---------------------------------------------------------------
+    // MFA status support
+    // ---------------------------------------------------------------
+
+    public void updateMfaStatus(String username, String tenantId, boolean enabled) {
+        UserPrincipal user = resolveUser(username, tenantId);
+
+        if (user == null) {
+            throw new UsernameNotFoundException(
+                    String.format("User '%s' not found in tenant '%s'", username, tenantId)
+            );
+        }
+
+        user.setMfaEnabled(enabled);
+    }
+
+    public boolean isMfaEnabled(String username, String tenantId) {
+        UserPrincipal user = resolveUser(username, tenantId);
+        return user != null && user.isMfaEnabled();
+    }
 }
