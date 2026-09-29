@@ -1,0 +1,369 @@
+﻿package com.example.platformadmin.rbac.controller;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+
+import com.example.platformadmin.rbac.dto.request.RoleRequestDto;
+import com.example.platformadmin.rbac.dto.response.RoleResponseDto;
+import com.example.platformadmin.rbac.enums.RoleType;
+import com.example.platformadmin.rbac.service.serviceImpl.RoleServiceImpl;
+
+@WebMvcTest(RoleController.class)
+@AutoConfigureMockMvc(addFilters = false)
+class RoleControllerTest {
+
+    private static final UUID ROLE_ID = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockitoBean
+    private RoleServiceImpl roleService;
+
+
+    // ============================================================
+    // SEARCH
+    // ============================================================
+
+    @Test
+    void searchRoles_shouldReturnRoles() throws Exception {
+
+        RoleResponseDto role = new RoleResponseDto();
+
+        when(roleService.searchRoles(
+                eq("HR"),
+                any(),
+                any()
+        )).thenReturn(List.of(role));
+
+        mockMvc.perform(
+                get("/api/v1/roles/search")
+                        .param("query", "HR")
+        )
+        .andExpect(status().isOk());
+
+        verify(roleService).searchRoles(
+                eq("HR"),
+                any(),
+                any()
+        );
+    }
+
+
+    @Test
+    void searchRoles_shouldAllowOptionalParameters() throws Exception {
+
+        when(roleService.searchRoles(
+                any(),
+                any(),
+                any()
+        )).thenReturn(List.of());
+
+        mockMvc.perform(
+                get("/api/v1/roles/search")
+        )
+        .andExpect(status().isOk());
+
+        verify(roleService).searchRoles(
+                any(),
+                any(),
+                any()
+        );
+    }
+
+
+    @Test
+    void searchRoles_shouldSupportQueryOnly() throws Exception {
+
+        when(roleService.searchRoles(
+                eq("Admin"),
+                any(),
+                any()
+        )).thenReturn(List.of());
+
+        mockMvc.perform(
+                get("/api/v1/roles/search")
+                        .param("query", "Admin")
+        )
+        .andExpect(status().isOk());
+
+        verify(roleService).searchRoles(
+                eq("Admin"),
+                any(),
+                any()
+        );
+    }
+
+
+    @Test
+    void searchRoles_shouldSupportStatusOnly() throws Exception {
+
+        when(roleService.searchRoles(
+                any(),
+                any(),
+                eq("ACTIVE")
+        )).thenReturn(List.of());
+
+        mockMvc.perform(
+                get("/api/v1/roles/search")
+                        .param("status", "ACTIVE")
+        )
+        .andExpect(status().isOk());
+
+        verify(roleService).searchRoles(
+                any(),
+                any(),
+                eq("ACTIVE")
+        );
+    }
+
+
+    @Test
+    void searchRoles_shouldSupportRoleTypeOnly() throws Exception {
+
+        when(roleService.searchRoles(
+                any(),
+                eq(RoleType.CUSTOM),
+                any()
+        )).thenReturn(List.of());
+
+        mockMvc.perform(
+                get("/api/v1/roles/search")
+                        .param("roleType", "CUSTOM")
+        )
+        .andExpect(status().isOk());
+
+        verify(roleService).searchRoles(
+                any(),
+                eq(RoleType.CUSTOM),
+                any()
+        );
+    }
+
+
+    @Test
+    void searchRoles_shouldSupportAllFilters() throws Exception {
+
+        when(roleService.searchRoles(
+                eq("HR"),
+                eq(RoleType.CUSTOM),
+                eq("ACTIVE")
+        )).thenReturn(List.of());
+
+        mockMvc.perform(
+                get("/api/v1/roles/search")
+                        .param("query", "HR")
+                        .param("roleType", "CUSTOM")
+                        .param("status", "ACTIVE")
+        )
+        .andExpect(status().isOk());
+
+        verify(roleService).searchRoles(
+                eq("HR"),
+                eq(RoleType.CUSTOM),
+                eq("ACTIVE")
+        );
+    }
+
+
+    // ============================================================
+    // STATUS
+    // ============================================================
+
+    @Test
+    void updateStatus_shouldReturnUpdatedRole() throws Exception {
+
+        RoleResponseDto response = new RoleResponseDto();
+
+        when(roleService.updateStatus(
+                eq(ROLE_ID),
+                eq("ACTIVE")
+        )).thenReturn(response);
+
+        mockMvc.perform(
+                patch("/api/v1/roles/" + ROLE_ID + "/status")
+                        .param("status", "ACTIVE")
+        )
+        .andExpect(status().isOk());
+
+        verify(roleService).updateStatus(
+                ROLE_ID,
+                "ACTIVE"
+        );
+    }
+
+
+    // ============================================================
+    // COUNTS
+    // ============================================================
+
+    @Test
+    void getRoleCounts_shouldReturnCounts() throws Exception {
+
+        when(roleService.getRoleCounts())
+                .thenReturn(Map.of(
+                        "totalRoles", 5L,
+                        "systemRoles", 2L,
+                        "customRoles", 3L
+                ));
+
+        mockMvc.perform(
+                get("/api/v1/roles/counts")
+        )
+        .andExpect(status().isOk());
+
+        verify(roleService).getRoleCounts();
+    }
+
+
+    // ============================================================
+    // CREATE
+    // ============================================================
+
+    @Test
+    void createRole_shouldReturnCreatedRole() throws Exception {
+
+        RoleResponseDto response = new RoleResponseDto();
+
+        when(roleService.create(
+                any(RoleRequestDto.class)
+        )).thenReturn(response);
+
+        mockMvc.perform(
+                post("/api/v1/roles")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "roleName": "HR Manager",
+                                  "roleCode": "HR_MANAGER",
+                                  "roleType": "CUSTOM",
+                                  "description": "HR management role",
+                                  "status": "ACTIVE"
+                                }
+                                """)
+        )
+        .andExpect(status().isCreated());
+
+        verify(roleService).create(
+                any(RoleRequestDto.class)
+        );
+    }
+
+
+    // ============================================================
+    // GET BY ID
+    // ============================================================
+
+    @Test
+    void getRoleById_shouldReturnRole() throws Exception {
+
+        RoleResponseDto response = new RoleResponseDto();
+
+        when(roleService.getById(ROLE_ID))
+                .thenReturn(response);
+
+        mockMvc.perform(
+                get("/api/v1/roles/" + ROLE_ID)
+        )
+        .andExpect(status().isOk());
+
+        verify(roleService).getById(ROLE_ID);
+    }
+
+
+    // ============================================================
+    // GET ALL
+    // ============================================================
+
+    @Test
+    void getAllRoles_shouldReturnRoles() throws Exception {
+
+        when(roleService.getAll())
+                .thenReturn(List.of(
+                        new RoleResponseDto()
+                ));
+
+        mockMvc.perform(
+                get("/api/v1/roles/all")
+        )
+        .andExpect(status().isOk());
+
+        verify(roleService).getAll();
+    }
+
+
+    // ============================================================
+    // UPDATE
+    // ============================================================
+
+    @Test
+    void updateRole_shouldReturnUpdatedRole() throws Exception {
+
+        RoleResponseDto response = new RoleResponseDto();
+
+        when(roleService.update(
+                eq(ROLE_ID),
+                any(RoleRequestDto.class)
+        )).thenReturn(response);
+
+        mockMvc.perform(
+                put("/api/v1/roles/" + ROLE_ID)
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "roleName": "Updated HR Manager",
+                                  "roleCode": "HR_MANAGER",
+                                  "roleType": "CUSTOM",
+                                  "description": "Updated description",
+                                  "status": "ACTIVE"
+                                }
+                                """)
+        )
+        .andExpect(status().isOk());
+
+        verify(roleService).update(
+                eq(ROLE_ID),
+                any(RoleRequestDto.class)
+        );
+    }
+
+
+    // ============================================================
+    // DELETE
+    // ============================================================
+
+    @Test
+    void deleteRole_shouldReturnNoContent() throws Exception {
+
+        doNothing()
+                .when(roleService)
+                .deleteById(ROLE_ID);
+
+        mockMvc.perform(
+                delete("/api/v1/roles/" + ROLE_ID)
+        )
+        .andExpect(status().isOk());
+
+        verify(roleService).deleteById(ROLE_ID);
+    }
+}

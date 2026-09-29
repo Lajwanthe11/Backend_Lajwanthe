@@ -1,4 +1,4 @@
-package com.platformadmin.superadmin.feature_management_service.dto.response;
+package com.example.platformadmin.superadmin.feature_management_service.dto.response;
 
 import lombok.Data;
 

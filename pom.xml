@@ -24,7 +24,6 @@
         <module>base-service</module>
         <module>auth-service</module>
         <module>platform-administration-service</module>
-        <module>rbac-service</module>
     </modules>
 
     <properties>
