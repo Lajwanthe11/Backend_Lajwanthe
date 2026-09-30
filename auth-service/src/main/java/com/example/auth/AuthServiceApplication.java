@@ -9,6 +9,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  *
  * Runs on port 8081 (see application.yml).
  * Exposes POST /api/auth/validate for inter-service token introspection.
+ *'/.,mnbvcx
  *
  * scanBasePackages = "com.example" ensures all @Component / @Configuration
  * beans from common-lib (com.example.common.*) are discovered at runtime.

@@ -7,12 +7,15 @@ import com.example.auth.dto.PasswordResetRequestDTO;
 import com.example.auth.dto.PasswordResetResponseDTO;
 import com.example.auth.dto.RegisterRequestDTO;
 import com.example.auth.dto.TokenRefreshRequestDTO;
+import com.example.auth.loginhistory.entity.LoginHistory.AuthenticationMethod;
+import com.example.auth.loginhistory.service.LoginHistoryService;
 import com.example.auth.security.jwt.JwtTokenProvider;
+import com.example.auth.security.user.UserPrincipal;
 import com.example.auth.service.AuthService;
 import com.example.auth.service.PasswordResetService;
-import com.example.auth.service.SessionManagementService;
 import com.example.auth.service.TokenDenylistService;
 import com.example.common.response.ApiResponse;
+import com.example.common.tenant.TenantContext;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -20,6 +23,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
@@ -45,17 +51,18 @@ public class AuthController {
     private final PasswordResetService passwordResetService;
     private final TokenDenylistService tokenDenylistService;
     private final JwtTokenProvider tokenProvider;
-    private final SessionManagementService sessionManagementService;
+    private final LoginHistoryService loginHistoryService;
 
     public AuthController(AuthService authService,
                           PasswordResetService passwordResetService,
                           TokenDenylistService tokenDenylistService,
-                          JwtTokenProvider tokenProvider, SessionManagementService sessionManagementService) {
+                          JwtTokenProvider tokenProvider,
+                          LoginHistoryService loginHistoryService) {
         this.authService = authService;
         this.passwordResetService = passwordResetService;
         this.tokenDenylistService = tokenDenylistService;
         this.tokenProvider = tokenProvider;
-        this.sessionManagementService = sessionManagementService;
+        this.loginHistoryService = loginHistoryService;
     }
 
     // ---------------------------------------------------------------
@@ -70,15 +77,20 @@ public class AuthController {
     public ResponseEntity<ApiResponse<AuthResponseDTO>> login(
             @Valid @RequestBody LoginRequestDTO loginRequest) {
 
-        AuthResponseDTO response = authService.login(loginRequest);
+        AuthResponseDTO response;
+        try {
+            response = authService.login(loginRequest);
+        } catch (AuthenticationException ex) {
+            // Wrong password / locked / disabled: save a FAILED row (with tenant_id), then let the
+            // normal error handling return the 401 exactly as before.
+            loginHistoryService.recordFailedLogin(
+                    loginRequest.getUsername(), AuthenticationMethod.PASSWORD, null, ex);
+            throw ex;
+        }
+
+        // Login succeeded: save the SUCCESS row (tenant_id, login_time, session_id, ...)
+        saveLoginHistory(response);
         return ResponseEntity.ok(ApiResponse.ok("Login successful", response));
-    }
-    @GetMapping("/session/{sessionId}")
-    public ResponseEntity<?> checkSession(@PathVariable String sessionId) {
-
-        boolean active = sessionManagementService.isSessionActive(sessionId);
-
-        return ResponseEntity.ok(active);
     }
 
     // ---------------------------------------------------------------
@@ -94,6 +106,8 @@ public class AuthController {
             @Valid @RequestBody RegisterRequestDTO registerRequest) {
 
         AuthResponseDTO response = authService.register(registerRequest);
+        // register() auto-logs the user in, so that session gets its history row too
+        saveLoginHistory(response);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.created("User registered successfully", response));
     }
@@ -106,11 +120,11 @@ public class AuthController {
     @Operation(
             summary = "Logout",
             description = "Revoke the caller's current JWT access token. " +
-                          "The token must be passed in the Authorization header as 'Bearer <token>'. " +
-                          "Once revoked, the token is rejected on all subsequent requests.",
+                    "The token must be passed in the Authorization header as 'Bearer <token>'. " +
+                    "Once revoked, the token is rejected on all subsequent requests.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
-    public ResponseEntity<ApiResponse<Void>> logout(HttpServletRequest request,@RequestParam String sessionId) {
+    public ResponseEntity<ApiResponse<Void>> logout(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
 
         if (!StringUtils.hasText(bearerToken) || !bearerToken.startsWith("Bearer ")) {
@@ -128,11 +142,15 @@ public class AuthController {
         Date expiry = tokenProvider.getExpiryFromJWT(jwt);
         tokenDenylistService.revokeToken(jwt, expiry);
 
-        sessionManagementService.invalidateSession(sessionId);
+        // Update the SAME login_history row the login created: found by the token's session id and
+        // tenant, and closed only if it is a SUCCESS row that has no logout_time yet.
+        TenantContext.setTenantId(tokenProvider.getTenantIdFromJWT(jwt));
+        loginHistoryService.recordLogout(tokenProvider.getSessionIdFromJWT(jwt));
 
         return ResponseEntity.ok(ApiResponse.ok("Logged out successfully", null));
     }
 
+    // ---------------------------------------------------------------
     // Token Refresh
     // ---------------------------------------------------------------
 
@@ -156,8 +174,8 @@ public class AuthController {
     @Operation(
             summary = "Request Password Reset",
             description = "Generate a time-limited password reset token for the given username. " +
-                          "In production this token would be sent by email; " +
-                          "it is returned directly in the response for developer convenience."
+                    "In production this token would be sent by email; " +
+                    "it is returned directly in the response for developer convenience."
     )
     public ResponseEntity<ApiResponse<PasswordResetResponseDTO>> requestPasswordReset(
             @Valid @RequestBody PasswordResetRequestDTO resetRequest) {
@@ -174,7 +192,7 @@ public class AuthController {
     @Operation(
             summary = "Confirm Password Reset",
             description = "Validate the reset token received from /password-reset/request " +
-                          "and set a new password. The token is single-use and expires in 15 minutes."
+                    "and set a new password. The token is single-use and expires in 15 minutes."
     )
     public ResponseEntity<ApiResponse<Void>> confirmPasswordReset(
             @Valid @RequestBody PasswordResetConfirmDTO confirmRequest) {
@@ -195,5 +213,31 @@ public class AuthController {
             @RequestParam(value = "tenantId", required = false) String tenantId) {
 
         return ResponseEntity.ok(ApiResponse.ok("OAuth2 Login Successful. Access token issued.", token));
+    }
+
+    // ---------------------------------------------------------------
+    // Login history helper
+    // ---------------------------------------------------------------
+
+    /**
+     * Saves the SUCCESS login_history row for a freshly issued token pair. The session id (sid) and
+     * expiry are read from the refresh token, so logout can later find and update this same row.
+     * Best-effort: a failure to write history never fails the login.
+     */
+    private void saveLoginHistory(AuthResponseDTO response) {
+        String refreshToken = response.getRefreshToken();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = (authentication != null && authentication.getPrincipal() instanceof UserPrincipal principal)
+                ? principal.getEmail()
+                : null;
+
+        TenantContext.setTenantId(response.getTenantId());
+        loginHistoryService.recordSuccessfulLogin(
+                response.getUsername(),
+                email,
+                AuthenticationMethod.PASSWORD,
+                null,
+                tokenProvider.getSessionIdFromJWT(refreshToken),
+                tokenProvider.getExpiryFromJWT(refreshToken));
     }
 }
