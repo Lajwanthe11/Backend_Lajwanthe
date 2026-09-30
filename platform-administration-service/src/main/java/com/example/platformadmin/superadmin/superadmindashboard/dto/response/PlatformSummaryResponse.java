@@ -12,4 +12,7 @@ public class PlatformSummaryResponse {
     private Long activeUsers;
     private Long onlineUsers;
     private String platformStatus;
+    private Long totalUsers;
+    private Double userGrowthPercent;
+    private Double orgGrowthPercent;
 }
