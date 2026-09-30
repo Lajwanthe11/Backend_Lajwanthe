@@ -5,14 +5,24 @@ import com.example.auth.devicemanagement.device.dto.DeviceAuditLogResponse;
 import com.example.auth.devicemanagement.device.dto.DeviceRegistrationRequest;
 import com.example.auth.devicemanagement.device.dto.DeviceResponse;
 import com.example.auth.devicemanagement.device.dto.DeviceSummaryResponse;
+import com.example.auth.devicemanagement.device.entity.Device;
 import com.example.auth.devicemanagement.device.entity.DeviceStatus;
 import com.example.auth.devicemanagement.device.entity.DeviceType;
+import com.example.common.abstracts.BaseService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
-public interface DeviceService {
+/**
+ * Service contract for Device management.
+ * Standard CRUD (create, getById, getAll, update, deleteById, existsById) is inherited from
+ * {@link BaseService}; the methods below are device-specific.
+ */
+public interface DeviceService
+        extends BaseService<Device, Long, DeviceRegistrationRequest, DeviceResponse> {
+
+    // getById(Long) is inherited from BaseService
 
     DeviceResponse registerDevice(DeviceRegistrationRequest request, String username, String userAgent);
 
@@ -22,8 +32,6 @@ public interface DeviceService {
      * be denied.
      */
     boolean isDeviceBlocked(String deviceIdentifier);
-
-    DeviceResponse getById(Long id);
 
     Page<DeviceResponse> search(String keyword, DeviceType deviceType, DeviceStatus deviceStatus, Pageable pageable);
 

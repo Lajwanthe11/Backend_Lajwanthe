@@ -20,6 +20,8 @@ import com.example.common.exception.BadRequestException;
 import com.example.common.exception.ResourceNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -44,6 +46,74 @@ public class DeviceServiceImpl implements DeviceService {
         this.properties = properties;
         this.userAgentDetector = userAgentDetector;
     }
+
+    // ---------------------------------------------------------------
+    // BaseService CRUD implementations (used by AbstractController)
+    // ---------------------------------------------------------------
+
+    /** Admin create: registers the device under the currently authenticated user. */
+    @Override
+    @Transactional
+    public DeviceResponse create(DeviceRegistrationRequest request) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = (auth != null) ? auth.getName() : "system";
+        return registerDevice(request, username, null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DeviceResponse getById(Long id) {
+        return toResponse(findByIdOrThrow(id));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<DeviceResponse> getAll() {
+        return deviceRepository.findAll().stream().map(this::toResponse).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<DeviceResponse> getAll(Pageable pageable) {
+        return deviceRepository.findAll(pageable).map(this::toResponse);
+    }
+
+    /** Updates editable device details. Only non-blank fields in the request are changed. */
+    @Override
+    @Transactional
+    public DeviceResponse update(Long id, DeviceRegistrationRequest request) {
+        Device device = findByIdOrThrow(id);
+        if (StringUtils.hasText(request.getDeviceName())) {
+            device.setDeviceName(request.getDeviceName());
+        }
+        if (request.getDeviceType() != null) {
+            device.setDeviceType(request.getDeviceType());
+        }
+        if (StringUtils.hasText(request.getOperatingSystem())) {
+            device.setOperatingSystem(request.getOperatingSystem());
+        }
+        if (StringUtils.hasText(request.getEmployeeId())) {
+            device.setEmployeeId(request.getEmployeeId());
+        }
+        return toResponse(deviceRepository.save(device));
+    }
+
+    /** Delete without a reason; reuses removeDevice so the audit log is still written. */
+    @Override
+    @Transactional
+    public void deleteById(Long id) {
+        removeDevice(id, null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean existsById(Long id) {
+        return deviceRepository.existsById(id);
+    }
+
+    // ---------------------------------------------------------------
+    // Device-specific operations
+    // ---------------------------------------------------------------
 
     @Override
     @Transactional
@@ -98,12 +168,6 @@ public class DeviceServiceImpl implements DeviceService {
         return deviceRepository.findByDeviceIdentifier(deviceIdentifier)
                 .map(device -> device.getDeviceStatus() == DeviceStatus.BLOCKED)
                 .orElse(false);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public DeviceResponse getById(Long id) {
-        return toResponse(findByIdOrThrow(id));
     }
 
     @Override
@@ -186,6 +250,10 @@ public class DeviceServiceImpl implements DeviceService {
                 .map(this::toAuditResponse)
                 .toList();
     }
+
+    // ---------------------------------------------------------------
+    // Helpers
+    // ---------------------------------------------------------------
 
     private Device findByIdOrThrow(Long id) {
         return deviceRepository.findById(id)
