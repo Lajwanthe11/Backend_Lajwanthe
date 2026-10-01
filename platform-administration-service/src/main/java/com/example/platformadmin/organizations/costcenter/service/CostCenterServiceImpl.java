@@ -4,6 +4,7 @@ import com.example.common.abstracts.AbstractService;
 import com.example.platformadmin.organizations.costcenter.dto.CostCenterRequestDTO;
 import com.example.platformadmin.organizations.costcenter.dto.CostCenterResponseDTO;
 import com.example.platformadmin.organizations.costcenter.entity.CostCenterEntity;
+import com.example.platformadmin.organizations.costcenter.enums.CostCenterStatus;
 import com.example.platformadmin.organizations.costcenter.exceptions.CostCenterAlreadyExistsException;
 import com.example.platformadmin.organizations.costcenter.repository.CostCenterRepository;
 import org.springframework.stereotype.Service;
@@ -17,17 +18,13 @@ public class CostCenterServiceImpl extends AbstractService<
 
     private final CostCenterRepository costCenterRepository;
 
-    public CostCenterServiceImpl(
-            CostCenterRepository costCenterRepository) {
-
+    public CostCenterServiceImpl(CostCenterRepository costCenterRepository) {
         super(costCenterRepository, "Cost Center");
         this.costCenterRepository = costCenterRepository;
     }
 
     @Override
-    protected CostCenterEntity toEntity(
-            CostCenterRequestDTO dto) {
-
+    protected CostCenterEntity toEntity(CostCenterRequestDTO dto) {
         CostCenterEntity entity = new CostCenterEntity();
 
         entity.setCostCenterCode(dto.getCostCenterCode());
@@ -40,16 +37,14 @@ public class CostCenterServiceImpl extends AbstractService<
         entity.setStatus(
                 dto.getStatus() != null
                         ? dto.getStatus()
-                        : com.example.platformadmin.organizations.costcenter.enums.CostCenterStatus.ACTIVE
+                        : CostCenterStatus.ACTIVE
         );
 
         return entity;
     }
 
     @Override
-    protected CostCenterResponseDTO toDto(
-            CostCenterEntity entity) {
-
+    protected CostCenterResponseDTO toDto(CostCenterEntity entity) {
         CostCenterResponseDTO dto = new CostCenterResponseDTO();
 
         dto.setId(entity.getId());
@@ -108,15 +103,13 @@ public class CostCenterServiceImpl extends AbstractService<
             CostCenterEntity entity,
             CostCenterRequestDTO dto) {
 
-        if (costCenterRepository
-                .existsByCostCenterCodeAndIdNot(
-                        dto.getCostCenterCode(),
-                        entity.getId())) {
+        if (costCenterRepository.existsByCostCenterCodeAndIdNot(
+                dto.getCostCenterCode(),
+                entity.getId())) {
 
             throw new CostCenterAlreadyExistsException(
                     "Cost center code already exists: "
                             + dto.getCostCenterCode()
-
             );
         }
     }
