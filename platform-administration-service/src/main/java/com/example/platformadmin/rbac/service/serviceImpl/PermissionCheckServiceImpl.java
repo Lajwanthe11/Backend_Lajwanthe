@@ -1,12 +1,12 @@
 ﻿package com.example.platformadmin.rbac.service.serviceImpl;
 
-import com.example.platformadmin.rbac.entity.Permission;
-
 import com.example.common.tenant.TenantContext;
 import com.example.platformadmin.rbac.service.PermissionCheckService;
 import com.example.platformadmin.rbac.service.PermissionResolver;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -14,7 +14,8 @@ import org.springframework.stereotype.Service;
 import java.util.Set;
 
 @Service
-public class PermissionCheckServiceImpl implements PermissionCheckService {
+public class PermissionCheckServiceImpl
+        implements PermissionCheckService {
 
     private static final Logger log =
             LoggerFactory.getLogger(PermissionCheckServiceImpl.class);
@@ -26,12 +27,13 @@ public class PermissionCheckServiceImpl implements PermissionCheckService {
         this.permissionResolver = permissionResolver;
     }
 
-    // Checks if the user has the given permission in the tenant.
+    // Check whether a user has a permission
     @Override
     public boolean hasPermission(
             String userId,
-            String tenantId,
             String permissionCode) {
+
+        String tenantId = TenantContext.getTenantId();
 
         Set<String> permissions =
                 permissionResolver.resolvePermissions(
@@ -53,7 +55,7 @@ public class PermissionCheckServiceImpl implements PermissionCheckService {
         return allowed;
     }
 
-    // Gets all permissions resolved for the user.
+    // Get all permissions for a user
     @Override
     public Set<String> getResolvedPermissions(
             String userId,
@@ -64,7 +66,7 @@ public class PermissionCheckServiceImpl implements PermissionCheckService {
                 tenantId);
     }
 
-    // Checks the permission using the currently logged-in user.
+    // Check permission for the current user
     @Override
     public boolean hasPermission(String permissionCode) {
 
@@ -78,12 +80,10 @@ public class PermissionCheckServiceImpl implements PermissionCheckService {
             return false;
         }
 
-        String username = authentication.getName();
-        String tenantId = TenantContext.getTenantId();
+        String userId = authentication.getName();
 
         return hasPermission(
-                username,
-                tenantId,
+                userId,
                 permissionCode);
     }
 }

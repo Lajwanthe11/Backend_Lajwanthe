@@ -48,12 +48,13 @@ class PermissionCheckServiceImplTest {
     @Test
     void hasPermission_permissionExists_returnsTrue() {
 
+        TenantContext.setTenantId("tenant1");
+
         when(permissionResolver.resolvePermissions("user1", "tenant1"))
                 .thenReturn(Set.of("USER_READ", "USER_CREATE"));
 
         boolean result = permissionCheckService.hasPermission(
                 "user1",
-                "tenant1",
                 "USER_READ");
 
         assertTrue(result);
@@ -62,12 +63,13 @@ class PermissionCheckServiceImplTest {
     @Test
     void hasPermission_permissionDoesNotExist_returnsFalse() {
 
+        TenantContext.setTenantId("tenant1");
+
         when(permissionResolver.resolvePermissions("user1", "tenant1"))
                 .thenReturn(Set.of("USER_READ"));
 
         boolean result = permissionCheckService.hasPermission(
                 "user1",
-                "tenant1",
                 "USER_DELETE");
 
         assertFalse(result);
@@ -76,12 +78,13 @@ class PermissionCheckServiceImplTest {
     @Test
     void hasPermission_wildcardPermission_returnsTrue() {
 
+        TenantContext.setTenantId("tenant1");
+
         when(permissionResolver.resolvePermissions("user1", "tenant1"))
                 .thenReturn(Set.of("*"));
 
         boolean result = permissionCheckService.hasPermission(
                 "user1",
-                "tenant1",
                 "ANY_PERMISSION");
 
         assertTrue(result);
@@ -90,12 +93,13 @@ class PermissionCheckServiceImplTest {
     @Test
     void hasPermission_permissionCodeIsCaseSensitive() {
 
+        TenantContext.setTenantId("tenant1");
+
         when(permissionResolver.resolvePermissions("user1", "tenant1"))
                 .thenReturn(Set.of("USER_READ"));
 
         boolean result = permissionCheckService.hasPermission(
                 "user1",
-                "tenant1",
                 "user_read");
 
         assertFalse(result);
