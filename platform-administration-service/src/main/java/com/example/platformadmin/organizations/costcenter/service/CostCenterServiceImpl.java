@@ -116,6 +116,7 @@ public class CostCenterServiceImpl extends AbstractService<
             throw new CostCenterAlreadyExistsException(
                     "Cost center code already exists: "
                             + dto.getCostCenterCode()
+
             );
         }
     }
