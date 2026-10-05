@@ -9,6 +9,8 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 
 import java.math.BigDecimal;
@@ -28,12 +30,13 @@ public class CostCenterEntity {
     private Long id;
 
     // =========================================================
-    // COST CENTER DETAILS
+    // COST CENTER
     // =========================================================
 
     @Column(
             name = "cost_center_code",
             nullable = false,
+            unique = true,
             length = 255
     )
     private String costCenterCode;
@@ -84,7 +87,7 @@ public class CostCenterEntity {
             precision = 15,
             scale = 2
     )
-    private BigDecimal allocatedBudget;
+    private BigDecimal budgetAmount;
 
     // =========================================================
     // CURRENCY
@@ -114,7 +117,10 @@ public class CostCenterEntity {
     @Column(name = "tenant_id")
     private String tenantId;
 
-    @Column(name = "created_at")
+    @Column(
+            name = "created_at",
+            nullable = false
+    )
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at")
@@ -127,7 +133,42 @@ public class CostCenterEntity {
     private String updatedBy;
 
     @Column(name = "version")
-    private Long version;
+    private Long version = 0L;
+
+    // =========================================================
+    // AUTOMATIC DATE HANDLING
+    // =========================================================
+
+    @PrePersist
+    protected void onCreate() {
+
+        LocalDateTime now = LocalDateTime.now();
+
+        if (createdAt == null) {
+            createdAt = now;
+        }
+
+        if (updatedAt == null) {
+            updatedAt = now;
+        }
+
+        if (version == null) {
+            version = 0L;
+        }
+
+        if (currency == null || currency.isBlank()) {
+            currency = "USD";
+        }
+
+        if (status == null) {
+            status = CostCenterStatus.ACTIVE;
+        }
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 
     // =========================================================
     // GETTERS AND SETTERS
@@ -189,12 +230,12 @@ public class CostCenterEntity {
         this.departmentId = departmentId;
     }
 
-    public BigDecimal getAllocatedBudget() {
-        return allocatedBudget;
+    public BigDecimal getBudgetAmount() {
+        return budgetAmount;
     }
 
-    public void setAllocatedBudget(BigDecimal allocatedBudget) {
-        this.allocatedBudget = allocatedBudget;
+    public void setBudgetAmount(BigDecimal budgetAmount) {
+        this.budgetAmount = budgetAmount;
     }
 
     public String getCurrency() {

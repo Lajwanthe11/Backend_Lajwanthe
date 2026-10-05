@@ -14,12 +14,10 @@ public interface CostCenterRepository
         extends JpaRepository<CostCenterEntity, Long> {
 
     // =========================================================
-    // COST CENTER CODE
+    // UNIQUE COST CENTER CODE
     // =========================================================
 
-    boolean existsByCostCenterCode(
-            String costCenterCode
-    );
+    boolean existsByCostCenterCode(String costCenterCode);
 
     boolean existsByCostCenterCodeAndIdNot(
             String costCenterCode,
@@ -28,14 +26,6 @@ public interface CostCenterRepository
 
     Optional<CostCenterEntity> findByCostCenterCode(
             String costCenterCode
-    );
-
-    // =========================================================
-    // GET BY DEPARTMENT
-    // =========================================================
-
-    List<CostCenterEntity> findByDepartmentId(
-            Long departmentId
     );
 
     // =========================================================
@@ -52,5 +42,13 @@ public interface CostCenterRepository
 
     List<CostCenterEntity> findByCompanyId(
             Long companyId
+    );
+
+    // =========================================================
+    // GET BY DEPARTMENT
+    // =========================================================
+
+    List<CostCenterEntity> findByDepartmentId(
+            Long departmentId
     );
 }

@@ -3,7 +3,6 @@ package com.example.platformadmin.organizations.costcenter.dto;
 import com.example.platformadmin.organizations.costcenter.enums.CostCenterStatus;
 
 import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -15,8 +14,8 @@ public class CostCenterRequestDTO {
 
     @NotBlank(message = "Cost center code is required")
     @Size(
-            max = 50,
-            message = "Cost center code must not exceed 50 characters"
+            max = 255,
+            message = "Cost center code must not exceed 255 characters"
     )
     private String costCenterCode;
 
@@ -42,24 +41,12 @@ public class CostCenterRequestDTO {
     @NotNull(message = "Department ID is required")
     private Long departmentId;
 
-    // =========================================================
-    // BUDGET
-    // =========================================================
-
     @DecimalMin(
-            value = "0.00",
-            message = "Allocated budget cannot be negative"
+            value = "0.0",
+            inclusive = true,
+            message = "Budget amount cannot be negative"
     )
-    @Digits(
-            integer = 13,
-            fraction = 2,
-            message = "Allocated budget must have at most 2 decimal places"
-    )
-    private BigDecimal allocatedBudget;
-
-    // =========================================================
-    // CURRENCY
-    // =========================================================
+    private BigDecimal budgetAmount;
 
     @Size(
             max = 10,
@@ -67,12 +54,7 @@ public class CostCenterRequestDTO {
     )
     private String currency = "USD";
 
-    // =========================================================
-    // STATUS
-    // =========================================================
-
-    private CostCenterStatus status =
-            CostCenterStatus.ACTIVE;
+    private CostCenterStatus status = CostCenterStatus.ACTIVE;
 
     // =========================================================
     // GETTERS AND SETTERS
@@ -126,12 +108,12 @@ public class CostCenterRequestDTO {
         this.departmentId = departmentId;
     }
 
-    public BigDecimal getAllocatedBudget() {
-        return allocatedBudget;
+    public BigDecimal getBudgetAmount() {
+        return budgetAmount;
     }
 
-    public void setAllocatedBudget(BigDecimal allocatedBudget) {
-        this.allocatedBudget = allocatedBudget;
+    public void setBudgetAmount(BigDecimal budgetAmount) {
+        this.budgetAmount = budgetAmount;
     }
 
     public String getCurrency() {

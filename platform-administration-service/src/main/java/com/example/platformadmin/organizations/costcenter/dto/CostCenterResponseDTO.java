@@ -22,7 +22,7 @@ public class CostCenterResponseDTO {
 
     private Long departmentId;
 
-    private BigDecimal allocatedBudget;
+    private BigDecimal budgetAmount;
 
     private String currency;
 
@@ -100,12 +100,12 @@ public class CostCenterResponseDTO {
         this.departmentId = departmentId;
     }
 
-    public BigDecimal getAllocatedBudget() {
-        return allocatedBudget;
+    public BigDecimal getBudgetAmount() {
+        return budgetAmount;
     }
 
-    public void setAllocatedBudget(BigDecimal allocatedBudget) {
-        this.allocatedBudget = allocatedBudget;
+    public void setBudgetAmount(BigDecimal budgetAmount) {
+        this.budgetAmount = budgetAmount;
     }
 
     public String getCurrency() {

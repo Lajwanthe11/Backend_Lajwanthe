@@ -18,20 +18,28 @@ public interface CostCenterService extends BaseService<
      * Returns all Cost Centers associated with a Department,
      * including their allocated budget and currency.
      */
-    List<CostCenterResponseDTO> getByDepartmentId(Long departmentId);
+    List<CostCenterResponseDTO> getByDepartmentId(
+            Long departmentId
+    );
 
     /**
      * Returns all Cost Centers associated with an Organization.
      */
-    List<CostCenterResponseDTO> getByOrganizationId(UUID organizationId);
+    List<CostCenterResponseDTO> getByOrganizationId(
+            UUID organizationId
+    );
 
     /**
      * Returns all Cost Centers associated with a Company.
      */
-    List<CostCenterResponseDTO> getByCompanyId(Long companyId);
+    List<CostCenterResponseDTO> getByCompanyId(
+            Long companyId
+    );
 
     /**
      * Returns a Cost Center by its unique Cost Center Code.
      */
-    CostCenterResponseDTO getByCode(String costCenterCode);
+    CostCenterResponseDTO getByCode(
+            String costCenterCode
+    );
 }

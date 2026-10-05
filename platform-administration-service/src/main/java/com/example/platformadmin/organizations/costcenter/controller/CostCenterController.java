@@ -1,15 +1,17 @@
 package com.example.platformadmin.organizations.costcenter.controller;
 
-import com.example.common.abstracts.AbstractController;
 import com.example.common.response.ApiResponse;
-
 import com.example.platformadmin.organizations.costcenter.dto.CostCenterRequestDTO;
 import com.example.platformadmin.organizations.costcenter.dto.CostCenterResponseDTO;
 import com.example.platformadmin.organizations.costcenter.entity.CostCenterEntity;
 import com.example.platformadmin.organizations.costcenter.service.CostCenterService;
 
+import com.example.common.abstracts.AbstractController;
+
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+
+import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,7 +23,7 @@ import java.util.UUID;
 @RequestMapping("/cost-centers")
 @Tag(
         name = "Cost Center Management",
-        description = "CRUD and lookup APIs for Cost Centers"
+        description = "CRUD and search APIs for Cost Center management"
 )
 @SecurityRequirement(name = "bearerAuth")
 public class CostCenterController extends AbstractController<
@@ -36,22 +38,21 @@ public class CostCenterController extends AbstractController<
             CostCenterService costCenterService) {
 
         super(costCenterService);
+
         this.costCenterService = costCenterService;
     }
 
     // =========================================================
-    // GET BY DEPARTMENT ID
+    // GET BY CODE
     // =========================================================
 
-    @GetMapping("/department/{departmentId}")
-    public ResponseEntity<ApiResponse<List<CostCenterResponseDTO>>>
-    getByDepartmentId(
-            @PathVariable Long departmentId) {
+    @GetMapping("/code/{code}")
+    public ResponseEntity<ApiResponse<CostCenterResponseDTO>>
+    getByCode(
+            @PathVariable String code) {
 
-        List<CostCenterResponseDTO> result =
-                costCenterService.getByDepartmentId(
-                        departmentId
-                );
+        CostCenterResponseDTO result =
+                costCenterService.getByCode(code);
 
         return ResponseEntity.ok(
                 ApiResponse.ok(result)
@@ -59,11 +60,12 @@ public class CostCenterController extends AbstractController<
     }
 
     // =========================================================
-    // GET BY ORGANIZATION ID
+    // GET BY ORGANIZATION
     // =========================================================
 
     @GetMapping("/organization/{organizationId}")
-    public ResponseEntity<ApiResponse<List<CostCenterResponseDTO>>>
+    public ResponseEntity<
+            ApiResponse<List<CostCenterResponseDTO>>>
     getByOrganizationId(
             @PathVariable UUID organizationId) {
 
@@ -78,11 +80,12 @@ public class CostCenterController extends AbstractController<
     }
 
     // =========================================================
-    // GET BY COMPANY ID
+    // GET BY COMPANY
     // =========================================================
 
     @GetMapping("/company/{companyId}")
-    public ResponseEntity<ApiResponse<List<CostCenterResponseDTO>>>
+    public ResponseEntity<
+            ApiResponse<List<CostCenterResponseDTO>>>
     getByCompanyId(
             @PathVariable Long companyId) {
 
@@ -97,17 +100,18 @@ public class CostCenterController extends AbstractController<
     }
 
     // =========================================================
-    // GET BY COST CENTER CODE
+    // GET BY DEPARTMENT
     // =========================================================
 
-    @GetMapping("/code/{costCenterCode}")
-    public ResponseEntity<ApiResponse<CostCenterResponseDTO>>
-    getByCode(
-            @PathVariable String costCenterCode) {
+    @GetMapping("/department/{departmentId}")
+    public ResponseEntity<
+            ApiResponse<List<CostCenterResponseDTO>>>
+    getByDepartmentId(
+            @PathVariable Long departmentId) {
 
-        CostCenterResponseDTO result =
-                costCenterService.getByCode(
-                        costCenterCode
+        List<CostCenterResponseDTO> result =
+                costCenterService.getByDepartmentId(
+                        departmentId
                 );
 
         return ResponseEntity.ok(
