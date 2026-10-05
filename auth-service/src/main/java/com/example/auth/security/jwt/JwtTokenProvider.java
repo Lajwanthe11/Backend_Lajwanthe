@@ -29,6 +29,9 @@ public class JwtTokenProvider {
 
     private static final Logger log = LoggerFactory.getLogger(JwtTokenProvider.class);
 
+    /** Claim shared by every token of one login session; links logout and refresh to its Login History record. */
+    public static final String SESSION_ID_CLAIM = "sid";
+
     @Value("${app.jwt.secret}")
     private String jwtSecret;
 
@@ -53,7 +56,11 @@ public class JwtTokenProvider {
     // ---------------------------------------------------------------
 
     /** Generate an access token from a Spring Security Authentication object. */
-    public String generateAccessToken(Authentication authentication,String sessionId) {
+    public String generateAccessToken(Authentication authentication) {
+        return generateAccessToken(authentication, null);
+    }
+
+    public String generateAccessToken(Authentication authentication, String sessionId) {
         UserDetails principal = (UserDetails) authentication.getPrincipal();
         String tenantId = (principal instanceof UserPrincipal userPrincipal)
                 ? userPrincipal.getTenantId()
@@ -72,22 +79,32 @@ public class JwtTokenProvider {
     }
 
     public String generateAccessToken(String username, String roles, String tenantId) {
-        return generateToken(username, roles, tenantId != null ? tenantId : TenantContext.getTenantId(),null, jwtExpirationInMs);
+        return generateAccessToken(username, roles, tenantId, null);
+    }
+
+    public String generateAccessToken(String username, String roles, String tenantId, String sessionId) {
+        return generateToken(username, roles,
+                tenantId != null ? tenantId : TenantContext.getTenantId(),
+                sessionId, jwtExpirationInMs);
     }
 
     /** Generate a refresh token (no roles embedded — minimal claims). */
     public String generateRefreshToken(String username) {
-        return generateRefreshToken(username, TenantContext.getTenantId(),null);
+        return generateRefreshToken(username, TenantContext.getTenantId());
     }
+
     public String generateRefreshToken(String username, String tenantId) {
         return generateRefreshToken(username, tenantId, null);
     }
 
-    public String generateRefreshToken(String username, String tenantId,String sessionId) {
-        return generateToken(username, null, tenantId != null ? tenantId : TenantContext.getTenantId(), sessionId, refreshExpirationInMs);
+    public String generateRefreshToken(String username, String tenantId, String sessionId) {
+        return generateToken(username, null,
+                tenantId != null ? tenantId : TenantContext.getTenantId(),
+                sessionId, refreshExpirationInMs);
     }
 
-    private String generateToken(String username, String roles, String tenantId,String sessionId, long expirationTime) {
+    private String generateToken(String username, String roles, String tenantId,
+                                 String sessionId, long expirationTime) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expirationTime);
 
@@ -95,13 +112,10 @@ public class JwtTokenProvider {
         if (roles != null) {
             claims.put("roles", roles);
         }
-        if (tenantId != null && !tenantId.isBlank()) {
-            claims.put("tenantId", tenantId);
-        } else {
-            claims.put("tenantId", TenantContext.DEFAULT_TENANT_ID);
-        }
+        claims.put("tenantId", (tenantId != null && !tenantId.isBlank())
+                ? tenantId : TenantContext.DEFAULT_TENANT_ID);
         if (sessionId != null) {
-            claims.put("sessionId", sessionId);
+            claims.put(SESSION_ID_CLAIM, sessionId);
         }
 
         return Jwts.builder()
@@ -129,12 +143,14 @@ public class JwtTokenProvider {
         String tenantId = parseClaims(token).get("tenantId", String.class);
         return (tenantId != null && !tenantId.isBlank()) ? tenantId : TenantContext.DEFAULT_TENANT_ID;
     }
-    public String getSessionIdFromJWT(String token) {
-        return parseClaims(token).get("sessionId", String.class);
-    }
 
     public Date getExpiryFromJWT(String token) {
         return parseClaims(token).getExpiration();
+    }
+
+    /** The login-session id, or null for tokens issued without one. */
+    public String getSessionIdFromJWT(String token) {
+        return parseClaims(token).get(SESSION_ID_CLAIM, String.class);
     }
 
     private Claims parseClaims(String token) {

@@ -1,7 +1,6 @@
 package com.example.auth.security.jwt;
 
 import com.example.auth.security.user.CustomUserDetailsService;
-import com.example.auth.service.SessionManagementService;
 import com.example.auth.service.TokenDenylistService;
 import com.example.common.tenant.TenantContext;
 import jakarta.servlet.FilterChain;
@@ -34,15 +33,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtTokenProvider tokenProvider;
     private final CustomUserDetailsService customUserDetailsService;
     private final TokenDenylistService tokenDenylistService;
-    private final SessionManagementService sessionManagementService;
 
     public JwtAuthenticationFilter(JwtTokenProvider tokenProvider,
                                    CustomUserDetailsService customUserDetailsService,
-                                   TokenDenylistService tokenDenylistService, SessionManagementService sessionManagementService) {
+                                   TokenDenylistService tokenDenylistService) {
         this.tokenProvider = tokenProvider;
         this.customUserDetailsService = customUserDetailsService;
         this.tokenDenylistService = tokenDenylistService;
-        this.sessionManagementService = sessionManagementService;
     }
 
     @Override
@@ -54,13 +51,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             if (StringUtils.hasText(jwt) && tokenProvider.validateToken(jwt)) {
 
-                String sessionId = tokenProvider.getSessionIdFromJWT(jwt);
-                if (!StringUtils.hasText(sessionId) || !sessionManagementService.isSessionActive(sessionId)) {
-
-                    log.debug("Rejected JWT because session is inactive or expired");
-                    filterChain.doFilter(request, response);
-                    return;
-                }
                 // Reject tokens that have been explicitly revoked (e.g., via logout)
                 if (tokenDenylistService.isRevoked(jwt)) {
                     log.debug("Rejected revoked JWT token");
@@ -99,4 +89,3 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         return null;
     }
 }
-
