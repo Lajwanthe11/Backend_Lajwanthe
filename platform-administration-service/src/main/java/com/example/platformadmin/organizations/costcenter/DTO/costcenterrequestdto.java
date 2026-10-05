@@ -18,14 +18,23 @@ import java.util.UUID;
 public class CostCenterRequestDTO {
 
     @NotBlank(message = "Cost center code is required")
-    @Size(max = 50, message = "Cost center code must not exceed 50 characters")
-    private String code;
+    @Size(
+            max = 50,
+            message = "Cost center code must not exceed 50 characters"
+    )
+    private String costCenterCode;
 
     @NotBlank(message = "Cost center name is required")
-    @Size(max = 150, message = "Cost center name must not exceed 150 characters")
-    private String name;
+    @Size(
+            max = 150,
+            message = "Cost center name must not exceed 150 characters"
+    )
+    private String costCenterName;
 
-    @Size(max = 500, message = "Description must not exceed 500 characters")
+    @Size(
+            max = 500,
+            message = "Description must not exceed 500 characters"
+    )
     private String description;
 
     @NotNull(message = "Cost center status is required")
@@ -41,14 +50,23 @@ public class CostCenterRequestDTO {
     private Long departmentId;
 
     @NotNull(message = "Budget is required")
-    @DecimalMin(value = "0.00", message = "Budget cannot be negative")
+    @DecimalMin(
+            value = "0.00",
+            message = "Budget cannot be negative"
+    )
     private BigDecimal budget;
 
     @NotNull(message = "Allocated funds is required")
-    @DecimalMin(value = "0.00", message = "Allocated funds cannot be negative")
+    @DecimalMin(
+            value = "0.00",
+            message = "Allocated funds cannot be negative"
+    )
     private BigDecimal allocatedFunds;
 
     @NotNull(message = "Departmental expenses is required")
-    @DecimalMin(value = "0.00", message = "Departmental expenses cannot be negative")
+    @DecimalMin(
+            value = "0.00",
+            message = "Departmental expenses cannot be negative"
+    )
     private BigDecimal departmentalExpenses;
 }
