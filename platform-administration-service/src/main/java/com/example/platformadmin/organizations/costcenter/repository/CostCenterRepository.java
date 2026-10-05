@@ -4,48 +4,55 @@ import com.example.platformadmin.organizations.costcenter.entity.CostCenterEntit
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.UUID;
 
 @Repository
 public interface CostCenterRepository
         extends JpaRepository<CostCenterEntity, Long> {
 
-    // Cost Center Name
-    boolean existsByCostCenterName(String costCenterName);
+    // ---------------------------------------------------------
+    // Cost Center Code uniqueness
+    // ---------------------------------------------------------
 
-    boolean existsByCostCenterNameAndIdNot(
-            String costCenterName,
+    boolean existsByCostCenterCode(
+            String costCenterCode
+    );
+
+    boolean existsByCostCenterCodeAndIdNot(
+            String costCenterCode,
             Long id
     );
 
-    // Cost Center Code must be unique
-    // within Organization + Company + Department
-    boolean existsByCostCenterCodeAndOrganizationIdAndCompanyIdAndDepartmentId(
-            String costCenterCode,
-            UUID organizationId,
-            Long companyId,
+    // ---------------------------------------------------------
+    // Get by Cost Center Code
+    // ---------------------------------------------------------
+
+    CostCenterEntity findByCostCenterCode(
+            String costCenterCode
+    );
+
+    // ---------------------------------------------------------
+    // Get by Organization ID
+    // ---------------------------------------------------------
+
+    List<CostCenterEntity> findByOrganizationId(
+            UUID organizationId
+    );
+
+    // ---------------------------------------------------------
+    // Get by Department ID
+    // ---------------------------------------------------------
+
+    List<CostCenterEntity> findByDepartmentId(
             Long departmentId
     );
 
-    boolean existsByCostCenterCodeAndOrganizationIdAndCompanyIdAndDepartmentIdAndIdNot(
-            String costCenterCode,
-            UUID organizationId,
-            Long companyId,
-            Long departmentId,
-            Long id
-    );
+    // ---------------------------------------------------------
+    // Get by Company ID
+    // ---------------------------------------------------------
 
-    // Organization + Company + Department combination
-    boolean existsByOrganizationIdAndCompanyIdAndDepartmentId(
-            UUID organizationId,
-            Long companyId,
-            Long departmentId
-    );
-
-    boolean existsByOrganizationIdAndCompanyIdAndDepartmentIdAndIdNot(
-            UUID organizationId,
-            Long companyId,
-            Long departmentId,
-            Long id
+    List<CostCenterEntity> findByCompanyId(
+            Long companyId
     );
 }
