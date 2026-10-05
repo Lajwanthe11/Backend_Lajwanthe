@@ -2,6 +2,7 @@ package com.example.platformadmin.superadmin.feature_management_service.controll
 
 import com.example.platformadmin.superadmin.feature_management_service.dto.request.FeatureCreateRequest;
 import com.example.platformadmin.superadmin.feature_management_service.dto.request.FeatureUpdateRequest;
+import com.example.platformadmin.superadmin.feature_management_service.dto.response.FeatureDashboardResponse;
 import com.example.platformadmin.superadmin.feature_management_service.dto.response.FeatureResponse;
 import com.example.platformadmin.superadmin.feature_management_service.services.FeatureService;
 import jakarta.validation.Valid;
@@ -43,9 +44,35 @@ public class FeatureController {
     }
 
     @GetMapping
-    public ResponseEntity<List<FeatureResponse>> getAllFeatures() {
-        log.info("REST request to get all features");
-        return ResponseEntity.ok(featureService.getAllFeatures());
+    public ResponseEntity<List<FeatureResponse>> getAllFeatures(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String module,
+            @RequestParam(required = false) String licensePlan,
+            @RequestParam(required = false) String status) {
+
+        log.info(
+                "REST request to get features - search: {}, module: {}, licensePlan: {}, status: {}",
+                search, module, licensePlan, status
+        );
+
+        return ResponseEntity.ok(
+                featureService.getAllFeatures(
+                        search,
+                        module,
+                        licensePlan,
+                        status
+                )
+        );
+    }
+
+    @GetMapping("/dashboard/summary")
+    public ResponseEntity<FeatureDashboardResponse> getDashboardSummary() {
+
+        log.info("REST request to get feature dashboard summary");
+
+        return ResponseEntity.ok(
+                featureService.getDashboardSummary()
+        );
     }
 
     @PutMapping("/{id}")

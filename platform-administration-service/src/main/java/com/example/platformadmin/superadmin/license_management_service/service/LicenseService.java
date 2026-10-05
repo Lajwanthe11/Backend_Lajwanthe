@@ -6,6 +6,7 @@ package com.example.platformadmin.superadmin.license_management_service.service;
 import com.example.platformadmin.superadmin.license_management_service.dto.request.LicenseCreateRequest;
 import com.example.platformadmin.superadmin.license_management_service.dto.request.LicenseRenewRequest;
 import com.example.platformadmin.superadmin.license_management_service.dto.request.LicenseUpdateRequest;
+import com.example.platformadmin.superadmin.license_management_service.dto.response.LicenseDashboardResponse;
 import com.example.platformadmin.superadmin.license_management_service.dto.response.LicenseResponse;
 import com.example.platformadmin.superadmin.license_management_service.dto.response.LicenseStatusResponse;
 import com.example.platformadmin.superadmin.license_management_service.enums.LicenseStatus;
@@ -61,4 +62,6 @@ public interface LicenseService {
     );
 
     void markExpiredLicenses();
+
+    LicenseDashboardResponse getDashboardSummary();
 }

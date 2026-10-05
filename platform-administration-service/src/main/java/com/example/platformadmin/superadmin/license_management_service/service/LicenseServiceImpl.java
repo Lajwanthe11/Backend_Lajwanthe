@@ -5,6 +5,7 @@ package com.example.platformadmin.superadmin.license_management_service.service;
 import com.example.platformadmin.superadmin.license_management_service.dto.request.LicenseCreateRequest;
 import com.example.platformadmin.superadmin.license_management_service.dto.request.LicenseRenewRequest;
 import com.example.platformadmin.superadmin.license_management_service.dto.request.LicenseUpdateRequest;
+import com.example.platformadmin.superadmin.license_management_service.dto.response.LicenseDashboardResponse;
 import com.example.platformadmin.superadmin.license_management_service.dto.response.LicenseResponse;
 import com.example.platformadmin.superadmin.license_management_service.dto.response.LicenseStatusResponse;
 import com.example.platformadmin.superadmin.license_management_service.entity.License;
@@ -19,6 +20,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -58,6 +61,60 @@ public class LicenseServiceImpl implements LicenseService {
         return mapToResponse(saved);
     }
 
+    /**
+     * Get a summary of the license dashboard.
+     *
+     * @return The license dashboard response.
+     */
+
+    @Override
+    public LicenseDashboardResponse getDashboardSummary() {
+
+        long totalLicenses =
+                licenseRepository.countByDeletedFalse();
+
+        long activeLicenses =
+                licenseRepository.countByStatusAndDeletedFalse(
+                        LicenseStatus.ACTIVE
+                );
+
+        long suspendedLicenses =
+                licenseRepository.countByStatusAndDeletedFalse(
+                        LicenseStatus.SUSPENDED
+                );
+
+        LocalDate today = LocalDate.now();
+
+        LocalDate next30Days = today.plusDays(30);
+
+        long expiringLicenses =
+                licenseRepository.countByExpiryDateBetweenAndDeletedFalse(
+                        today,
+                        next30Days
+                );
+
+        BigDecimal utilizationRate = BigDecimal.ZERO;
+
+        if (totalLicenses > 0) {
+
+            utilizationRate =
+                    BigDecimal.valueOf(activeLicenses)
+                            .multiply(BigDecimal.valueOf(100))
+                            .divide(
+                                    BigDecimal.valueOf(totalLicenses),
+                                    2,
+                                    RoundingMode.HALF_UP
+                            );
+        }
+
+        return new LicenseDashboardResponse(
+                totalLicenses,
+                activeLicenses,
+                expiringLicenses,
+                suspendedLicenses,
+                utilizationRate
+        );
+    }
     @Override
     @Transactional
     public LicenseResponse getLicense(UUID licenseId) {
