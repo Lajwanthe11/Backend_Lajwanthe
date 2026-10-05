@@ -1,27 +1,48 @@
-
 package com.example.platformadmin.organizations.costcenter.dto;
 
 import com.example.platformadmin.organizations.costcenter.enums.CostCenterStatus;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 public class CostCenterResponseDTO {
 
     private Long id;
+
     private String costCenterCode;
+
     private String costCenterName;
+
     private String description;
+
     private UUID organizationId;
+
     private Long companyId;
+
     private Long departmentId;
+
+    private BigDecimal allocatedBudget;
+
+    private String currency;
+
     private CostCenterStatus status;
+
     private String tenantId;
+
     private LocalDateTime createdAt;
+
     private LocalDateTime updatedAt;
+
     private String createdBy;
+
     private String updatedBy;
+
     private Long version;
+
+    // =========================================================
+    // GETTERS AND SETTERS
+    // =========================================================
 
     public Long getId() {
         return id;
@@ -77,6 +98,22 @@ public class CostCenterResponseDTO {
 
     public void setDepartmentId(Long departmentId) {
         this.departmentId = departmentId;
+    }
+
+    public BigDecimal getAllocatedBudget() {
+        return allocatedBudget;
+    }
+
+    public void setAllocatedBudget(BigDecimal allocatedBudget) {
+        this.allocatedBudget = allocatedBudget;
+    }
+
+    public String getCurrency() {
+        return currency;
+    }
+
+    public void setCurrency(String currency) {
+        this.currency = currency;
     }
 
     public CostCenterStatus getStatus() {

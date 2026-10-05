@@ -21,7 +21,7 @@ import java.util.UUID;
 @RequestMapping("/cost-centers")
 @Tag(
         name = "Cost Center Management",
-        description = "CRUD and search APIs for Cost Center management"
+        description = "CRUD and lookup APIs for Cost Centers"
 )
 @SecurityRequirement(name = "bearerAuth")
 public class CostCenterController extends AbstractController<
@@ -40,15 +40,18 @@ public class CostCenterController extends AbstractController<
     }
 
     // =========================================================
-    // GET BY COST CENTER CODE
+    // GET BY DEPARTMENT ID
     // =========================================================
 
-    @GetMapping("/code/{code}")
-    public ResponseEntity<ApiResponse<CostCenterResponseDTO>> getByCode(
-            @PathVariable String code) {
+    @GetMapping("/department/{departmentId}")
+    public ResponseEntity<ApiResponse<List<CostCenterResponseDTO>>>
+    getByDepartmentId(
+            @PathVariable Long departmentId) {
 
-        CostCenterResponseDTO result =
-                costCenterService.getByCode(code);
+        List<CostCenterResponseDTO> result =
+                costCenterService.getByDepartmentId(
+                        departmentId
+                );
 
         return ResponseEntity.ok(
                 ApiResponse.ok(result)
@@ -75,25 +78,6 @@ public class CostCenterController extends AbstractController<
     }
 
     // =========================================================
-    // GET BY DEPARTMENT ID
-    // =========================================================
-
-    @GetMapping("/department/{departmentId}")
-    public ResponseEntity<ApiResponse<List<CostCenterResponseDTO>>>
-    getByDepartmentId(
-            @PathVariable Long departmentId) {
-
-        List<CostCenterResponseDTO> result =
-                costCenterService.getByDepartmentId(
-                        departmentId
-                );
-
-        return ResponseEntity.ok(
-                ApiResponse.ok(result)
-        );
-    }
-
-    // =========================================================
     // GET BY COMPANY ID
     // =========================================================
 
@@ -105,6 +89,25 @@ public class CostCenterController extends AbstractController<
         List<CostCenterResponseDTO> result =
                 costCenterService.getByCompanyId(
                         companyId
+                );
+
+        return ResponseEntity.ok(
+                ApiResponse.ok(result)
+        );
+    }
+
+    // =========================================================
+    // GET BY COST CENTER CODE
+    // =========================================================
+
+    @GetMapping("/code/{costCenterCode}")
+    public ResponseEntity<ApiResponse<CostCenterResponseDTO>>
+    getByCode(
+            @PathVariable String costCenterCode) {
+
+        CostCenterResponseDTO result =
+                costCenterService.getByCode(
+                        costCenterCode
                 );
 
         return ResponseEntity.ok(

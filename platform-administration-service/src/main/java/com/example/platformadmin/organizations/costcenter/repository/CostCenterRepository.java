@@ -1,19 +1,21 @@
 package com.example.platformadmin.organizations.costcenter.repository;
 
 import com.example.platformadmin.organizations.costcenter.entity.CostCenterEntity;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface CostCenterRepository
         extends JpaRepository<CostCenterEntity, Long> {
 
-    // ---------------------------------------------------------
-    // Cost Center Code uniqueness
-    // ---------------------------------------------------------
+    // =========================================================
+    // COST CENTER CODE
+    // =========================================================
 
     boolean existsByCostCenterCode(
             String costCenterCode
@@ -24,33 +26,29 @@ public interface CostCenterRepository
             Long id
     );
 
-    // ---------------------------------------------------------
-    // Get by Cost Center Code
-    // ---------------------------------------------------------
-
-    CostCenterEntity findByCostCenterCode(
+    Optional<CostCenterEntity> findByCostCenterCode(
             String costCenterCode
     );
 
-    // ---------------------------------------------------------
-    // Get by Organization ID
-    // ---------------------------------------------------------
-
-    List<CostCenterEntity> findByOrganizationId(
-            UUID organizationId
-    );
-
-    // ---------------------------------------------------------
-    // Get by Department ID
-    // ---------------------------------------------------------
+    // =========================================================
+    // GET BY DEPARTMENT
+    // =========================================================
 
     List<CostCenterEntity> findByDepartmentId(
             Long departmentId
     );
 
-    // ---------------------------------------------------------
-    // Get by Company ID
-    // ---------------------------------------------------------
+    // =========================================================
+    // GET BY ORGANIZATION
+    // =========================================================
+
+    List<CostCenterEntity> findByOrganizationId(
+            UUID organizationId
+    );
+
+    // =========================================================
+    // GET BY COMPANY
+    // =========================================================
 
     List<CostCenterEntity> findByCompanyId(
             Long companyId

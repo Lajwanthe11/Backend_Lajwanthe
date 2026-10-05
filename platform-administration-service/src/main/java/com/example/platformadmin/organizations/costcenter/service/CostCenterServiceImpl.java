@@ -2,6 +2,9 @@ package com.example.platformadmin.organizations.costcenter.service;
 
 import com.example.common.abstracts.AbstractService;
 
+import com.example.platformadmin.organizations.company.exception.CompanyNotFoundException;
+import com.example.platformadmin.organizations.company.repository.CompanyRepository;
+
 import com.example.platformadmin.organizations.costcenter.dto.CostCenterRequestDTO;
 import com.example.platformadmin.organizations.costcenter.dto.CostCenterResponseDTO;
 import com.example.platformadmin.organizations.costcenter.entity.CostCenterEntity;
@@ -10,16 +13,14 @@ import com.example.platformadmin.organizations.costcenter.exceptions.CostCenterA
 import com.example.platformadmin.organizations.costcenter.exceptions.CostCenterNotFoundException;
 import com.example.platformadmin.organizations.costcenter.repository.CostCenterRepository;
 
-import com.example.platformadmin.organizations.organization.exception.OrganizationNotFoundException;
-import com.example.platformadmin.organizations.organization.repository.OrganizationRepository;
-
-import com.example.platformadmin.organizations.company.exception.CompanyNotFoundException;
-import com.example.platformadmin.organizations.company.repository.CompanyRepository;
-
 import com.example.platformadmin.organizations.department.exception.DepartmentNotFoundException;
 import com.example.platformadmin.organizations.department.repository.DepartmentRepository;
 
+import com.example.platformadmin.organizations.organization.exception.OrganizationNotFoundException;
+import com.example.platformadmin.organizations.organization.repository.OrganizationRepository;
+
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -51,7 +52,7 @@ public class CostCenterServiceImpl extends AbstractService<
     }
 
     // =========================================================
-    // CREATE - Convert DTO to Entity
+    // DTO -> ENTITY
     // =========================================================
 
     @Override
@@ -84,6 +85,18 @@ public class CostCenterServiceImpl extends AbstractService<
                 dto.getDepartmentId()
         );
 
+        // Budget
+        entity.setAllocatedBudget(
+                dto.getAllocatedBudget()
+        );
+
+        // Currency
+        entity.setCurrency(
+                dto.getCurrency() != null
+                        ? dto.getCurrency()
+                        : "USD"
+        );
+
         entity.setStatus(
                 dto.getStatus() != null
                         ? dto.getStatus()
@@ -94,7 +107,7 @@ public class CostCenterServiceImpl extends AbstractService<
     }
 
     // =========================================================
-    // ENTITY -> RESPONSE DTO
+    // ENTITY -> DTO
     // =========================================================
 
     @Override
@@ -104,7 +117,9 @@ public class CostCenterServiceImpl extends AbstractService<
         CostCenterResponseDTO dto =
                 new CostCenterResponseDTO();
 
-        dto.setId(entity.getId());
+        dto.setId(
+                entity.getId()
+        );
 
         dto.setCostCenterCode(
                 entity.getCostCenterCode()
@@ -130,10 +145,21 @@ public class CostCenterServiceImpl extends AbstractService<
                 entity.getDepartmentId()
         );
 
+        // Budget
+        dto.setAllocatedBudget(
+                entity.getAllocatedBudget()
+        );
+
+        // Currency
+        dto.setCurrency(
+                entity.getCurrency()
+        );
+
         dto.setStatus(
                 entity.getStatus()
         );
 
+        // Base Entity fields
         dto.setTenantId(
                 entity.getTenantId()
         );
@@ -194,8 +220,19 @@ public class CostCenterServiceImpl extends AbstractService<
                 dto.getDepartmentId()
         );
 
-        if (dto.getStatus() != null) {
+        // Budget
+        entity.setAllocatedBudget(
+                dto.getAllocatedBudget()
+        );
 
+        // Currency
+        if (dto.getCurrency() != null) {
+            entity.setCurrency(
+                    dto.getCurrency()
+            );
+        }
+
+        if (dto.getStatus() != null) {
             entity.setStatus(
                     dto.getStatus()
             );
@@ -209,7 +246,7 @@ public class CostCenterServiceImpl extends AbstractService<
     private void validateReferences(
             CostCenterRequestDTO dto) {
 
-        // Organization must exist
+        // Organization validation
         if (!organizationRepository.existsById(
                 dto.getOrganizationId())) {
 
@@ -218,7 +255,7 @@ public class CostCenterServiceImpl extends AbstractService<
             );
         }
 
-        // Company must exist
+        // Company validation
         if (!companyRepository.existsById(
                 dto.getCompanyId())) {
 
@@ -228,19 +265,18 @@ public class CostCenterServiceImpl extends AbstractService<
             );
         }
 
-        // Department must exist
+        // Department validation
         if (!departmentRepository.existsById(
                 dto.getDepartmentId())) {
 
             throw new DepartmentNotFoundException(
-                    "Department not found with ID: "
-                            + dto.getDepartmentId()
+                    dto.getDepartmentId()
             );
         }
     }
 
     // =========================================================
-    // BEFORE CREATE
+    // CREATE VALIDATION
     // =========================================================
 
     @Override
@@ -248,10 +284,11 @@ public class CostCenterServiceImpl extends AbstractService<
             CostCenterEntity entity,
             CostCenterRequestDTO dto) {
 
-        // Validate referenced IDs
+        // Organization, Company and Department
+        // must exist.
         validateReferences(dto);
 
-        // ONLY COST CENTER CODE MUST BE UNIQUE
+        // ONLY COST CENTER CODE MUST BE UNIQUE.
         if (costCenterRepository.existsByCostCenterCode(
                 dto.getCostCenterCode())) {
 
@@ -260,10 +297,24 @@ public class CostCenterServiceImpl extends AbstractService<
                             + dto.getCostCenterCode()
             );
         }
+
+        /*
+         * DO NOT check:
+         *
+         * costCenterName
+         * organizationId
+         * companyId
+         * departmentId
+         * allocatedBudget
+         * currency
+         * status
+         *
+         * These fields are allowed to repeat.
+         */
     }
 
     // =========================================================
-    // BEFORE UPDATE
+    // UPDATE VALIDATION
     // =========================================================
 
     @Override
@@ -271,10 +322,12 @@ public class CostCenterServiceImpl extends AbstractService<
             CostCenterEntity entity,
             CostCenterRequestDTO dto) {
 
-        // Validate referenced IDs
+        // References must exist.
         validateReferences(dto);
 
-        // ONLY COST CENTER CODE MUST BE UNIQUE
+        // ONLY COST CENTER CODE MUST BE UNIQUE.
+        //
+        // The current record is excluded using its ID.
         if (costCenterRepository
                 .existsByCostCenterCodeAndIdNot(
                         dto.getCostCenterCode(),
@@ -285,44 +338,12 @@ public class CostCenterServiceImpl extends AbstractService<
                             + dto.getCostCenterCode()
             );
         }
-    }
 
-    // =========================================================
-    // GET BY COST CENTER CODE
-    // =========================================================
-
-    @Override
-    public CostCenterResponseDTO getByCode(
-            String code) {
-
-        CostCenterEntity entity =
-                costCenterRepository
-                        .findByCostCenterCode(code);
-
-        if (entity == null) {
-
-            throw new CostCenterNotFoundException(
-                    "Cost center not found with code: "
-                            + code
-            );
-        }
-
-        return toDto(entity);
-    }
-
-    // =========================================================
-    // GET BY ORGANIZATION ID
-    // =========================================================
-
-    @Override
-    public List<CostCenterResponseDTO> getByOrganizationId(
-            UUID organizationId) {
-
-        return costCenterRepository
-                .findByOrganizationId(organizationId)
-                .stream()
-                .map(this::toDto)
-                .toList();
+        /*
+         * Cost Center Name is intentionally NOT checked.
+         *
+         * Same name is allowed.
+         */
     }
 
     // =========================================================
@@ -330,11 +351,56 @@ public class CostCenterServiceImpl extends AbstractService<
     // =========================================================
 
     @Override
+    @Transactional(readOnly = true)
     public List<CostCenterResponseDTO> getByDepartmentId(
             Long departmentId) {
 
+        if (departmentId == null) {
+            throw new IllegalArgumentException(
+                    "Department ID cannot be null"
+            );
+        }
+
+        if (!departmentRepository.existsById(
+                departmentId)) {
+
+            throw new DepartmentNotFoundException(
+                    departmentId
+            );
+        }
+
         return costCenterRepository
                 .findByDepartmentId(departmentId)
+                .stream()
+                .map(this::toDto)
+                .toList();
+    }
+
+    // =========================================================
+    // GET BY ORGANIZATION ID
+    // =========================================================
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CostCenterResponseDTO> getByOrganizationId(
+            UUID organizationId) {
+
+        if (organizationId == null) {
+            throw new IllegalArgumentException(
+                    "Organization ID cannot be null"
+            );
+        }
+
+        if (!organizationRepository.existsById(
+                organizationId)) {
+
+            throw new OrganizationNotFoundException(
+                    organizationId
+            );
+        }
+
+        return costCenterRepository
+                .findByOrganizationId(organizationId)
                 .stream()
                 .map(this::toDto)
                 .toList();
@@ -345,13 +411,57 @@ public class CostCenterServiceImpl extends AbstractService<
     // =========================================================
 
     @Override
+    @Transactional(readOnly = true)
     public List<CostCenterResponseDTO> getByCompanyId(
             Long companyId) {
+
+        if (companyId == null) {
+            throw new IllegalArgumentException(
+                    "Company ID cannot be null"
+            );
+        }
+
+        if (!companyRepository.existsById(
+                companyId)) {
+
+            throw new CompanyNotFoundException(
+                    "Company not found with ID: "
+                            + companyId
+            );
+        }
 
         return costCenterRepository
                 .findByCompanyId(companyId)
                 .stream()
                 .map(this::toDto)
                 .toList();
+    }
+
+    // =========================================================
+    // GET BY COST CENTER CODE
+    // =========================================================
+
+    @Override
+    @Transactional(readOnly = true)
+    public CostCenterResponseDTO getByCode(
+            String costCenterCode) {
+
+        if (costCenterCode == null
+                || costCenterCode.isBlank()) {
+
+            throw new IllegalArgumentException(
+                    "Cost center code cannot be blank"
+            );
+        }
+
+        return costCenterRepository
+                .findByCostCenterCode(costCenterCode.trim())
+                .map(this::toDto)
+                .orElseThrow(() ->
+                        new CostCenterNotFoundException(
+                                "Cost center not found with code: "
+                                        + costCenterCode
+                        )
+                );
     }
 }

@@ -1,24 +1,36 @@
-
 package com.example.platformadmin.organizations.costcenter.dto;
 
 import com.example.platformadmin.organizations.costcenter.enums.CostCenterStatus;
+
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 public class CostCenterRequestDTO {
 
     @NotBlank(message = "Cost center code is required")
-    @Size(max = 50, message = "Cost center code must not exceed 50 characters")
+    @Size(
+            max = 50,
+            message = "Cost center code must not exceed 50 characters"
+    )
     private String costCenterCode;
 
     @NotBlank(message = "Cost center name is required")
-    @Size(max = 150, message = "Cost center name must not exceed 150 characters")
+    @Size(
+            max = 255,
+            message = "Cost center name must not exceed 255 characters"
+    )
     private String costCenterName;
 
-    @Size(max = 255, message = "Description must not exceed 255 characters")
+    @Size(
+            max = 500,
+            message = "Description must not exceed 500 characters"
+    )
     private String description;
 
     @NotNull(message = "Organization ID is required")
@@ -30,7 +42,41 @@ public class CostCenterRequestDTO {
     @NotNull(message = "Department ID is required")
     private Long departmentId;
 
-    private CostCenterStatus status;
+    // =========================================================
+    // BUDGET
+    // =========================================================
+
+    @DecimalMin(
+            value = "0.00",
+            message = "Allocated budget cannot be negative"
+    )
+    @Digits(
+            integer = 13,
+            fraction = 2,
+            message = "Allocated budget must have at most 2 decimal places"
+    )
+    private BigDecimal allocatedBudget;
+
+    // =========================================================
+    // CURRENCY
+    // =========================================================
+
+    @Size(
+            max = 10,
+            message = "Currency must not exceed 10 characters"
+    )
+    private String currency = "USD";
+
+    // =========================================================
+    // STATUS
+    // =========================================================
+
+    private CostCenterStatus status =
+            CostCenterStatus.ACTIVE;
+
+    // =========================================================
+    // GETTERS AND SETTERS
+    // =========================================================
 
     public String getCostCenterCode() {
         return costCenterCode;
@@ -78,6 +124,22 @@ public class CostCenterRequestDTO {
 
     public void setDepartmentId(Long departmentId) {
         this.departmentId = departmentId;
+    }
+
+    public BigDecimal getAllocatedBudget() {
+        return allocatedBudget;
+    }
+
+    public void setAllocatedBudget(BigDecimal allocatedBudget) {
+        this.allocatedBudget = allocatedBudget;
+    }
+
+    public String getCurrency() {
+        return currency;
+    }
+
+    public void setCurrency(String currency) {
+        this.currency = currency;
     }
 
     public CostCenterStatus getStatus() {
