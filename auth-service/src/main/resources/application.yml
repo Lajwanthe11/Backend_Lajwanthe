@@ -8,7 +8,7 @@ spring:
     name: auth-service
 
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/microservice_db}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/postgres}
     driver-class-name: org.postgresql.Driver
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
     password: ${SPRING_DATASOURCE_PASSWORD:postgres}
@@ -68,13 +68,25 @@ spring:
             # multi-tenant /common/ metadata document returns a literal "{tenantid}" placeholder
             # that Spring's strict URI parser rejects, crashing the app before it can even start.
             # Static URLs avoid any startup-time network call entirely.
-            # Tenant ID below is the real Directory (tenant) ID from Azure — "common" won't
+            # Tenant ID below is the real Directory (tenant) ID from Azure â€” "common" won't
             # reliably work with this static-endpoint approach for the userinfo call.
             authorization-uri: https://login.microsoftonline.com/${OAUTH2_MICROSOFT_TENANT_ID:1380dd78-5b89-40ee-b046-d89d51024a62}/oauth2/v2.0/authorize
             token-uri: https://login.microsoftonline.com/${OAUTH2_MICROSOFT_TENANT_ID:1380dd78-5b89-40ee-b046-d89d51024a62}/oauth2/v2.0/token
             jwk-set-uri: https://login.microsoftonline.com/${OAUTH2_MICROSOFT_TENANT_ID:1380dd78-5b89-40ee-b046-d89d51024a62}/discovery/v2.0/keys
             user-info-uri: https://graph.microsoft.com/oidc/userinfo
             user-name-attribute: sub
+
+  mail:
+    host: ${SPRING_MAIL_HOST:smtp.gmail.com}
+    port: ${SPRING_MAIL_PORT:587}
+    username: ${SPRING_MAIL_USERNAME:}
+    password: ${SPRING_MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
 # Application Configuration
 app:
