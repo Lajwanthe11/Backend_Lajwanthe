@@ -1,5 +1,6 @@
 package com.example.auth.service;
 
+import com.example.auth.audit.service.AuditService;
 import com.example.auth.dto.AuthResponseDTO;
 import com.example.auth.dto.LoginRequestDTO;
 import com.example.auth.dto.RegisterRequestDTO;
@@ -38,18 +39,22 @@ public class AuthService {
     // NEW: password strength validation added for registration flow
     private final PasswordValidator passwordValidator;
     private final SessionManagementService sessionManagementService;
+    // Audit & Compliance
+    private final AuditService auditService;
 
     public AuthService(AuthenticationManager authenticationManager,
                        CustomUserDetailsService customUserDetailsService,
                        PasswordEncoder passwordEncoder,
                        JwtTokenProvider tokenProvider,
-                       PasswordValidator passwordValidator,SessionManagementService sessionManagementService) {
+                       PasswordValidator passwordValidator,SessionManagementService sessionManagementService,
+                       AuditService auditService) {
         this.authenticationManager = authenticationManager;
         this.customUserDetailsService = customUserDetailsService;
         this.passwordEncoder = passwordEncoder;
         this.tokenProvider = tokenProvider;
         this.passwordValidator = passwordValidator;
         this.sessionManagementService = sessionManagementService;
+        this.auditService = auditService;
     }
 
     public AuthResponseDTO login(LoginRequestDTO loginRequest) {
@@ -82,6 +87,7 @@ public class AuthService {
                             customUserDetailsService.getMaxAttempts(), minutes, seconds);
                 }
             }
+            auditService.accountLocked(loginRequest.getUsername(), tenantId);
             // NEW: custom exception so controller/advice can return a distinct
             // "locked" response instead of a generic auth failure
             throw new AccountLockedException(message);
@@ -89,6 +95,7 @@ public class AuthService {
             // NEW: Wrong password -> track the failed attempt, then rethrow so the
             // existing "invalid credentials" behavior is unchanged for the caller.
             customUserDetailsService.incrementFailedAttempts(loginRequest.getUsername(), tenantId);
+            auditService.loginFailed(loginRequest.getUsername(), tenantId);
             throw ex;
         }
 
@@ -100,6 +107,7 @@ public class AuthService {
                 loginRequest.getUsername(),
                 tenantId
         );
+        auditService.loginSuccess(loginRequest.getUsername(), tenantId);
         String accessToken = tokenProvider.generateAccessToken(authentication,sessionId);
         String refreshToken = tokenProvider.generateRefreshToken(loginRequest.getUsername(), tenantId,sessionId);
 
@@ -113,6 +121,62 @@ public class AuthService {
                 .tokenType("Bearer")
                 .username(loginRequest.getUsername())
                 .tenantId(tenantId)
+                .roles(roles)
+                .sessionId(sessionId)
+                .build();
+    }
+    public AuthResponseDTO completeMfaLogin(String username, String tenantId) {
+
+        if (StringUtils.hasText(tenantId)) {
+            TenantContext.setTenantId(tenantId);
+        }
+
+        String effectiveTenantId = TenantContext.getTenantId();
+
+        UserDetails userDetails =
+                customUserDetailsService.loadUserByUsername(username);
+
+        Authentication authentication =
+                new UsernamePasswordAuthenticationToken(
+                        userDetails,
+                        null,
+                        userDetails.getAuthorities()
+                );
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        String sessionId = sessionManagementService.createSession(
+                username,
+                effectiveTenantId
+        );
+
+        auditService.loginSuccess(username, effectiveTenantId);
+
+        String accessToken =
+                tokenProvider.generateAccessToken(
+                        authentication,
+                        sessionId
+                );
+
+        String refreshToken =
+                tokenProvider.generateRefreshToken(
+                        username,
+                        effectiveTenantId,
+                        sessionId
+                );
+
+        List<String> roles =
+                authentication.getAuthorities()
+                        .stream()
+                        .map(GrantedAuthority::getAuthority)
+                        .collect(Collectors.toList());
+
+        return AuthResponseDTO.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .tokenType("Bearer")
+                .username(username)
+                .tenantId(effectiveTenantId)
                 .roles(roles)
                 .sessionId(sessionId)
                 .build();
@@ -145,6 +209,8 @@ public class AuthService {
                 tenantId
         );
 
+        auditService.userRegistered(registerRequest.getUsername(), tenantId);
+
         // Auto-login after registration
         return login(new LoginRequestDTO(registerRequest.getUsername(), registerRequest.getPassword(), tenantId));
     }
@@ -169,6 +235,8 @@ public class AuthService {
                 tenantId
         );
         String newRefreshToken = tokenProvider.generateRefreshToken(username, tenantId);
+
+        auditService.tokenRefresh(username, tenantId);
 
         List<String> roles = userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)

@@ -21,7 +21,7 @@ public class DashboardServiceImpl implements DashboardService {
     public DashboardServiceImpl(
             @Qualifier("superAdminHealthClientStub") PlatformHealthClient healthClient,
             @Qualifier("superAdminUserClientStub") UserManagementClient userClient,
-            OrganizationManagementClient orgClient,
+            @Qualifier("superAdminOrganizationClientStub") OrganizationManagementClient orgClient,
             @Qualifier("superAdminLicenseClientStub") LicenseManagementClient licenseClient) {
         this.healthClient = healthClient;
         this.userClient = userClient;
