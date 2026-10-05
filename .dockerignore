@@ -1,0 +1,20 @@
+# Maven build outputs (built inside Docker, not needed in context)
+**/target/
+
+# IDE and OS files
+.idea/
+.DS_Store
+*.iml
+*.class
+
+# Git
+.git/
+.gitignore
+
+# README and docs (not needed in image)
+README.md
+*.md
+
+# Docker files themselves
+**/Dockerfile
+.dockerignore

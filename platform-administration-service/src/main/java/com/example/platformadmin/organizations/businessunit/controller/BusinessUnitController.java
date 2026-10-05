@@ -5,7 +5,7 @@ import com.example.common.response.ApiResponse;
 import com.example.platformadmin.organizations.businessunit.dto.BusinessUnitRequestDto;
 import com.example.platformadmin.organizations.businessunit.dto.BusinessUnitResponseDto;
 import com.example.platformadmin.organizations.businessunit.entity.BusinessUnit;
-import com.example.platformadmin.organizations.businessunit.service.BusinessUnitServiceImpl;
+import com.example.platformadmin.organizations.businessunit.service.BusinessUnitService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
@@ -26,9 +26,9 @@ public class BusinessUnitController extends AbstractController<
         BusinessUnitRequestDto,
         BusinessUnitResponseDto> {
 
-    private final BusinessUnitServiceImpl businessUnitService;
+    private final BusinessUnitService businessUnitService;
 
-    public BusinessUnitController(BusinessUnitServiceImpl businessUnitService) {
+    public BusinessUnitController(BusinessUnitService businessUnitService) {
         super(businessUnitService);
         this.businessUnitService = businessUnitService;
     }
