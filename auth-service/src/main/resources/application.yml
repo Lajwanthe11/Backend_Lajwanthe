@@ -1,4 +1,4 @@
-﻿server:
+server:
   port: 8081
   servlet:
     context-path: /api
@@ -8,10 +8,10 @@ spring:
     name: auth-service
 
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/cloud_platform}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/postgres}
     driver-class-name: org.postgresql.Driver
-    username: ${SPRING_DATASOURCE_USERNAME:oec_admin}
-    password: ${SPRING_DATASOURCE_PASSWORD:DevOps321}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
     hikari:
       minimum-idle: ${DB_POOL_MIN_IDLE:5}
       maximum-pool-size: ${DB_POOL_MAX_SIZE:20}
@@ -75,6 +75,18 @@ spring:
             jwk-set-uri: https://login.microsoftonline.com/${OAUTH2_MICROSOFT_TENANT_ID:1380dd78-5b89-40ee-b046-d89d51024a62}/discovery/v2.0/keys
             user-info-uri: https://graph.microsoft.com/oidc/userinfo
             user-name-attribute: sub
+
+  mail:
+    host: ${SPRING_MAIL_HOST:smtp.gmail.com}
+    port: ${SPRING_MAIL_PORT:587}
+    username: ${SPRING_MAIL_USERNAME:}
+    password: ${SPRING_MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
 # Application Configuration
 app:
