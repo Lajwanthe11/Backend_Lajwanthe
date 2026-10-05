@@ -11,6 +11,8 @@ import com.example.auth.security.user.CustomUserDetailsService;
 import com.example.common.exception.BadRequestException;
 import com.example.common.tenant.TenantContext;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -20,8 +22,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -44,18 +47,18 @@ public class AuthService {
                        CustomUserDetailsService customUserDetailsService,
                        PasswordEncoder passwordEncoder,
                        JwtTokenProvider tokenProvider,
-                       PasswordValidator passwordValidator,SessionManagementService sessionManagementService,
-                       AuditService auditService
                        PasswordValidator passwordValidator,
+                       SessionManagementService sessionManagementService,
+                       AuditService auditService,
                        LoginHistoryService loginHistoryService) {
         this.authenticationManager = authenticationManager;
         this.customUserDetailsService = customUserDetailsService;
         this.passwordEncoder = passwordEncoder;
         this.tokenProvider = tokenProvider;
         this.passwordValidator = passwordValidator;
-        this.loginHistoryService = loginHistoryService;
         this.sessionManagementService = sessionManagementService;
         this.auditService = auditService;
+        this.loginHistoryService = loginHistoryService;
     }
 
     public AuthResponseDTO login(LoginRequestDTO loginRequest) {
@@ -73,7 +76,7 @@ public class AuthService {
                     )
             );
         } catch (LockedException ex) {
-            // NEW: account-lockout handling — fetch lock expiry to build a
+            // account-lockout handling — fetch lock expiry to build a
             // user-friendly "try again after X min Y sec" message
             LocalDateTime lockedUntil = customUserDetailsService.getLockedUntil(loginRequest.getUsername(), tenantId);
 
@@ -89,41 +92,30 @@ public class AuthService {
                 }
             }
             auditService.accountLocked(loginRequest.getUsername(), tenantId);
-            // NEW: custom exception so controller/advice can return a distinct
+            // custom exception so controller/advice can return a distinct
             // "locked" response instead of a generic auth failure
-            throw new AccountLockedException(message);
+            throw new com.example.common.exception.AccountLockedException(message);
         } catch (BadCredentialsException ex) {
-            // NEW: Wrong password -> track the failed attempt, then rethrow so the
+            // Wrong password -> track the failed attempt, then rethrow so the
             // existing "invalid credentials" behavior is unchanged for the caller.
             customUserDetailsService.incrementFailedAttempts(loginRequest.getUsername(), tenantId);
             auditService.loginFailed(loginRequest.getUsername(), tenantId);
             throw ex;
         }
 
-        // NEW: Successful login -> clear any prior failed-attempt count / lock state
+        // Successful login -> clear any prior failed-attempt count / lock state
         customUserDetailsService.resetFailedAttempts(loginRequest.getUsername(), tenantId);
-
-        // Failed attempts are recorded by AuthController.login() (it catches the AuthenticationException)
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        loginRequest.getUsername(),
-                        loginRequest.getPassword()
-                )
-        );
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         // One id per login session, carried by both tokens so logout and refresh can find its history record
-        String sessionId = UUID.randomUUID().toString();
-        String accessToken = tokenProvider.generateAccessToken(authentication, sessionId);
-        String refreshToken = tokenProvider.generateRefreshToken(loginRequest.getUsername(), tenantId, sessionId);
         String sessionId = sessionManagementService.createSession(
                 loginRequest.getUsername(),
                 tenantId
         );
         auditService.loginSuccess(loginRequest.getUsername(), tenantId);
-        String accessToken = tokenProvider.generateAccessToken(authentication,sessionId);
-        String refreshToken = tokenProvider.generateRefreshToken(loginRequest.getUsername(), tenantId,sessionId);
+        String accessToken = tokenProvider.generateAccessToken(authentication, sessionId);
+        String refreshToken = tokenProvider.generateRefreshToken(loginRequest.getUsername(), tenantId, sessionId);
 
         // The login_history row is saved by AuthController (login / register), using the sid in these tokens
 
@@ -138,8 +130,10 @@ public class AuthService {
                 .username(loginRequest.getUsername())
                 .tenantId(tenantId)
                 .roles(roles)
+                .sessionId(sessionId)
                 .build();
     }
+
     public AuthResponseDTO completeMfaLogin(String username, String tenantId) {
 
         if (StringUtils.hasText(tenantId)) {
@@ -199,6 +193,7 @@ public class AuthService {
 
     public AuthResponseDTO register(RegisterRequestDTO registerRequest) {
 
+        // enforce password strength rules before creating the account
         passwordValidator.validate(registerRequest.getPassword());
 
         if (StringUtils.hasText(registerRequest.getTenantId())) {
@@ -266,6 +261,7 @@ public class AuthService {
                 .username(username)
                 .tenantId(tenantId)
                 .roles(roles)
+                .sessionId(sessionId)
                 .build();
     }
 }

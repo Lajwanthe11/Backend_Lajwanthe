@@ -59,6 +59,7 @@ public class AuthController {
                           PasswordResetService passwordResetService,
                           TokenDenylistService tokenDenylistService,
                           JwtTokenProvider tokenProvider,
+                          SessionManagementService sessionManagementService,
                           LoginHistoryService loginHistoryService) {
         this.authService = authService;
         this.passwordResetService = passwordResetService;
@@ -160,8 +161,7 @@ public class AuthController {
     )
     public ResponseEntity<ApiResponse<Void>> logout(
             HttpServletRequest request,
-            @RequestParam String sessionId) {
-
+            @RequestParam(value = "sessionId", required = false) String sessionId) {
 
         String bearerToken = request.getHeader("Authorization");
 
@@ -179,12 +179,18 @@ public class AuthController {
 
         Date expiry = tokenProvider.getExpiryFromJWT(jwt);
         tokenDenylistService.revokeToken(jwt, expiry);
-        sessionManagementService.invalidateSession(sessionId);
+
+        String sid = StringUtils.hasText(sessionId) ? sessionId : tokenProvider.getSessionIdFromJWT(jwt);
+        if (StringUtils.hasText(sid)) {
+            sessionManagementService.invalidateSession(sid);
+        }
 
         // Update the SAME login_history row the login created: found by the token's session id and
         // tenant, and closed only if it is a SUCCESS row that has no logout_time yet.
         TenantContext.setTenantId(tokenProvider.getTenantIdFromJWT(jwt));
-        loginHistoryService.recordLogout(tokenProvider.getSessionIdFromJWT(jwt));
+        if (StringUtils.hasText(sid)) {
+            loginHistoryService.recordLogout(sid);
+        }
 
         return ResponseEntity.ok(ApiResponse.ok("Logged out successfully", null));
     }

@@ -3,6 +3,7 @@ package com.example.auth.loginhistory.entity;
 import com.example.auth.tenant.entity.Tenant;
 import com.example.common.abstracts.BaseEntity;
 import jakarta.persistence.Column;
+import jakarta.persistence.ConstraintMode;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -61,7 +62,7 @@ public class LoginHistory extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tenant_id", referencedColumnName = "tenant_id",
             insertable = false, updatable = false,
-            foreignKey = @ForeignKey(name = "fk_login_history_tenant"))
+            foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     private Tenant tenant;
 
     @Column(name = "username", nullable = false)
