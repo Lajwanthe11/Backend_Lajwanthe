@@ -1,15 +1,18 @@
 package com.example.platformadmin.superadmin.feature_management_service.exception;
 
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -120,6 +123,49 @@ public class FeatureGlobalExceptionHandler {
                 .status(status)
                 .body(response);
     }
+
+        @ExceptionHandler(HttpMessageNotReadableException.class)
+        public ResponseEntity<Map<String, Object>> handleHttpMessageNotReadable(
+                HttpMessageNotReadableException ex) {
+
+            Map<String, Object> response = new HashMap<>();
+
+            Throwable cause = ex.getCause();
+
+            if (cause instanceof InvalidFormatException invalidFormatException
+                    && invalidFormatException.getTargetType() != null
+                    && invalidFormatException.getTargetType().isEnum()) {
+
+                Class<?> enumClass = invalidFormatException.getTargetType();
+
+                String allowedValues = Arrays.stream(enumClass.getEnumConstants())
+                        .map(Object::toString)
+                        .reduce((a, b) -> a + ", " + b)
+                        .orElse("");
+
+                response.put("error", "Bad Request");
+                response.put(
+                        "message",
+                        "Invalid value '" + invalidFormatException.getValue()
+                                + "' for field. Allowed values are: "
+                                + allowedValues
+                );
+                response.put("status", 400);
+
+                return ResponseEntity
+                        .status(HttpStatus.BAD_REQUEST)
+                        .body(response);
+            }
+
+            response.put("error", "Bad Request");
+            response.put("message", "Invalid request body");
+            response.put("status", 400);
+
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(response);
+        }
+
 }
 
 
