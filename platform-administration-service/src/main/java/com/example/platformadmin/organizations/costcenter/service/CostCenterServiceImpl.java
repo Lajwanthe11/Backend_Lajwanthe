@@ -6,19 +6,23 @@ import com.example.platformadmin.organizations.company.repository.CompanyReposit
 import com.example.platformadmin.organizations.costcenter.dto.CostCenterRequestDTO;
 import com.example.platformadmin.organizations.costcenter.dto.CostCenterResponseDTO;
 import com.example.platformadmin.organizations.costcenter.entity.CostCenterEntity;
-import com.example.platformadmin.organizations.costcenter.exception.CostCenterAlreadyExistsException;
-import com.example.platformadmin.organizations.costcenter.exception.CostCenterNotFoundException;
-import com.example.platformadmin.organizations.costcenter.exception.InvalidCompanyIdException;
-import com.example.platformadmin.organizations.costcenter.exception.InvalidDepartmentIdException;
-import com.example.platformadmin.organizations.costcenter.exception.InvalidOrganizationIdException;
+import com.example.platformadmin.organizations.costcenter.enums.CostCenterStatus;
+import com.example.platformadmin.organizations.costcenter.exception.*;
 import com.example.platformadmin.organizations.costcenter.repository.CostCenterRepository;
 import com.example.platformadmin.organizations.department.entity.Department;
 import com.example.platformadmin.organizations.department.repository.DepartmentRepository;
 import com.example.platformadmin.organizations.organization.entity.OrganizationEntity;
 import com.example.platformadmin.organizations.organization.repository.OrganizationRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -49,6 +53,10 @@ public class CostCenterServiceImpl
         this.organizationRepository = organizationRepository;
     }
 
+    // -------------------------------------------------------
+    // Request DTO -> Entity
+    // -------------------------------------------------------
+
     @Override
     protected CostCenterEntity toEntity(CostCenterRequestDTO dto) {
 
@@ -71,6 +79,10 @@ public class CostCenterServiceImpl
 
         return entity;
     }
+
+    // -------------------------------------------------------
+    // Entity -> Response DTO
+    // -------------------------------------------------------
 
     @Override
     protected CostCenterResponseDTO toDto(CostCenterEntity entity) {
@@ -109,12 +121,15 @@ public class CostCenterServiceImpl
 
         dto.setCreatedAt(entity.getCreatedAt());
         dto.setUpdatedAt(entity.getUpdatedAt());
-
         dto.setCreatedBy(entity.getCreatedBy());
         dto.setUpdatedBy(entity.getUpdatedBy());
 
         return dto;
     }
+
+    // -------------------------------------------------------
+    // Update Existing Entity
+    // -------------------------------------------------------
 
     @Override
     protected void updateEntityFromDto(
@@ -137,6 +152,10 @@ public class CostCenterServiceImpl
         entity.setDepartmentalExpenses(dto.getDepartmentalExpenses());
     }
 
+    // -------------------------------------------------------
+    // Before Create
+    // -------------------------------------------------------
+
     @Override
     protected void beforeCreate(
             CostCenterEntity entity,
@@ -149,6 +168,10 @@ public class CostCenterServiceImpl
 
         applyRelationships(entity, dto);
     }
+
+    // -------------------------------------------------------
+    // Before Update
+    // -------------------------------------------------------
 
     @Override
     protected void beforeUpdate(
@@ -163,6 +186,10 @@ public class CostCenterServiceImpl
         applyRelationships(entity, dto);
     }
 
+    // =======================================================
+    // SOFT DELETE SUPPORT
+    // =======================================================
+
     @Override
     @Transactional(readOnly = true)
     public CostCenterResponseDTO getById(Long id) {
@@ -171,6 +198,26 @@ public class CostCenterServiceImpl
                 getCostCenterOrThrow(id);
 
         return toDto(entity);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CostCenterResponseDTO> getAll() {
+
+        return costCenterRepository
+                .findByIsDeletedFalse()
+                .stream()
+                .map(this::toDto)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<CostCenterResponseDTO> getAll(Pageable pageable) {
+
+        return costCenterRepository
+                .findByIsDeletedFalse(pageable)
+                .map(this::toDto);
     }
 
     @Override
@@ -197,6 +244,10 @@ public class CostCenterServiceImpl
         return response;
     }
 
+    // -------------------------------------------------------
+    // Soft Delete
+    // -------------------------------------------------------
+
     @Override
     @Transactional
     public void deleteById(Long id) {
@@ -204,19 +255,105 @@ public class CostCenterServiceImpl
         CostCenterEntity entity =
                 getCostCenterOrThrow(id);
 
-        beforeDelete(id);
+        entity.setIsDeleted(true);
+        entity.setDeletedAt(LocalDate.now());
+        entity.setDeletedBy(resolveCurrentUser());
 
-        costCenterRepository.delete(entity);
-
-        afterDelete(id);
+        costCenterRepository.save(entity);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean existsById(Long id) {
+
+        validateId(id);
+
+        return costCenterRepository
+                .findByIdAndIsDeletedFalse(id)
+                .isPresent();
+    }
+
+    // =======================================================
+    // SEARCH METHODS
+    // =======================================================
+
+    // Search by Status
+    @Override
+    @Transactional(readOnly = true)
+    public List<CostCenterResponseDTO> getByStatus(
+            CostCenterStatus status) {
+
+        return costCenterRepository
+                .findByStatusAndIsDeletedFalse(status)
+                .stream()
+                .map(this::toDto)
+                .toList();
+    }
+
+    // Search by Organization ID
+    @Override
+    @Transactional(readOnly = true)
+    public List<CostCenterResponseDTO> getByOrganizationId(
+            UUID organizationId) {
+
+        // Validate organization ID
+        getOrganization(organizationId);
+
+        return costCenterRepository
+                .findByOrganization_IdAndIsDeletedFalse(
+                        organizationId
+                )
+                .stream()
+                .map(this::toDto)
+                .toList();
+    }
+
+    // Search by Company ID
+    @Override
+    @Transactional(readOnly = true)
+    public List<CostCenterResponseDTO> getByCompanyId(
+            Long companyId) {
+
+        // Validate company ID
+        getCompany(companyId);
+
+        return costCenterRepository
+                .findByCompany_IdAndIsDeletedFalse(
+                        companyId
+                )
+                .stream()
+                .map(this::toDto)
+                .toList();
+    }
+
+    // Search by Department ID
+    @Override
+    @Transactional(readOnly = true)
+    public List<CostCenterResponseDTO> getByDepartmentId(
+            Long departmentId) {
+
+        // Validate department ID
+        getDepartment(departmentId);
+
+        return costCenterRepository
+                .findByDepartment_IdAndIsDeletedFalse(
+                        departmentId
+                )
+                .stream()
+                .map(this::toDto)
+                .toList();
+    }
+
+    // =======================================================
+    // HELPER METHODS
+    // =======================================================
 
     private CostCenterEntity getCostCenterOrThrow(Long id) {
 
         validateId(id);
 
         return costCenterRepository
-                .findById(id)
+                .findByIdAndIsDeletedFalse(id)
                 .orElseThrow(
                         () -> new CostCenterNotFoundException(
                                 "Cost Center not found with id: " + id
@@ -306,5 +443,38 @@ public class CostCenterServiceImpl
                                 departmentId
                         )
                 );
+    }
+
+    // -------------------------------------------------------
+    // Current Logged-in User
+    // -------------------------------------------------------
+
+    private String resolveCurrentUser() {
+
+        Authentication authentication =
+                SecurityContextHolder
+                        .getContext()
+                        .getAuthentication();
+
+        if (authentication != null
+                && authentication.isAuthenticated()) {
+
+            Object principal =
+                    authentication.getPrincipal();
+
+            if (principal instanceof UserDetails userDetails) {
+                return userDetails.getUsername();
+            }
+
+            if (authentication.getName() != null
+                    && !authentication
+                    .getName()
+                    .equalsIgnoreCase("anonymousUser")) {
+
+                return authentication.getName();
+            }
+        }
+
+        return "SYSTEM";
     }
 }
