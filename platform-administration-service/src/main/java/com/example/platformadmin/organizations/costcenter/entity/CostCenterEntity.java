@@ -24,7 +24,13 @@ import java.math.BigDecimal;
 @Entity
 @Table(
         name = "cost_centers",
-        schema = "public"
+        schema = "public",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_cost_center_code",
+                        columnNames = "cost_center_code"
+                )
+        }
 )
 public class CostCenterEntity extends BaseEntity {
 
