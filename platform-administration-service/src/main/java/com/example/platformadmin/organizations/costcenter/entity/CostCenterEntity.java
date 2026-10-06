@@ -13,19 +13,22 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.util.UUID;
+
 @Getter
 @Setter
 @NoArgsConstructor
 @Entity
-@Table(name = "cost_centers", schema = "public")
+@Table(name = "cost_centers")
 public class CostCenterEntity extends BaseEntity {
 
     @Column(name = "cost_center_code", nullable = false, unique = true, length = 50)
     private String costCenterCode;
 
-    @Column(name = "cost_center_name", nullable = false, length = 150)
+    @Column(name = "cost_center_name", nullable = false,unique = true, length = 150)
     private String costCenterName;
 
+    @Column(name = "description", length = 255)
+    private String description;
 
     @Column(name = "organization_id", nullable = false)
     private UUID organizationId;
@@ -33,12 +36,13 @@ public class CostCenterEntity extends BaseEntity {
     @Column(name = "company_id", nullable = false)
     private Long companyId;
 
+    /** Department to which this cost center and its budget are linked. */
     @Column(name = "department_id", nullable = false)
     private Long departmentId;
 
-    @Column(name = "budget", precision = 19, scale = 2)
-    private BigDecimal budget;
-
+    /** Budget allocated to this cost center under the linked department. */
+    @Column(name = "budget_amount", nullable = false, precision = 19, scale = 2)
+    private BigDecimal budgetAmount = BigDecimal.ZERO;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
