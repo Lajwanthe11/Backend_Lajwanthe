@@ -1,30 +1,21 @@
 package com.example.platformadmin.organizations.costcenter.controller;
 
-import com.example.common.response.ApiResponse;
+import com.example.common.abstracts.AbstractController;
 import com.example.platformadmin.organizations.costcenter.dto.CostCenterRequestDTO;
 import com.example.platformadmin.organizations.costcenter.dto.CostCenterResponseDTO;
 import com.example.platformadmin.organizations.costcenter.entity.CostCenterEntity;
 import com.example.platformadmin.organizations.costcenter.service.CostCenterService;
-
-import com.example.common.abstracts.AbstractController;
-
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.tags.Tag;
-
-import jakarta.validation.Valid;
-
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/cost-centers")
-@Tag(
-        name = "Cost Center Management",
-        description = "CRUD and search APIs for Cost Center management"
-)
 @SecurityRequirement(name = "bearerAuth")
 public class CostCenterController extends AbstractController<
         CostCenterEntity,
@@ -38,84 +29,69 @@ public class CostCenterController extends AbstractController<
             CostCenterService costCenterService) {
 
         super(costCenterService);
-
         this.costCenterService = costCenterService;
     }
 
     // =========================================================
-    // GET BY CODE
-    // =========================================================
-
-    @GetMapping("/code/{code}")
-    public ResponseEntity<ApiResponse<CostCenterResponseDTO>>
-    getByCode(
-            @PathVariable String code) {
-
-        CostCenterResponseDTO result =
-                costCenterService.getByCode(code);
-
-        return ResponseEntity.ok(
-                ApiResponse.ok(result)
-        );
-    }
-
-    // =========================================================
-    // GET BY ORGANIZATION
-    // =========================================================
-
-    @GetMapping("/organization/{organizationId}")
-    public ResponseEntity<
-            ApiResponse<List<CostCenterResponseDTO>>>
-    getByOrganizationId(
-            @PathVariable UUID organizationId) {
-
-        List<CostCenterResponseDTO> result =
-                costCenterService.getByOrganizationId(
-                        organizationId
-                );
-
-        return ResponseEntity.ok(
-                ApiResponse.ok(result)
-        );
-    }
-
-    // =========================================================
-    // GET BY COMPANY
-    // =========================================================
-
-    @GetMapping("/company/{companyId}")
-    public ResponseEntity<
-            ApiResponse<List<CostCenterResponseDTO>>>
-    getByCompanyId(
-            @PathVariable Long companyId) {
-
-        List<CostCenterResponseDTO> result =
-                costCenterService.getByCompanyId(
-                        companyId
-                );
-
-        return ResponseEntity.ok(
-                ApiResponse.ok(result)
-        );
-    }
-
-    // =========================================================
-    // GET BY DEPARTMENT
+    // GET COST CENTERS BY DEPARTMENT ID
     // =========================================================
 
     @GetMapping("/department/{departmentId}")
-    public ResponseEntity<
-            ApiResponse<List<CostCenterResponseDTO>>>
-    getByDepartmentId(
+    public List<CostCenterResponseDTO> getByDepartmentId(
             @PathVariable Long departmentId) {
 
-        List<CostCenterResponseDTO> result =
-                costCenterService.getByDepartmentId(
-                        departmentId
-                );
-
-        return ResponseEntity.ok(
-                ApiResponse.ok(result)
+        return costCenterService.getByDepartmentId(
+                departmentId
         );
     }
+
+    // =========================================================
+    // GET COST CENTERS BY COMPANY ID
+    // =========================================================
+
+    @GetMapping("/company/{companyId}")
+    public List<CostCenterResponseDTO> getByCompanyId(
+            @PathVariable Long companyId) {
+
+        return costCenterService.getByCompanyId(
+                companyId
+        );
+    }
+
+    // =========================================================
+    // GET COST CENTERS BY ORGANIZATION ID
+    // =========================================================
+
+    @GetMapping("/organization/{organizationId}")
+    public List<CostCenterResponseDTO> getByOrganizationId(
+            @PathVariable UUID organizationId) {
+
+        return costCenterService.getByOrganizationId(
+                organizationId
+        );
+    }
+
+    // =========================================================
+    // GET COST CENTER BY CODE
+    // =========================================================
+
+    @GetMapping("/code/{code}")
+    public CostCenterResponseDTO getByCode(
+            @PathVariable String code) {
+
+        return costCenterService.getByCode(code);
+    }
+
+    // =========================================================
+    // GET COST CENTER BY ID
+    // =========================================================
+
+//    @GetMapping("/{costCenterId}")
+//    public CostCenterResponseDTO getByCostCenterId(
+//            @PathVariable Long costCenterId) {
+//
+//        return costCenterService.getByCostCenterId(
+//                costCenterId
+//        );
+//    }
 }

@@ -24,8 +24,6 @@ public class CostCenterResponseDTO {
 
     private BigDecimal budgetAmount;
 
-    private String currency;
-
     private CostCenterStatus status;
 
     private String tenantId;
@@ -40,9 +38,8 @@ public class CostCenterResponseDTO {
 
     private Long version;
 
-    // =========================================================
-    // GETTERS AND SETTERS
-    // =========================================================
+
+    // Getters and Setters
 
     public Long getId() {
         return id;
@@ -106,14 +103,6 @@ public class CostCenterResponseDTO {
 
     public void setBudgetAmount(BigDecimal budgetAmount) {
         this.budgetAmount = budgetAmount;
-    }
-
-    public String getCurrency() {
-        return currency;
-    }
-
-    public void setCurrency(String currency) {
-        this.currency = currency;
     }
 
     public CostCenterStatus getStatus() {
