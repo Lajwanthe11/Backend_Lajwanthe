@@ -1,17 +1,16 @@
 package com.example.platformadmin.organizations.costcenter.entity;
 
 import com.example.common.abstracts.BaseEntity;
-import com.example.platformadmin.organizations.company.entity.Company;
 import com.example.platformadmin.organizations.costcenter.enums.CostCenterStatus;
-import com.example.platformadmin.organizations.department.entity.Department;
-import com.example.platformadmin.organizations.organization.entity.OrganizationEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.UUID;
+
 
 @Getter
 @Setter
@@ -38,37 +37,36 @@ public class CostCenterEntity extends BaseEntity {
     @Column(name = "description", length = 500)
     private String description;
 
+
+    @Column(name = "organization_id", nullable = false)
+    private UUID organizationId;
+
+    @Column(name = "company_id", nullable = false)
+    private Long companyId;
+
+    @Column(name = "department_id", nullable = false)
+    private Long departmentId;
+
+    @Column(name = "budget", nullable = false, precision = 19, scale = 2)
+    private BigDecimal budget = BigDecimal.ZERO;
+
+    @Column(name = "allocated_funds", nullable = false, precision = 19, scale = 2)
+    private BigDecimal allocatedFunds = BigDecimal.ZERO;
+
+    @Column(name = "expenses", nullable = false, precision = 19, scale = 2)
+    private BigDecimal expenses = BigDecimal.ZERO;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
-    private CostCenterStatus status;
-
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "organization_id", nullable = false)
-    private OrganizationEntity organization;
-
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "company_id", nullable = false)
-    private Company company;
-
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "department_id", nullable = false)
-    private Department department;
-
-    @Column(name = "budget", precision = 19, scale = 2, nullable = false)
-    private BigDecimal budget;
-
-    @Column(name = "allocated_funds", precision = 19, scale = 2, nullable = false)
-    private BigDecimal allocatedFunds;
-
-    @Column(name = "departmental_expenses", precision = 19, scale = 2, nullable = false)
-    private BigDecimal departmentalExpenses;
+    private CostCenterStatus status = CostCenterStatus.ACTIVE;
 
     @Column(name = "is_deleted", nullable = false)
-    private Boolean isDeleted = false;
+    private Boolean deleted = false;
 
     @Column(name = "deleted_at")
-    private LocalDate deletedAt;
+    private LocalDateTime deletedAt;
 
     @Column(name = "deleted_by")
     private String deletedBy;
+
 }

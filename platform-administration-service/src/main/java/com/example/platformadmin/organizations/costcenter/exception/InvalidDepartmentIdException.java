@@ -5,7 +5,7 @@ import org.springframework.http.HttpStatus;
 
 public class InvalidDepartmentIdException extends AppException {
 
-    public InvalidDepartmentIdException(Long departmentId) {
-        super("Invalid department ID: " + departmentId, HttpStatus.BAD_REQUEST);
+    public InvalidDepartmentIdException(String message) {
+        super(message, HttpStatus.BAD_REQUEST);
     }
 }
