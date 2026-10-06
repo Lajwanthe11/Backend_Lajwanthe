@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -35,6 +36,7 @@ public class CostCenterEntity extends BaseEntity {
 
     @Column(name = "description", length = 500)
     private String description;
+
 
     @Column(name = "organization_id", nullable = false)
     private UUID organizationId;
@@ -66,4 +68,5 @@ public class CostCenterEntity extends BaseEntity {
 
     @Column(name = "deleted_by")
     private String deletedBy;
+
 }
