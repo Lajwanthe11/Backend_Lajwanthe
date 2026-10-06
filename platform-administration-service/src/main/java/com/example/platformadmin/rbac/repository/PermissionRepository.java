@@ -1,4 +1,4 @@
-﻿package com.example.platformadmin.rbac.repository;
+package com.example.platformadmin.rbac.repository;
 
 import com.example.platformadmin.rbac.entity.Permission;
 import org.springframework.data.domain.Page;

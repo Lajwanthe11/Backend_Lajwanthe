@@ -1,4 +1,4 @@
-﻿package com.example.platformadmin.rbac.dto.response;
+package com.example.platformadmin.rbac.dto.response;
 
 public record CsvImportError(
         long rowNumber,

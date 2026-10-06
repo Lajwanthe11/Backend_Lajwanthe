@@ -1,4 +1,4 @@
-﻿package com.example.platformadmin.rbac.evaluator;
+package com.example.platformadmin.rbac.evaluator;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

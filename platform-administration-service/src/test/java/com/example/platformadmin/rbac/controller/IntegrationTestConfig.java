@@ -1,4 +1,4 @@
-﻿package com.example.platformadmin.rbac.controller;
+package com.example.platformadmin.rbac.controller;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;

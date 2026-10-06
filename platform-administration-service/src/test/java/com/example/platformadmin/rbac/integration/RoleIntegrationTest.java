@@ -1,4 +1,4 @@
-﻿package com.example.platformadmin.rbac.integration;
+package com.example.platformadmin.rbac.integration;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;

@@ -1,4 +1,4 @@
-﻿package com.example.platformadmin.rbac.performance;
+package com.example.platformadmin.rbac.performance;
 
 import java.util.Arrays;
 

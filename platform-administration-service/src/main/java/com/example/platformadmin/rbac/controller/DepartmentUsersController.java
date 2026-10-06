@@ -1,4 +1,4 @@
-﻿package com.example.platformadmin.rbac.controller;
+package com.example.platformadmin.rbac.controller;
 
 import com.example.platformadmin.rbac.service.DepartmentPermissionService;
 import io.swagger.v3.oas.annotations.Operation;

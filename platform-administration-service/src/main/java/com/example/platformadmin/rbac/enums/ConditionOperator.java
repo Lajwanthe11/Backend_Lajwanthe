@@ -1,4 +1,4 @@
-﻿package com.example.platformadmin.rbac.enums;
+package com.example.platformadmin.rbac.enums;
 
 public enum ConditionOperator {
 

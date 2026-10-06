@@ -1,4 +1,4 @@
-﻿package com.example.platformadmin.rbac.entity;
+package com.example.platformadmin.rbac.entity;
 
 import com.example.common.abstracts.BaseEntity;
 import jakarta.persistence.Column;

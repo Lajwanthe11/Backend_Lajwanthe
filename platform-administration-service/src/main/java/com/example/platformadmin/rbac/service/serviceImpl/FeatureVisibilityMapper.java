@@ -1,4 +1,4 @@
-﻿package com.example.platformadmin.rbac.service.serviceImpl;
+package com.example.platformadmin.rbac.service.serviceImpl;
 
 import com.example.platformadmin.rbac.dto.response.ModuleAccess;
 import com.example.platformadmin.rbac.dto.response.UiPermissionResponse;

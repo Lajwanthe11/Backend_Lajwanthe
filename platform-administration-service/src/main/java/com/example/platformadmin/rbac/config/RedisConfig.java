@@ -1,4 +1,4 @@
-﻿package com.example.platformadmin.rbac.config;
+package com.example.platformadmin.rbac.config;
 
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;

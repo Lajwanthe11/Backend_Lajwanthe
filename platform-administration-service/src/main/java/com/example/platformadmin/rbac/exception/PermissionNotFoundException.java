@@ -1,4 +1,4 @@
-﻿package com.example.platformadmin.rbac.exception;
+package com.example.platformadmin.rbac.exception;
 
 import com.example.platformadmin.rbac.entity.Permission;
 

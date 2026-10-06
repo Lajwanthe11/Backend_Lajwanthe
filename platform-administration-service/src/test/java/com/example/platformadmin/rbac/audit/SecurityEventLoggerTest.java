@@ -1,4 +1,4 @@
-﻿package com.example.platformadmin.rbac.audit;
+package com.example.platformadmin.rbac.audit;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;

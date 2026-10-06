@@ -1,4 +1,4 @@
-﻿package com.example.platformadmin.rbac.service.serviceImpl;
+package com.example.platformadmin.rbac.service.serviceImpl;
 
 import com.example.platformadmin.rbac.service.UserAssignmentSupportService;
 import org.springframework.stereotype.Service;

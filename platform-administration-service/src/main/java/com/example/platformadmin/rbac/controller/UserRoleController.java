@@ -1,4 +1,4 @@
-﻿package com.example.platformadmin.rbac.controller;
+package com.example.platformadmin.rbac.controller;
 
 import com.example.platformadmin.rbac.dto.request.AssignRoleRequest;
 import com.example.platformadmin.rbac.dto.request.RevokeRoleRequest;

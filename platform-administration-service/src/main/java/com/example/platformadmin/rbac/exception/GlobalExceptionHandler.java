@@ -1,4 +1,4 @@
-﻿package com.example.platformadmin.rbac.exception;
+package com.example.platformadmin.rbac.exception;
 
 import java.time.Instant;
 import java.util.LinkedHashMap;
