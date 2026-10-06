@@ -7,7 +7,7 @@ import com.example.platformadmin.organizations.costcenter.dto.CostCenterRequestD
 import com.example.platformadmin.organizations.costcenter.dto.CostCenterResponseDTO;
 import com.example.platformadmin.organizations.costcenter.entity.CostCenterEntity;
 import com.example.platformadmin.organizations.costcenter.enums.CostCenterStatus;
-import com.example.platformadmin.organizations.costcenter.exception.CostCenterAlreadyExistsException;
+import com.example.platformadmin.organizations.costcenter.exceptions.CostCenterAlreadyExistsException;
 import com.example.platformadmin.organizations.costcenter.repository.CostCenterRepository;
 import com.example.platformadmin.organizations.department.exception.DepartmentNotFoundException;
 import com.example.platformadmin.organizations.department.repository.DepartmentRepository;
