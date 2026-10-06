@@ -2,9 +2,6 @@ package com.example.auth.dto;
 
 import jakarta.validation.constraints.NotBlank;
 
-/**
- * Request DTO for user login.
- */
 public class LoginRequestDTO {
 
     @NotBlank(message = "Username is required")
@@ -14,6 +11,10 @@ public class LoginRequestDTO {
     private String password;
 
     private String tenantId;
+
+    private String deviceIdentifier;
+
+    private String userAgent;
 
     public LoginRequestDTO() {
     }
@@ -26,8 +27,16 @@ public class LoginRequestDTO {
 
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }
+
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
+
     public String getTenantId() { return tenantId; }
     public void setTenantId(String tenantId) { this.tenantId = tenantId; }
+
+    public String getDeviceIdentifier() { return deviceIdentifier; }
+    public void setDeviceIdentifier(String deviceIdentifier) { this.deviceIdentifier = deviceIdentifier; }
+
+    public String getUserAgent() { return userAgent; }
+    public void setUserAgent(String userAgent) { this.userAgent = userAgent; }
 }

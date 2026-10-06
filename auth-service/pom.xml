@@ -12,7 +12,9 @@
 
     <artifactId>auth-service</artifactId>
     <name>auth-service</name>
-    <description>Authentication Microservice: JWT token generation, OAuth2 login (Google/GitHub), user registration and login</description>
+    <description>Authentication Microservice: JWT token generation, OAuth2 login (Google/GitHub), user registration and
+        login
+    </description>
 
     <dependencies>
         <!-- Internal: base service (tenant, exceptions, response wrappers, CRUD abstractions) -->
@@ -82,10 +84,18 @@
 
     <build>
         <plugins>
-            <!-- Spring Boot Maven Plugin - makes this module a runnable fat JAR -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <compilerArgs>
+                        <arg>-parameters</arg>
+                    </compilerArgs>
+                </configuration>
             </plugin>
         </plugins>
     </build>
