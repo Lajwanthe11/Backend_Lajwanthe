@@ -55,12 +55,12 @@ public class MfaService {
 
     public MfaService(
             CustomUserDetailsService customUserDetailsService,
-            JavaMailSender mailSender) {
+            org.springframework.beans.factory.ObjectProvider<JavaMailSender> mailSenderProvider) {
 
         this.customUserDetailsService =
                 customUserDetailsService;
 
-        this.mailSender = mailSender;
+        this.mailSender = mailSenderProvider.getIfAvailable();
     }
 
     // ---------------------------------------------------------------
@@ -123,7 +123,12 @@ public class MfaService {
                         + "Auth Service"
         );
 
-        mailSender.send(message);
+        if (mailSender != null) {
+            mailSender.send(message);
+        } else {
+            org.slf4j.LoggerFactory.getLogger(MfaService.class)
+                    .info("JavaMailSender is not configured. MFA OTP for user '{}' is: {}", username, otp);
+        }
     }
     // ---------------------------------------------------------------
     // Verify OTP

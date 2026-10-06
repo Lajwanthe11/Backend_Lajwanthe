@@ -95,12 +95,39 @@
                 <version>${springdoc.version}</version>
             </dependency>
 
+            <!-- Lombok - version managed centrally via lombok.version property -->
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>${lombok.version}</version>
+                <optional>true</optional>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 
     <build>
         <pluginManagement>
             <plugins>
+
+                <!--
+                    Configure the compiler plugin with Lombok as an annotation processor
+                    so that @Data, @Builder, @Getter/@Setter etc. generate correctly on
+                    every module that inherits this parent.
+                -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <configuration>
+                        <annotationProcessorPaths>
+                            <path>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok</artifactId>
+                                <version>${lombok.version}</version>
+                            </path>
+                        </annotationProcessorPaths>
+                    </configuration>
+                </plugin>
 
                 <plugin>
                     <groupId>org.springframework.boot</groupId>
@@ -110,5 +137,6 @@
             </plugins>
         </pluginManagement>
     </build>
+
 
 </project>

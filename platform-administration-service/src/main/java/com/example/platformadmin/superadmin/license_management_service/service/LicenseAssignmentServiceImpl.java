@@ -10,7 +10,7 @@ import com.example.platformadmin.superadmin.license_management_service.exception
 import com.example.platformadmin.superadmin.license_management_service.exception.LicenseNotFoundException;
 import com.example.platformadmin.superadmin.license_management_service.repository.LicenseAssignmentRepository;
 import com.example.platformadmin.superadmin.license_management_service.repository.LicenseRepository;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
