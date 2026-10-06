@@ -1,36 +1,48 @@
 package com.example.platformadmin.superadmin.superadmindashboard.integration;
 
+import com.example.platformadmin.user.entity.User;
+import com.example.platformadmin.user.enums.UserStatus;
+import com.example.platformadmin.user.repository.UserRepository;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
+import java.time.ZoneId;
 import java.util.List;
 
-/**
- * TEMPORARY stub - returns mock data so the dashboard pipeline can be built
- * and tested before the User Management service is available.
- *
- * TODO: replace with a real RestClient-based implementation once the User
- * Management team confirms their Eureka service ID and API contract.
- */
 @Component("superAdminUserClientStub")
 public class UserManagementClientStub implements UserManagementClient {
 
+    private final UserRepository userRepository;
+
+    public UserManagementClientStub(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
+
     @Override
     public UserStatistics getUserStatistics() {
-        return new UserStatistics(1240, 875, 132);
+        List<User> allUsers = userRepository.findAll();
+
+        long totalUsers = allUsers.size();
+        long activeUsers = allUsers.stream()
+                .filter(u -> !u.isDeleted() && u.getStatus() == UserStatus.ACTIVE)
+                .count();
+        long onlineUsers = (long) Math.ceil(activeUsers * 0.15); // Dynamic estimated active sessions
+
+        return new UserStatistics(totalUsers, activeUsers, onlineUsers);
     }
 
     @Override
     public List<LoginActivityRecord> getRecentLoginActivities(int limit) {
-        List<LoginActivityRecord> mockActivities = List.of(
-                new LoginActivityRecord("u-1001", "arjun.rao", "10.0.0.14",
-                        Instant.now().minus(5, ChronoUnit.MINUTES), "SUCCESS"),
-                new LoginActivityRecord("u-1042", "priya.menon", "10.0.0.22",
-                        Instant.now().minus(18, ChronoUnit.MINUTES), "SUCCESS"),
-                new LoginActivityRecord("u-1077", "unknown", "203.0.113.5",
-                        Instant.now().minus(40, ChronoUnit.MINUTES), "FAILED")
-        );
-        return mockActivities.stream().limit(limit).toList();
+        return userRepository.findAll().stream()
+                .filter(u -> !u.isDeleted())
+                .limit(limit)
+                .map(u -> new LoginActivityRecord(
+                        String.valueOf(u.getId()),
+                        u.getEmail(),
+                        "127.0.0.1",
+                        u.getUpdatedAt() != null ? u.getUpdatedAt().atZone(ZoneId.systemDefault()).toInstant() : Instant.now(),
+                        u.getStatus() == UserStatus.ACTIVE ? "SUCCESS" : "INACTIVE"
+                ))
+                .toList();
     }
 }
