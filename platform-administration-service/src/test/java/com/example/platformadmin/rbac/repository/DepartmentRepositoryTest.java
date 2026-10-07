@@ -1,4 +1,4 @@
-﻿package com.example.platformadmin.rbac.repository;
+package com.example.platformadmin.rbac.repository;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;

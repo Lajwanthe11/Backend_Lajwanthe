@@ -1,4 +1,4 @@
-﻿package com.example.platformadmin.rbac.config;
+package com.example.platformadmin.rbac.config;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;

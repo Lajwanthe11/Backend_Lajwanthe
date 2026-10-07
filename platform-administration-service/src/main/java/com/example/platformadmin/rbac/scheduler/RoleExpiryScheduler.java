@@ -1,4 +1,4 @@
-﻿package com.example.platformadmin.rbac.scheduler;
+package com.example.platformadmin.rbac.scheduler;
 
 import com.example.platformadmin.rbac.entity.Role;
 

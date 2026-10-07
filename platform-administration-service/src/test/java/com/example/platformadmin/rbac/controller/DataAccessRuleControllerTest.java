@@ -1,4 +1,4 @@
-﻿package com.example.platformadmin.rbac.controller;
+package com.example.platformadmin.rbac.controller;
 
 import com.example.platformadmin.rbac.dto.request.CreateDataAccessRuleRequest;
 import com.example.platformadmin.rbac.dto.request.RuleTestRequest;

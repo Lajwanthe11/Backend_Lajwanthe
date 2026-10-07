@@ -1,4 +1,4 @@
-﻿package com.example.platformadmin.rbac.service;
+package com.example.platformadmin.rbac.service;
 
 import com.example.platformadmin.rbac.dto.response.PermissionResponseDto;
 import org.springframework.data.domain.Page;

@@ -1,4 +1,4 @@
-﻿package com.example.platformadmin.rbac.entity;
+package com.example.platformadmin.rbac.entity;
 
 import com.example.platformadmin.rbac.enums.ConditionOperator;
 import com.example.platformadmin.rbac.enums.RuleType;

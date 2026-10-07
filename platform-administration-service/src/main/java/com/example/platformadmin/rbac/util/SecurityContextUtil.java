@@ -1,4 +1,4 @@
-﻿package com.example.platformadmin.rbac.util;
+package com.example.platformadmin.rbac.util;
 
 import com.example.platformadmin.rbac.dto.response.AuthenticatedUser;
 import org.springframework.security.core.Authentication;

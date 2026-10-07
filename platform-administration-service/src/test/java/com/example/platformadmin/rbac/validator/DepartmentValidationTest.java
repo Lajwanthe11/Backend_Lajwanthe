@@ -1,4 +1,4 @@
-﻿package com.example.platformadmin.rbac.validator;
+package com.example.platformadmin.rbac.validator;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;

@@ -1,4 +1,4 @@
-﻿package com.example.platformadmin.rbac.dto.response;
+package com.example.platformadmin.rbac.dto.response;
 
 import com.example.platformadmin.rbac.dto.response.CsvImportError;
 

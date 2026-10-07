@@ -1,4 +1,4 @@
-﻿package com.example.platformadmin.rbac.evaluator;
+package com.example.platformadmin.rbac.evaluator;
 
 import org.springframework.stereotype.Component;
 

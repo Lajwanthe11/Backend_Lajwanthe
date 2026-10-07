@@ -1,4 +1,4 @@
-﻿package com.example.platformadmin.rbac.integration;
+package com.example.platformadmin.rbac.integration;
 
 import com.example.platformadmin.rbac.controller.IntegrationTestConfig;
 import org.springframework.context.annotation.Import;

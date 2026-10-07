@@ -1,4 +1,4 @@
-﻿package com.example.platformadmin.rbac.controller;
+package com.example.platformadmin.rbac.controller;
 
 import com.example.platformadmin.rbac.dto.response.PermissionGroupResponseDto;
 import com.example.platformadmin.rbac.dto.response.PermissionResponseDto;

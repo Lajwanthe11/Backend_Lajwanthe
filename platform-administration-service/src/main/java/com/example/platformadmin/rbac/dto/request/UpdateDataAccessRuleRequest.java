@@ -1,4 +1,4 @@
-﻿package com.example.platformadmin.rbac.dto.request;
+package com.example.platformadmin.rbac.dto.request;
 
 import com.example.platformadmin.rbac.enums.ConditionOperator;
 import com.example.platformadmin.rbac.enums.RuleType;

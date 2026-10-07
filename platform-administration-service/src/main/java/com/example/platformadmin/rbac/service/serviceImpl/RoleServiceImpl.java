@@ -1,4 +1,4 @@
-﻿package com.example.platformadmin.rbac.service.serviceImpl;
+package com.example.platformadmin.rbac.service.serviceImpl;
 
 import com.example.common.abstracts.AbstractService;
 import com.example.common.exception.BadRequestException;

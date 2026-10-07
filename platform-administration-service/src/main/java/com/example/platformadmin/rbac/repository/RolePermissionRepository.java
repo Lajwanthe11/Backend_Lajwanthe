@@ -1,4 +1,4 @@
-﻿package com.example.platformadmin.rbac.repository;
+package com.example.platformadmin.rbac.repository;
 
 import com.example.platformadmin.rbac.entity.RolePermission;
 import io.lettuce.core.dynamic.annotation.Param;

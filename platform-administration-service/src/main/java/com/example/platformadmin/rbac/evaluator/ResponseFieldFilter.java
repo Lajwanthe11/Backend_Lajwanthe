@@ -1,4 +1,4 @@
-﻿package com.example.platformadmin.rbac.evaluator;
+package com.example.platformadmin.rbac.evaluator;
 
 import com.example.platformadmin.rbac.entity.DataAccessRule;
 import com.example.platformadmin.rbac.evaluator.FieldLevelRuleEvaluator.FieldEvaluationResult;

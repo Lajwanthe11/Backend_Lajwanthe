@@ -1,4 +1,4 @@
-﻿package com.example.platformadmin.rbac.dto.request;
+package com.example.platformadmin.rbac.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;

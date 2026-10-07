@@ -34,28 +34,13 @@ import org.springframework.web.cors.CorsConfigurationSource;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-        private final JwtAuthenticationEntryPoint unauthorizedHandler;
-        private final JwtAuthenticationFilter jwtAuthenticationFilter;
-        private final CustomOAuth2UserService customOAuth2UserService;
-        private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
-        private final OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler;
-        private final CorsConfigurationSource corsConfigurationSource;
+    private final JwtAuthenticationEntryPoint unauthorizedHandler;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final CustomOAuth2UserService customOAuth2UserService;
+    private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
+    private final OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler;
+    private final CorsConfigurationSource corsConfigurationSource;
 
-<<<<<<< HEAD
-        public SecurityConfig(JwtAuthenticationEntryPoint unauthorizedHandler,
-                        JwtAuthenticationFilter jwtAuthenticationFilter,
-                        CustomOAuth2UserService customOAuth2UserService,
-                        OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler,
-                        OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler,
-                        CorsConfigurationSource corsConfigurationSource) {
-                this.unauthorizedHandler = unauthorizedHandler;
-                this.jwtAuthenticationFilter = jwtAuthenticationFilter;
-                this.customOAuth2UserService = customOAuth2UserService;
-                this.oAuth2AuthenticationSuccessHandler = oAuth2AuthenticationSuccessHandler;
-                this.oAuth2AuthenticationFailureHandler = oAuth2AuthenticationFailureHandler;
-                this.corsConfigurationSource = corsConfigurationSource;
-        }
-=======
     public SecurityConfig(JwtAuthenticationEntryPoint unauthorizedHandler,
                           JwtAuthenticationFilter jwtAuthenticationFilter,
                           CustomOAuth2UserService customOAuth2UserService,
@@ -69,52 +54,12 @@ public class SecurityConfig {
         this.oAuth2AuthenticationFailureHandler = oAuth2AuthenticationFailureHandler;
         this.corsConfigurationSource = corsConfigurationSource;
     }
->>>>>>> f2806f67474dcf34c5bffa52b9c4078e92c712be
 
-        @Bean
-        public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
-                return authConfig.getAuthenticationManager();
-        }
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
+        return authConfig.getAuthenticationManager();
+    }
 
-<<<<<<< HEAD
-        @Bean
-        public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-                http
-                                .cors(cors -> cors.configurationSource(corsConfigurationSource))
-                                .csrf(AbstractHttpConfigurer::disable)
-                                .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
-                                .sessionManagement(session -> session
-                                                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                                .authorizeHttpRequests(auth -> auth
-                                                // Public endpoints — no authentication required
-                                                .requestMatchers(
-                                                                "/auth/**",
-                                                                "/api/auth/**",
-                                                                "/v3/api-docs/**",
-                                                                "/swagger-ui/**",
-                                                                "/swagger-ui.html",
-                                                                "/error")
-                                                .permitAll()
-                                                .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
-                                                // Service-to-service event reporting: authenticated by the
-                                                // X-Internal-Api-Key header in the controller
-                                                .requestMatchers(HttpMethod.POST, "/security-alerts/events/ingest")
-                                                .permitAll()
-                                                // All other endpoints require authentication
-                                                .anyRequest().authenticated())
-                                .oauth2Login(oauth2 -> oauth2
-                                                .userInfoEndpoint(userInfo -> userInfo
-                                                                .userService(customOAuth2UserService))
-                                                .successHandler(oAuth2AuthenticationSuccessHandler)
-                                                .failureHandler(oAuth2AuthenticationFailureHandler));
-
-                // Add JWT filter before username/password filter
-                http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-
-                return http.build();
-        }
-}
-=======
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -133,7 +78,10 @@ public class SecurityConfig {
                                 "/error"
                         ).permitAll()
                         .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
+                        // Service-to-service event reporting: authenticated by the
+                        // X-Internal-Api-Key header in the controller
                         .requestMatchers(HttpMethod.POST, "/security-alerts/events/ingest").permitAll()
+                        // All other endpoints require authentication
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2
@@ -142,9 +90,9 @@ public class SecurityConfig {
                         .failureHandler(oAuth2AuthenticationFailureHandler)
                 );
 
+        // Add JWT filter before username/password filter
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 }
->>>>>>> f2806f67474dcf34c5bffa52b9c4078e92c712be

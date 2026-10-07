@@ -1,4 +1,4 @@
-﻿package com.example.platformadmin.rbac.entity;
+package com.example.platformadmin.rbac.entity;
 
 import jakarta.persistence.*;
 import java.util.UUID;

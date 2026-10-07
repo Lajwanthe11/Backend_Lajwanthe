@@ -1,4 +1,4 @@
-﻿package com.example.platformadmin.rbac.controller;
+package com.example.platformadmin.rbac.controller;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;

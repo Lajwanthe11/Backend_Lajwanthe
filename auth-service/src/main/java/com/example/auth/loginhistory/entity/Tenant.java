@@ -1,4 +1,4 @@
-package com.example.auth.tenant.entity;
+package com.example.auth.loginhistory.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

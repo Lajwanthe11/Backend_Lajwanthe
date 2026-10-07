@@ -1,4 +1,4 @@
-﻿package com.example.platformadmin.rbac.performance;
+package com.example.platformadmin.rbac.performance;
 
 import com.example.platformadmin.rbac.service.PermissionCheckService;
 import com.example.platformadmin.rbac.service.PermissionResolver;

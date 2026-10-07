@@ -1,6 +1,5 @@
 package com.example.auth.loginhistory.entity;
 
-import com.example.auth.tenant.entity.Tenant;
 import com.example.common.abstracts.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.ConstraintMode;

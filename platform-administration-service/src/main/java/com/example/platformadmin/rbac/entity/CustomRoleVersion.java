@@ -1,4 +1,4 @@
-﻿// CustomRoleVersion.java
+// CustomRoleVersion.java
 
 package com.example.platformadmin.rbac.entity;
 

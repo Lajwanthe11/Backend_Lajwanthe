@@ -1,4 +1,4 @@
-﻿package com.example.platformadmin.rbac.security;
+package com.example.platformadmin.rbac.security;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;

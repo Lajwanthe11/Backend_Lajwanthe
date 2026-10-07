@@ -1,4 +1,4 @@
-﻿package com.example.platformadmin.rbac.exception;
+package com.example.platformadmin.rbac.exception;
 
 import com.example.common.exception.AppException;
 import org.springframework.http.HttpStatus;

@@ -1,4 +1,4 @@
-﻿package com.example.platformadmin.rbac.exception;
+package com.example.platformadmin.rbac.exception;
 
 public class UserRoleNotFoundException extends RuntimeException {
 
