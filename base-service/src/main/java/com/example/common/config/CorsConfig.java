@@ -10,7 +10,8 @@ import java.util.List;
 
 /**
  * Common CORS configuration — permissive defaults for local dev.
- * Override this bean in your service's @Configuration class if you need stricter rules.
+ * Override this bean in your service's @Configuration class if you need
+ * stricter rules.
  */
 @Configuration
 public class CorsConfig {
@@ -26,7 +27,10 @@ public class CorsConfig {
                 "Access-Control-Request-Headers", "X-Tenant-ID"
         ));
         configuration.setExposedHeaders(List.of(
-                "Access-Control-Allow-Origin", "Access-Control-Allow-Credentials", "Authorization"
+                "Access-Control-Allow-Origin", "Access-Control-Allow-Credentials", "Authorization",
+                // lets browser code read the file name and row count of file downloads (e.g.
+                // security alert export)
+                "Content-Disposition", "X-Total-Count"
         ));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);

@@ -1,6 +1,6 @@
-package com.example.auth.tenant.repository;
+package com.example.auth.loginhistory.repository;
 
-import com.example.auth.tenant.entity.Tenant;
+import com.example.auth.loginhistory.entity.Tenant;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

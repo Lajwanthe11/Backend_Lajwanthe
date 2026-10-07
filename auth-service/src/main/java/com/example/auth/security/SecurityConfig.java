@@ -28,6 +28,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
  * - OAuth2 login for Google/GitHub
  * - Public: /auth/**, swagger, oauth2/**
  */
+
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -77,7 +78,10 @@ public class SecurityConfig {
                                 "/error"
                         ).permitAll()
                         .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
+                        // Service-to-service event reporting: authenticated by the
+                        // X-Internal-Api-Key header in the controller
                         .requestMatchers(HttpMethod.POST, "/security-alerts/events/ingest").permitAll()
+                        // All other endpoints require authentication
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2
@@ -86,6 +90,7 @@ public class SecurityConfig {
                         .failureHandler(oAuth2AuthenticationFailureHandler)
                 );
 
+        // Add JWT filter before username/password filter
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
