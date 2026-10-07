@@ -162,6 +162,12 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Lombok - annotation processor for @Data, @Builder, @Slf4j, etc. -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-test</artifactId>
@@ -179,6 +185,12 @@
                     <mainClass>
                         com.example.platformadmin.PlatformAdministrationApplication
                     </mainClass>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
                 </configuration>
             </plugin>
             <plugin>

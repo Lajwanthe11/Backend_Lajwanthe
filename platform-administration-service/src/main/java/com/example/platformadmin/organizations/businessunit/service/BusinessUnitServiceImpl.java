@@ -139,7 +139,7 @@ public class BusinessUnitServiceImpl implements BusinessUnitService {
     @Override
     @Transactional(readOnly = true)
     public List<BusinessUnitResponseDto> searchBusinessUnits(String query) {
-        if (query == null || query.strip().isBlank()) {
+        if (query == null || query.isBlank()) {
             throw new BadRequestException("Search query must not be blank");
         }
         List<BusinessUnitResponseDto> results = repository.searchBusinessUnits(query).stream()

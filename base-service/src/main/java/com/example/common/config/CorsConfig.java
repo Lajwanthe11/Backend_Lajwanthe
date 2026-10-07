@@ -16,7 +16,25 @@ import java.util.List;
 @Configuration
 public class CorsConfig {
 
+<<<<<<< HEAD
         @Bean
+=======
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOriginPatterns(List.of("*"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of(
+                "Authorization", "Content-Type", "X-Requested-With",
+                "Accept", "Origin", "Access-Control-Request-Method",
+                "Access-Control-Request-Headers", "X-Tenant-ID"
+        ));
+        configuration.setExposedHeaders(List.of(
+                "Access-Control-Allow-Origin", "Access-Control-Allow-Credentials", "Authorization"
+        ));
+        configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
+>>>>>>> f2806f67474dcf34c5bffa52b9c4078e92c712be
 
         public CorsConfigurationSource corsConfigurationSource() {
                 CorsConfiguration configuration = new CorsConfiguration();

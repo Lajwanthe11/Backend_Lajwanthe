@@ -1,0 +1,219 @@
+﻿# ============================================================
+# One Enterprise Cloud - Docker Compose (Local Dev)
+# ============================================================
+# Usage:
+#   docker compose up --build          # build all images and start (local postgres)
+#   docker compose up -d               # run in background (local postgres)
+#   docker compose logs -f             # tail logs
+#   docker compose down                # stop containers (no -v -- keeps DB data)
+#
+# -- EC2 / Cloud DB Mode --------------------------------------
+#   1. Start the SSH tunnel first (keeps running in background):
+#        .\start-ec2-tunnel.ps1
+#      OR manually:
+#        ssh -N -L 5432:localhost:5432 ec2-user@75.101.236.244
+#
+#   2. Then start services without the local postgres container:
+#        docker compose --profile cloud up --build
+#
+#   The 'cloud' profile skips the local postgres service and
+#   routes all DB traffic through the SSH tunnel on
+#   host.docker.internal:5432 -> EC2 oec-postgres container.
+# ============================================================
+
+version: "3.9"
+
+# -- Shared environment anchors ---------------------------------
+
+# Local dev DB (postgres container in this compose)
+x-db-env: &db-env
+  SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/microservice_db
+  SPRING_DATASOURCE_USERNAME: postgres
+  SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-root@123}
+  SPRING_JPA_HIBERNATE_DDL_AUTO: update
+  SPRING_JPA_DEFAULT_SCHEMA: public
+
+# EC2 / Cloud DB (via SSH tunnel on host.docker.internal:5432)
+x-db-env-cloud: &db-env-cloud
+  SPRING_DATASOURCE_URL: jdbc:postgresql://host.docker.internal:5432/${EC2_DB_NAME:-cloud_platform}
+  SPRING_DATASOURCE_USERNAME: ${EC2_DB_USER:-oec_admin}
+  SPRING_DATASOURCE_PASSWORD: ${EC2_DB_PASSWORD:-DevOps321}
+  SPRING_JPA_HIBERNATE_DDL_AUTO: ${EC2_DDL_AUTO:-validate}
+  SPRING_JPA_DEFAULT_SCHEMA: public
+
+x-pool-env: &pool-env
+  DB_POOL_MIN_IDLE: 5
+  DB_POOL_MAX_SIZE: 20
+  DB_POOL_IDLE_TIMEOUT: 300000
+  DB_POOL_MAX_LIFETIME: 1200000
+  DB_POOL_CONN_TIMEOUT: 20000
+
+x-jwt-env: &jwt-env
+  JWT_SECRET: ${JWT_SECRET:-404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+  JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-86400000}
+
+x-tenant-env: &tenant-env
+  DEFAULT_TENANT_ID: ${DEFAULT_TENANT_ID:-default}
+  TENANT_HEADER_NAME: X-Tenant-ID
+
+# -- Services ---------------------------------------------------
+services:
+
+  # ----------------------------------------------------------
+  # PostgreSQL (local dev only -- skipped when --profile cloud)
+  # ----------------------------------------------------------
+  postgres:
+    profiles: ["", "local"]
+    image: postgres:16-alpine
+    container_name: one-enterprise-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: microservice_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-root@123}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d microservice_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ----------------------------------------------------------
+  # Auth Service  (port 8081)
+  # ----------------------------------------------------------
+
+  # Local mode (default)
+  auth-service:
+    profiles: ["", "local"]
+    build:
+      context: .
+      dockerfile: auth-service/Dockerfile
+    image: one-enterprise/auth-service:1.0.0-SNAPSHOT
+    container_name: one-enterprise-auth
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+    environment:
+      <<: [*db-env, *pool-env, *jwt-env, *tenant-env]
+      JWT_REFRESH_EXPIRATION_MS: ${JWT_REFRESH_EXPIRATION_MS:-604800000}
+      OAUTH2_GOOGLE_CLIENT_ID: ${OAUTH2_GOOGLE_CLIENT_ID:-google-client-id-placeholder}
+      OAUTH2_GOOGLE_CLIENT_SECRET: ${OAUTH2_GOOGLE_CLIENT_SECRET:-google-client-secret-placeholder}
+      OAUTH2_GITHUB_CLIENT_ID: ${OAUTH2_GITHUB_CLIENT_ID:-github-client-id-placeholder}
+      OAUTH2_GITHUB_CLIENT_SECRET: ${OAUTH2_GITHUB_CLIENT_SECRET:-github-client-secret-placeholder}
+      APP_OAUTH2_AUTHORIZED_REDIRECT_URIS: "http://localhost:3000/oauth2/redirect,http://localhost:8081/api/auth/oauth2/success"
+      SECURITY_ALERTS_ENABLED: ${SECURITY_ALERTS_ENABLED:-true}
+      SECURITY_ALERTS_INGEST_API_KEY: ${SECURITY_ALERTS_INGEST_API_KEY:-}
+      SECURITY_ALERTS_TRUST_FORWARDED_HEADERS: "false"
+      SECURITY_ALERTS_EXPORT_MAX_ROWS: 10000
+      ACCOUNT_LOCKOUT_MAX_ATTEMPTS: ${ACCOUNT_LOCKOUT_MAX_ATTEMPTS:-3}
+      ACCOUNT_LOCKOUT_DURATION_MINUTES: ${ACCOUNT_LOCKOUT_DURATION_MINUTES:-2}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-default}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8081/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Cloud / EC2 mode
+  auth-service-cloud:
+    profiles: ["cloud"]
+    build:
+      context: .
+      dockerfile: auth-service/Dockerfile
+    image: one-enterprise/auth-service:1.0.0-SNAPSHOT
+    container_name: one-enterprise-auth
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "8081:8081"
+    environment:
+      <<: [*db-env-cloud, *pool-env, *jwt-env, *tenant-env]
+      JWT_REFRESH_EXPIRATION_MS: ${JWT_REFRESH_EXPIRATION_MS:-604800000}
+      OAUTH2_GOOGLE_CLIENT_ID: ${OAUTH2_GOOGLE_CLIENT_ID:-google-client-id-placeholder}
+      OAUTH2_GOOGLE_CLIENT_SECRET: ${OAUTH2_GOOGLE_CLIENT_SECRET:-google-client-secret-placeholder}
+      OAUTH2_GITHUB_CLIENT_ID: ${OAUTH2_GITHUB_CLIENT_ID:-github-client-id-placeholder}
+      OAUTH2_GITHUB_CLIENT_SECRET: ${OAUTH2_GITHUB_CLIENT_SECRET:-github-client-secret-placeholder}
+      APP_OAUTH2_AUTHORIZED_REDIRECT_URIS: "http://localhost:3000/oauth2/redirect,http://localhost:8081/api/auth/oauth2/success"
+      SECURITY_ALERTS_ENABLED: ${SECURITY_ALERTS_ENABLED:-true}
+      SECURITY_ALERTS_INGEST_API_KEY: ${SECURITY_ALERTS_INGEST_API_KEY:-}
+      SECURITY_ALERTS_TRUST_FORWARDED_HEADERS: "false"
+      SECURITY_ALERTS_EXPORT_MAX_ROWS: 10000
+      ACCOUNT_LOCKOUT_MAX_ATTEMPTS: ${ACCOUNT_LOCKOUT_MAX_ATTEMPTS:-3}
+      ACCOUNT_LOCKOUT_DURATION_MINUTES: ${ACCOUNT_LOCKOUT_DURATION_MINUTES:-2}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-default}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8081/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ----------------------------------------------------------
+  # Platform Administration Service  (port 8082)
+  # ----------------------------------------------------------
+
+  # Local mode (default)
+  platform-administration-service:
+    profiles: ["", "local"]
+    build:
+      context: .
+      dockerfile: platform-administration-service/Dockerfile
+    image: one-enterprise/platform-administration-service:1.0.0-SNAPSHOT
+    container_name: one-enterprise-platform-admin
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+    ports:
+      - "8082:8082"
+    environment:
+      <<: [*db-env, *pool-env, *jwt-env, *tenant-env]
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-default}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8082/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Cloud / EC2 mode
+  platform-administration-service-cloud:
+    profiles: ["cloud"]
+    build:
+      context: .
+      dockerfile: platform-administration-service/Dockerfile
+    image: one-enterprise/platform-administration-service:1.0.0-SNAPSHOT
+    container_name: one-enterprise-platform-admin
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      auth-service-cloud:
+        condition: service_started
+    ports:
+      - "8082:8082"
+    environment:
+      <<: [*db-env-cloud, *pool-env, *jwt-env, *tenant-env]
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-default}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8082/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+# -- Volumes ----------------------------------------------------
+volumes:
+  postgres_data:
+    driver: local
