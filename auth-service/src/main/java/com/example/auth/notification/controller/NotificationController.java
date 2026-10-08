@@ -85,7 +85,7 @@ public class NotificationController extends AbstractController<
      * ADMIN-only because the current JWT does not provide
      * a verified numeric user-id mapping.
      */
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<NotificationResponse>>
     getUserNotifications(
