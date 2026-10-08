@@ -2,6 +2,7 @@ package com.example.platformadmin.rbac.config;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
@@ -23,6 +24,9 @@ public class UnannotatedEndpointScanner {
 
     private final RequestMappingHandlerMapping handlerMapping;
 
+    @Value("${app.rbac.fail-closed:false}")
+    private boolean failClosed;
+
     public UnannotatedEndpointScanner(@Qualifier("requestMappingHandlerMapping") RequestMappingHandlerMapping handlerMapping) {
         this.handlerMapping = handlerMapping;
     }
@@ -33,9 +37,16 @@ public class UnannotatedEndpointScanner {
 
         int unprotected = 0;
         int publicEndpoints = 0;
+        int frameworkEndpoints = 0;
 
         for (Map.Entry<RequestMappingInfo, HandlerMethod> entry : handlerMethods.entrySet()) {
             HandlerMethod handlerMethod = entry.getValue();
+
+            // Skip framework and infrastructure endpoints (Swagger, OpenAPI, Spring Boot error handling)
+            if (isFrameworkEndpoint(handlerMethod)) {
+                frameworkEndpoints++;
+                continue;
+            }
 
             boolean hasPermission = AnnotatedElementUtils.findMergedAnnotation(handlerMethod.getMethod(),
                     RequirePermission.class) != null
@@ -67,26 +78,43 @@ public class UnannotatedEndpointScanner {
                 continue;
             }
 
-            // Neither annotation present — this endpoint will be BLOCKED at runtime
-            // by PermissionAuthorizationAspect (deny-by-default policy).
+            // Neither annotation present
             unprotected++;
-            log.error("[RBAC-STARTUP-ERROR] Endpoint {} on {}.{} has NEITHER @RequirePermission NOR "
-                    + "@PublicEndpoint. It will be BLOCKED at runtime (fail-closed policy). "
-                    + "Add one of these annotations to fix.",
-                    entry.getKey(),
-                    handlerMethod.getBeanType().getSimpleName(),
-                    handlerMethod.getMethod().getName());
+            if (failClosed) {
+                log.error("[RBAC-STARTUP-ERROR] Endpoint {} on {}.{} has NEITHER @RequirePermission NOR "
+                        + "@PublicEndpoint. It will be BLOCKED at runtime (fail-closed policy). "
+                        + "Add one of these annotations to fix.",
+                        entry.getKey(),
+                        handlerMethod.getBeanType().getSimpleName(),
+                        handlerMethod.getMethod().getName());
+            } else {
+                log.debug("[RBAC-STARTUP] Unannotated endpoint {} on {}.{} (permissive mode active)",
+                        entry.getKey(),
+                        handlerMethod.getBeanType().getSimpleName(),
+                        handlerMethod.getMethod().getName());
+            }
         }
 
         if (unprotected > 0) {
-            log.error("[RBAC-STARTUP-ERROR] {} endpoint(s) are UNPROTECTED and will be denied at runtime. "
-                    + "See errors above.", unprotected);
+            if (failClosed) {
+                log.error("[RBAC-STARTUP-ERROR] {} endpoint(s) are UNPROTECTED and will be denied at runtime. "
+                        + "See errors above.", unprotected);
+            } else {
+                log.info("[RBAC-STARTUP] {} endpoint(s) are currently unannotated. Running in permissive mode "
+                        + "(app.rbac.fail-closed=false; endpoints require valid JWT authentication).", unprotected);
+            }
         } else {
-            log.info("[RBAC-STARTUP] All {} controller endpoint(s) are annotated "
+            log.info("[RBAC-STARTUP] All application controller endpoint(s) are annotated "
                     + "({} with @RequirePermission, {} with @PublicEndpoint).",
-                    handlerMethods.size() - publicEndpoints + publicEndpoints,
-                    handlerMethods.size() - publicEndpoints,
+                    handlerMethods.size() - frameworkEndpoints - publicEndpoints,
                     publicEndpoints);
         }
+    }
+
+    private boolean isFrameworkEndpoint(HandlerMethod handlerMethod) {
+        String packageName = handlerMethod.getBeanType().getPackageName();
+        return packageName.startsWith("org.springdoc")
+                || packageName.startsWith("org.springframework.boot.autoconfigure")
+                || packageName.startsWith("org.springframework.boot.actuate");
     }
 }

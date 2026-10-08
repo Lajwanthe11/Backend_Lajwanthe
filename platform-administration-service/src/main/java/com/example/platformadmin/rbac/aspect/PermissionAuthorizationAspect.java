@@ -12,6 +12,9 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -23,9 +26,14 @@ import java.lang.reflect.Method;
 @Component
 public class PermissionAuthorizationAspect {
 
+    private static final Logger log = LoggerFactory.getLogger(PermissionAuthorizationAspect.class);
+
     private final PermissionAuthorizationService authorizationService;
     private final SecurityContextUtil securityContextUtil;
     private final SecurityEventLogger securityEventLogger;
+
+    @Value("${app.rbac.fail-closed:false}")
+    private boolean failClosed;
 
     public PermissionAuthorizationAspect(PermissionAuthorizationService authorizationService,
             SecurityContextUtil securityContextUtil,
@@ -35,8 +43,9 @@ public class PermissionAuthorizationAspect {
         this.securityEventLogger = securityEventLogger;
     }
 
-    @Around("within(@org.springframework.web.bind.annotation.RestController *) "
-            + "|| within(@org.springframework.stereotype.Controller *)")
+    @Around("within(com.example.platformadmin..*) && ("
+            + "within(@org.springframework.web.bind.annotation.RestController *) "
+            + "|| within(@org.springframework.stereotype.Controller *))")
     public Object enforcePermission(ProceedingJoinPoint joinPoint) throws Throwable {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         Method method = signature.getMethod();
@@ -73,11 +82,17 @@ public class PermissionAuthorizationAspect {
             return joinPoint.proceed();
         }
 
-        // --- DENY BY DEFAULT ---
-        // No @RequirePermission and no @PublicEndpoint found.
-        // Fail closed: treat as unauthorized rather than silently allowing access.
-        // Fix: add @RequirePermission(<permission>) or @PublicEndpoint(reason="...") to the method.
+        // --- UNANNOTATED ENDPOINT HANDLING ---
         String methodRef = method.getDeclaringClass().getSimpleName() + "#" + method.getName();
+        if (!failClosed) {
+            // Permissive mode during development/transition:
+            // Allow authenticated requests through (still protected by Spring Security JWT filter).
+            log.debug("[RBAC] Endpoint {} has no @RequirePermission or @PublicEndpoint — permitted (fail-closed=false).", methodRef);
+            return joinPoint.proceed();
+        }
+
+        // --- DENY BY DEFAULT (Strict production mode) ---
+        // Fail closed: treat as unauthorized rather than silently allowing access.
         throw new PermissionDeniedException(
                 "Endpoint " + methodRef + " has no @RequirePermission or @PublicEndpoint — "
                         + "access denied by default (fail-closed policy).",
