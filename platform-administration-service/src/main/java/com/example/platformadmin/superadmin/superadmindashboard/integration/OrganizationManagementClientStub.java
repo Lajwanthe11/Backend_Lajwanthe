@@ -1,29 +1,20 @@
 package com.example.platformadmin.superadmin.superadmindashboard.integration;
 
-import com.example.platformadmin.organizations.organization.entity.OrganizationEntity;
-import com.example.platformadmin.organizations.organization.repository.OrganizationRepository;
+/**
+	 * TEMPORARY stub - returns mock data so the dashboard pipeline can be built and
+	 * tested before the Organization Management service is available.
+	 *
+	 * TODO: replace with a real RestClient-based implementation once confirmed.
+	**/
+
+import com.example.platformadmin.superadmin.superadmindashboard.integration.OrganizationManagementClient;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
-@Component
+@Component("organizationManagementClientStub")
 public class OrganizationManagementClientStub implements OrganizationManagementClient {
 
-    private final OrganizationRepository organizationRepository;
-
-    public OrganizationManagementClientStub(OrganizationRepository organizationRepository) {
-        this.organizationRepository = organizationRepository;
-    }
-
-    @Override
-    public OrganizationStatistics getOrganizationStatistics() {
-        List<OrganizationEntity> orgs = organizationRepository.findAll();
-
-        long totalOrganizations = orgs.size();
-        long activeOrganizations = orgs.stream()
-                .filter(o -> "ACTIVE".equalsIgnoreCase(o.getStatus()))
-                .count();
-
-        return new OrganizationStatistics(totalOrganizations, activeOrganizations);
-    }
+		  @Override
+          public OrganizationStatistics getOrganizationStatistics() {
+              return new OrganizationStatistics(58, 12);
+          }
 }

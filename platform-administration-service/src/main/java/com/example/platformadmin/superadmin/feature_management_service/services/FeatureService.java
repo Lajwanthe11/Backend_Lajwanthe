@@ -2,14 +2,17 @@ package com.example.platformadmin.superadmin.feature_management_service.services
 
 import com.example.platformadmin.superadmin.feature_management_service.dto.request.FeatureCreateRequest;
 import com.example.platformadmin.superadmin.feature_management_service.dto.request.FeatureUpdateRequest;
+import com.example.platformadmin.superadmin.feature_management_service.dto.response.FeatureDashboardResponse;
 import com.example.platformadmin.superadmin.feature_management_service.dto.response.FeatureResponse;
 import com.example.platformadmin.superadmin.feature_management_service.entity.Feature;
 import com.example.platformadmin.superadmin.feature_management_service.exception.FeatureConfigurationException;
 import com.example.platformadmin.superadmin.feature_management_service.exception.FeatureNotFoundException;
 import com.example.platformadmin.superadmin.feature_management_service.exception.InvalidFeatureStateException;
 import com.example.platformadmin.superadmin.feature_management_service.repository.FeatureRepository;
+import com.example.platformadmin.superadmin.feature_management_service.specification.FeatureSpecification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -66,15 +69,45 @@ public class FeatureService {
         return mapToResponse(savedFeature);
     }
 
-    // GET ALL
 
+    // GET ALL
     @Transactional(readOnly = true)
-    public List<FeatureResponse> getAllFeatures() {
-        log.info("Retrieving all features");
-        return featureRepository.findAll()
+    public List<FeatureResponse> getAllFeatures(
+            String search,
+            String module,
+            String licensePlan,
+            String status) {
+
+        Specification<Feature> specification = Specification
+                .where(FeatureSpecification.search(search))
+                .and(FeatureSpecification.hasModule(module))
+                .and(FeatureSpecification.hasLicensePlan(licensePlan))
+                .and(FeatureSpecification.hasStatus(status));
+
+        return featureRepository.findAll(specification)
                 .stream()
                 .map(this::mapToResponse)
-                .collect(Collectors.toList());
+                .toList();
+    }
+
+    // DASHBOARD SUMMARY
+    @Transactional(readOnly = true)
+    public FeatureDashboardResponse getDashboardSummary() {
+
+        long totalFeatures =
+                featureRepository.count();
+
+        long enabledFeatures =
+                featureRepository.countByStatus("ENABLED");
+
+        long disabledFeatures =
+                featureRepository.countByStatus("DISABLED");
+
+        return new FeatureDashboardResponse(
+                totalFeatures,
+                enabledFeatures,
+                disabledFeatures
+        );
     }
 
     // GET BY ID
@@ -258,4 +291,4 @@ public class FeatureService {
 
         return response;
     }
-}
+}
