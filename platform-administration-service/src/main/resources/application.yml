@@ -8,10 +8,10 @@ spring:
     name: platform-administration-service
 
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/microservice_db}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/postgres}
     driver-class-name: org.postgresql.Driver
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
-    password: ${SPRING_DATASOURCE_PASSWORD:wiz@linux}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
 
     hikari:
       minimum-idle: ${DB_POOL_MIN_IDLE:5}
@@ -35,6 +35,10 @@ spring:
             non_contextual_creation: true
 
 app:
+  cors:
+    allowed-origins: http://localhost:3000
+
+
   tenant:
     default-tenant: ${DEFAULT_TENANT_ID:default}
     header-name: ${TENANT_HEADER_NAME:X-Tenant-ID}

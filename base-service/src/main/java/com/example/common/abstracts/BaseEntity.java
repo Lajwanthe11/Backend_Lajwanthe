@@ -13,8 +13,10 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
- * Base abstract entity with automatic tenant isolation, auditing columns, and optimistic locking.
- * All domain entities should extend this class to inherit these cross-cutting concerns.
+ * Base abstract entity with automatic tenant isolation, auditing columns, and
+ * optimistic locking.
+ * All domain entities should extend this class to inherit these cross-cutting
+ * concerns.
  */
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
@@ -49,7 +51,8 @@ public abstract class BaseEntity implements Serializable {
     private Long version;
 
     /**
-     * Ensures tenantId is populated from TenantContext before JPA persists the entity.
+     * Ensures tenantId is populated from TenantContext before JPA persists the
+     * entity.
      */
     @PrePersist
     public void prePersistTenant() {
@@ -60,18 +63,59 @@ public abstract class BaseEntity implements Serializable {
 
     // --- Getters / Setters ---
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public String getTenantId() { return tenantId; }
-    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
-    public String getCreatedBy() { return createdBy; }
-    public void setCreatedBy(String createdBy) { this.createdBy = createdBy; }
-    public String getUpdatedBy() { return updatedBy; }
-    public void setUpdatedBy(String updatedBy) { this.updatedBy = updatedBy; }
-    public Long getVersion() { return version; }
-    public void setVersion(Long version) { this.version = version; }
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public String getUpdatedBy() {
+        return updatedBy;
+    }
+
+    public void setUpdatedBy(String updatedBy) {
+        this.updatedBy = updatedBy;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
+    }
 }

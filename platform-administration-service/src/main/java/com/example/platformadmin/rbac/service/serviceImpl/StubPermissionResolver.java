@@ -1,0 +1,51 @@
+package com.example.platformadmin.rbac.service.serviceImpl;
+
+import com.example.platformadmin.rbac.service.PermissionResolver;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import org.springframework.context.annotation.Profile;
+import org.springframework.stereotype.Service;
+
+// Development-only fake permission source. It maps known demo user IDs to permission sets.
+@Service
+@Profile("dev")
+public class StubPermissionResolver implements PermissionResolver {
+
+    private final Map<String, Set<String>> permissionsByUserId = new ConcurrentHashMap<>();
+
+    public StubPermissionResolver() {
+        // "HR manager" style user
+        permissionsByUserId.put("user-hr-1", Set.of(
+                "USER_READ", "USER_CREATE", "USER_UPDATE",
+                "REPORT_VIEW","ROLE_READ", "ROLE_CREATE"));
+        // read-only user
+        permissionsByUserId.put("user-readonly-1", Set.of(
+                "USER_READ", "REPORT_VIEW"));
+        // admin
+        permissionsByUserId.put("user-admin-1", Set.of(
+                "USER_READ", "USER_CREATE", "USER_UPDATE", "USER_DELETE",
+                "REPORT_VIEW", "REPORT_EXPORT", "SECURITY_EVENTS_VIEW", "ROLE_READ", "ROLE_CREATE"));
+
+        permissionsByUserId.put("svc-internal-1", Set.of("INTERNAL_SERVICE"));
+    }
+
+    @Override
+    public Set<String> resolvePermissions(String userId, String tenantId) {
+        return permissionsByUserId.getOrDefault(userId, Set.of());
+    }
+
+    @Override
+    public boolean hasPermission(
+            String userId,
+            String permissionCode) {
+
+        Set<String> permissions =
+                permissionsByUserId.getOrDefault(
+                        userId,
+                        Set.of());
+
+        return permissions.contains("*")
+                || permissions.contains(permissionCode);
+   }
+}

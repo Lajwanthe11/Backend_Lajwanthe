@@ -34,7 +34,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Tag(name = "Platform Settings Controller", description = "APIs for managing global platform-wide settings")
 @SecurityRequirement(name = "bearerAuth")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('SUPER_ADMIN')")
 public class PlatformSettingsController {
 
     private final PlatformSettingsService service;

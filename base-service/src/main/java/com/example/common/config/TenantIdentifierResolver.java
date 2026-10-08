@@ -17,7 +17,8 @@ import java.util.Map;
  * Automatically discovered by any service that scans com.example.common.
  */
 @Component
-public class TenantIdentifierResolver implements CurrentTenantIdentifierResolver<String>, HibernatePropertiesCustomizer {
+public class TenantIdentifierResolver
+        implements CurrentTenantIdentifierResolver<String>, HibernatePropertiesCustomizer {
 
     @Override
     public String resolveCurrentTenantIdentifier() {
@@ -32,6 +33,10 @@ public class TenantIdentifierResolver implements CurrentTenantIdentifierResolver
 
     @Override
     public void customize(Map<String, Object> hibernateProperties) {
-        hibernateProperties.put(AvailableSettings.MULTI_TENANT_IDENTIFIER_RESOLVER, this);
+
+        Object multiTenancy = hibernateProperties.get("hibernate.multiTenancy");
+        if (multiTenancy == null || !"NONE".equalsIgnoreCase(String.valueOf(multiTenancy))) {
+            hibernateProperties.put(AvailableSettings.MULTI_TENANT_IDENTIFIER_RESOLVER, this);
+        }
     }
 }
