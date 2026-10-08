@@ -27,4 +27,15 @@ public interface LicenseRepository
     );
 
     boolean existsByLicenseKey(String licenseKey);
+
+    // Count methods for dashboard statistics
+    
+    long countByDeletedFalse();
+
+    long countByStatusAndDeletedFalse(LicenseStatus status);
+
+    long countByExpiryDateBetweenAndDeletedFalse(
+            LocalDate startDate,
+            LocalDate endDate
+    );
 }

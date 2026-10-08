@@ -5,6 +5,7 @@ package com.example.platformadmin.superadmin.license_management_service.controll
 import com.example.platformadmin.superadmin.license_management_service.dto.request.LicenseCreateRequest;
 import com.example.platformadmin.superadmin.license_management_service.dto.request.LicenseRenewRequest;
 import com.example.platformadmin.superadmin.license_management_service.dto.request.LicenseUpdateRequest;
+import com.example.platformadmin.superadmin.license_management_service.dto.response.LicenseDashboardResponse;
 import com.example.platformadmin.superadmin.license_management_service.dto.response.LicenseResponse;
 import com.example.platformadmin.superadmin.license_management_service.dto.response.LicenseStatusResponse;
 import com.example.platformadmin.superadmin.license_management_service.enums.LicenseStatus;
@@ -33,13 +34,7 @@ public class LicenseController {
 
     @PostMapping
     @Operation(summary = "Create a license")
-    public ResponseEntity<LicenseResponse> createLicense(
-            @Valid @RequestBody LicenseCreateRequest request,
-            @RequestHeader(
-                    value = "X-Actor-Id",
-                    required = false
-            ) UUID actorId
-    ) {
+    public ResponseEntity<LicenseResponse> createLicense(@Valid @RequestBody LicenseCreateRequest request, @RequestHeader(value = "X-Actor-Id", required = false) UUID actorId) {
 
         LicenseResponse response =
                 licenseService.createLicense(
@@ -64,6 +59,15 @@ public class LicenseController {
                         plan,
                         status
                 )
+        );
+    }
+
+    @GetMapping("/dashboard/summary")
+    @Operation(summary = "Get license dashboard summary")
+    public ResponseEntity<LicenseDashboardResponse> getDashboardSummary() {
+
+        return ResponseEntity.ok(
+                licenseService.getDashboardSummary()
         );
     }
 
