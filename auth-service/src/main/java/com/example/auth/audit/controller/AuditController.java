@@ -33,7 +33,7 @@ import java.util.List;
 @RequestMapping("/audit")
 @Tag(name = "Audit & Compliance", description = "Read-only access to the authentication audit trail (admin only)")
 @SecurityRequirement(name = "bearerAuth")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('SUPER_ADMIN')")
 public class AuditController extends AbstractController<AuditEvent, Long, AuditRequestDto, AuditResponseDto> {
 
     private final AuditService auditService;
