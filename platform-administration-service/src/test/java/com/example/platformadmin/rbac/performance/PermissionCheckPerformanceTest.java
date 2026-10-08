@@ -1,9 +1,11 @@
 package com.example.platformadmin.rbac.performance;
 
+import com.example.common.tenant.TenantContext;
 import com.example.platformadmin.rbac.service.PermissionCheckService;
 import com.example.platformadmin.rbac.service.PermissionResolver;
 import com.example.platformadmin.rbac.service.serviceImpl.PermissionCheckServiceImpl;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -37,8 +39,15 @@ class PermissionCheckPerformanceTest {
 
     @BeforeEach
     void setUp() {
+        TenantContext.setTenantId(TENANT_ID);
+
         permissionCheckService =
                 new PermissionCheckServiceImpl(permissionResolver);
+    }
+
+    @AfterEach
+    void tearDown() {
+        TenantContext.clear();
     }
 
     @Test
@@ -59,7 +68,6 @@ class PermissionCheckPerformanceTest {
 
             boolean result = permissionCheckService.hasPermission(
                     USER_ID,
-                    TENANT_ID,
                     PERMISSION_CODE);
 
             long endTime = System.nanoTime();
@@ -111,7 +119,6 @@ class PermissionCheckPerformanceTest {
 
             boolean result = permissionCheckService.hasPermission(
                     USER_ID,
-                    TENANT_ID,
                     "USER_DELETE");
 
             long endTime = System.nanoTime();
@@ -154,7 +161,6 @@ class PermissionCheckPerformanceTest {
 
             boolean result = permissionCheckService.hasPermission(
                     USER_ID,
-                    TENANT_ID,
                     "ANY_PERMISSION");
 
             long endTime = System.nanoTime();
@@ -196,28 +202,26 @@ class PermissionCheckPerformanceTest {
         when(permissionResolver.resolvePermissions(userTwo, tenantTwo))
                 .thenReturn(Set.of("USER_DELETE"));
 
-        warmUp();
+        TenantContext.setTenantId(tenantOne);
 
         long startTime = System.nanoTime();
 
         boolean userOneAllowed = permissionCheckService.hasPermission(
                 userOne,
-                tenantOne,
                 "USER_READ");
 
         boolean userOneWrongPermission = permissionCheckService.hasPermission(
                 userOne,
-                tenantOne,
                 "USER_DELETE");
+
+        TenantContext.setTenantId(tenantTwo);
 
         boolean userTwoAllowed = permissionCheckService.hasPermission(
                 userTwo,
-                tenantTwo,
                 "USER_DELETE");
 
         boolean userTwoWrongPermission = permissionCheckService.hasPermission(
                 userTwo,
-                tenantTwo,
                 "USER_READ");
 
         long endTime = System.nanoTime();
@@ -318,7 +322,6 @@ class PermissionCheckPerformanceTest {
 
         boolean result = permissionCheckService.hasPermission(
                 USER_ID,
-                TENANT_ID,
                 PERMISSION_CODE);
 
         long endTime = System.nanoTime();
@@ -343,7 +346,6 @@ class PermissionCheckPerformanceTest {
 
             permissionCheckService.hasPermission(
                     USER_ID,
-                    TENANT_ID,
                     PERMISSION_CODE);
         }
     }

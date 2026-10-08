@@ -1,7 +1,5 @@
 package com.example.platformadmin.rbac.service.serviceImpl;
 
-import com.example.platformadmin.rbac.entity.Permission;
-
 import com.example.common.tenant.TenantContext;
 import com.example.platformadmin.rbac.service.PermissionResolver;
 
@@ -154,17 +152,16 @@ public class PermissionResolverImpl implements PermissionResolver {
                 String superAdminSql = """
                                 SELECT COUNT(*)
                                 FROM user_roles ur
-                                INNER JOIN roles r
-                                    ON ur.role_id = r.role_id
+                                INNER JOIN roles r ON ur.role_id = r.role_id
                                 WHERE ur.user_id = ?
-                                  AND ur.tenant_id = ?
-                                  AND ur.is_active = true
-                                  AND ur.effective_date <= CURRENT_DATE
-                                  AND (ur.expiry_date IS NULL
-                                       OR ur.expiry_date > CURRENT_DATE)
-                                  AND r.role_code = 'SUPER_ADMIN'
-                                  AND r.status = 'ACTIVE'
-                                  AND r.is_deleted = false
+                                AND ur.tenant_id = ?
+                                AND ur.is_active = true
+                                AND ur.effective_date <= CURRENT_DATE
+                                AND (ur.expiry_date IS NULL OR ur.expiry_date > CURRENT_DATE)
+                                AND r.role_code = 'SUPER_ADMIN'
+                                AND r.status = 'ACTIVE'
+                                AND r.is_active = true
+                                AND r.is_deleted = false
                                 """;
 
                 Integer superAdminCount = jdbcTemplate.queryForObject(
@@ -183,22 +180,19 @@ public class PermissionResolverImpl implements PermissionResolver {
                 String sql = """
                                 SELECT p.permission_code
                                 FROM permissions p
-                                INNER JOIN role_permissions rp
-                                    ON p.permission_id = rp.permission_id
-                                INNER JOIN user_roles ur
-                                    ON rp.role_id = ur.role_id
-                                INNER JOIN roles r
-                                    ON ur.role_id = r.role_id
+                                INNER JOIN role_permissions rp ON p.permission_id = rp.permission_id
+                                INNER JOIN user_roles ur ON rp.role_id = ur.role_id
+                                INNER JOIN roles r ON ur.role_id = r.role_id
                                 WHERE ur.user_id = ?
-                                  AND ur.tenant_id = ?
-                                  AND ur.is_active = true
-                                  AND ur.effective_date <= CURRENT_DATE
-                                  AND (ur.expiry_date IS NULL
-                                       OR ur.expiry_date > CURRENT_DATE)
-                                  AND rp.is_active = true
-                                  AND p.is_active = true
-                                  AND r.status = 'ACTIVE'
-                                  AND r.is_deleted = false
+                                AND ur.tenant_id = ?
+                                AND ur.is_active = true
+                                AND ur.effective_date <= CURRENT_DATE
+                                AND (ur.expiry_date IS NULL OR ur.expiry_date > CURRENT_DATE)
+                                AND rp.is_active = true
+                                AND p.is_active = true
+                                AND r.status = 'ACTIVE'
+                                AND r.is_active = true
+                                AND r.is_deleted = false
                                 """;
 
                 return new HashSet<>(

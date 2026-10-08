@@ -8,16 +8,23 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.Set;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.example.common.security.jwt.JwtTokenValidator;
 import com.example.platformadmin.rbac.controller.RbacPermissionController;
 import com.example.platformadmin.rbac.service.PermissionCacheService;
 import com.example.platformadmin.rbac.service.PermissionCheckService;
@@ -29,11 +36,44 @@ class PermissionIntegrationTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @MockitoBean
     private PermissionCheckService permissionCheckService;
 
-    @MockBean
+    @MockitoBean
     private PermissionCacheService permissionCacheService;
+
+    @MockitoBean
+    private RedisTemplate<String, String> redisTemplate;
+
+    @MockitoBean
+    private JwtTokenValidator jwtTokenValidator;
+
+    @BeforeEach
+    void setUp() {
+        setJwtAuthentication(
+                "part12-user-with-no-role",
+                "part12-tenant-a");
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
+    }
+
+    private void setJwtAuthentication(
+            String userId,
+            String tenantId) {
+
+        Jwt jwt = Jwt.withTokenValue("test-token")
+                .header("alg", "none")
+                .claim("userId", userId)
+                .claim("tenantId", tenantId)
+                .build();
+
+        SecurityContextHolder.getContext()
+                .setAuthentication(
+                        new JwtAuthenticationToken(jwt));
+    }
 
     @Test
     @DisplayName("TC-S2-05 - User without permissions must be denied")
@@ -41,7 +81,6 @@ class PermissionIntegrationTest {
 
         when(permissionCheckService.hasPermission(
                 "part12-user-with-no-role",
-                "part12-tenant-a",
                 "USER_READ"))
                 .thenReturn(false);
 
@@ -50,8 +89,6 @@ class PermissionIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "userId": "part12-user-with-no-role",
-                                  "tenantId": "part12-tenant-a",
                                   "permissionCode": "USER_READ"
                                 }
                                 """))
@@ -63,9 +100,12 @@ class PermissionIntegrationTest {
     @DisplayName("TC-S2-06 - Super Admin permission must always be allowed")
     void superAdmin_shouldAlwaysBeAllowed() throws Exception {
 
+        setJwtAuthentication(
+                "super-admin-user",
+                "part12-tenant-a");
+
         when(permissionCheckService.hasPermission(
                 "super-admin-user",
-                "part12-tenant-a",
                 "PART12_ANY_PERMISSION"))
                 .thenReturn(true);
 
@@ -74,8 +114,6 @@ class PermissionIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "userId": "super-admin-user",
-                                  "tenantId": "part12-tenant-a",
                                   "permissionCode": "PART12_ANY_PERMISSION"
                                 }
                                 """))
@@ -98,9 +136,12 @@ class PermissionIntegrationTest {
     @DisplayName("TC-S2-15 - Permission check must survive Redis failure")
     void redisUnavailable_shouldFallbackToDatabase() throws Exception {
 
+        setJwtAuthentication(
+                "part12-db-backed-user",
+                "part12-tenant-a");
+
         when(permissionCheckService.hasPermission(
                 "part12-db-backed-user",
-                "part12-tenant-a",
                 "USER_READ"))
                 .thenReturn(false);
 
@@ -109,8 +150,6 @@ class PermissionIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "userId": "part12-db-backed-user",
-                                  "tenantId": "part12-tenant-a",
                                   "permissionCode": "USER_READ"
                                 }
                                 """))
