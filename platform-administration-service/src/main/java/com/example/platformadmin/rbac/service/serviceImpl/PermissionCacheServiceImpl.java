@@ -1,7 +1,5 @@
 package com.example.platformadmin.rbac.service.serviceImpl;
 
-import com.example.platformadmin.rbac.entity.Permission;
-
 import com.example.platformadmin.rbac.service.PermissionCacheService;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -14,61 +12,58 @@ import java.util.Set;
 
 @Service
 public class PermissionCacheServiceImpl
-        implements PermissionCacheService {
+                implements PermissionCacheService {
 
-    private static final Logger log =
-            LoggerFactory.getLogger(PermissionCacheServiceImpl.class);
+        private static final Logger log = LoggerFactory.getLogger(PermissionCacheServiceImpl.class);
 
-    private final RedisTemplate<String, String> redisTemplate;
-    private final Counter redisCacheFailures;
+        private final RedisTemplate<String, String> redisTemplate;
+        private final Counter redisCacheFailures;
 
-    public PermissionCacheServiceImpl(
-            RedisTemplate<String, String> redisTemplate,
-            MeterRegistry meterRegistry) {
+        public PermissionCacheServiceImpl(
+                        RedisTemplate<String, String> redisTemplate,
+                        MeterRegistry meterRegistry) {
 
-        this.redisTemplate = redisTemplate;
+                this.redisTemplate = redisTemplate;
 
-        this.redisCacheFailures =
-                Counter.builder("redis.cache.failures")
-                        .description(
-                                "Number of Redis permission cache failures")
-                        .register(meterRegistry);
-    }
-
-    // Clears the permission cache for one user.
-    @Override
-    public void clearUserPermissionsCache(
-            String userId,
-            String tenantId) {
-
-        String cacheKey =
-                "perms:" + tenantId + ":" + userId;
-
-        try {
-            redisTemplate.delete(cacheKey);
-
-        } catch (Exception e) {
-
-            log.warn(
-                    "Failed to clear permission cache for userId={}, tenantId={}",
-                    userId,
-                    tenantId,
-                    e);
-
-            redisCacheFailures.increment();
+                this.redisCacheFailures = Counter.builder("redis.cache.failures")
+                                .description(
+                                                "Number of Redis permission cache failures")
+                                .register(meterRegistry);
         }
-    }
 
-    // Clears the permission cache for multiple users.
-    @Override
-    public void clearUsersPermissionsCache(
-            Set<String> userIds,
-            String tenantId) {
+        // Clears the permission cache for one user.
+        @Override
+        public void clearUserPermissionsCache(
+                        String userId,
+                        String tenantId) {
 
-        for (String userId : userIds) {
-            clearUserPermissionsCache(
-                    userId,
-                    tenantId);
+                String cacheKey = "perms:" + tenantId + ":" + userId;
+
+                try {
+                        redisTemplate.delete(cacheKey);
+
+                } catch (Exception e) {
+
+                        log.warn(
+                                        "Failed to clear permission cache for userId={}, tenantId={}",
+                                        userId,
+                                        tenantId,
+                                        e);
+
+                        redisCacheFailures.increment();
+                }
         }
-    }
+
+        // Clears the permission cache for multiple users.
+        @Override
+        public void clearUsersPermissionsCache(
+                        Set<String> userIds,
+                        String tenantId) {
+
+                for (String userId : userIds) {
+                        clearUserPermissionsCache(
+                                        userId,
+                                        tenantId);
+                }
+        }
 }

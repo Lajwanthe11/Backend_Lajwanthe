@@ -35,6 +35,10 @@ spring:
             non_contextual_creation: true
 
 app:
+  cors:
+    allowed-origins: http://localhost:3000
+
+
   tenant:
     default-tenant: ${DEFAULT_TENANT_ID:default}
     header-name: ${TENANT_HEADER_NAME:X-Tenant-ID}

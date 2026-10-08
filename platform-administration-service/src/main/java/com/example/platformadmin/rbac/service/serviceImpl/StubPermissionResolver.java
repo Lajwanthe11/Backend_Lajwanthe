@@ -34,4 +34,18 @@ public class StubPermissionResolver implements PermissionResolver {
     public Set<String> resolvePermissions(String userId, String tenantId) {
         return permissionsByUserId.getOrDefault(userId, Set.of());
     }
+
+    @Override
+    public boolean hasPermission(
+            String userId,
+            String permissionCode) {
+
+        Set<String> permissions =
+                permissionsByUserId.getOrDefault(
+                        userId,
+                        Set.of());
+
+        return permissions.contains("*")
+                || permissions.contains(permissionCode);
+   }
 }
