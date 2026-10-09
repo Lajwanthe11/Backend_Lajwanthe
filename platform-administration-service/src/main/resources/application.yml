@@ -20,6 +20,14 @@ spring:
       max-lifetime: ${DB_POOL_MAX_LIFETIME:1200000}
       connection-timeout: ${DB_POOL_CONN_TIMEOUT:20000}
 
+  # Disables Spring Data Redis *repository* scanning (removes the
+  # "Could not safely identify store assignment" log lines).
+
+  data:
+    redis:
+      repositories:
+        enabled: false
+
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
@@ -38,6 +46,8 @@ app:
   cors:
     allowed-origins: http://localhost:3000
 
+  rbac:
+    fail-closed: ${APP_RBAC_FAIL_CLOSED:false}
 
   tenant:
     default-tenant: ${DEFAULT_TENANT_ID:default}
@@ -53,3 +63,11 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
 
+logging:
+  level:
+    # Hides the [RBAC-STARTUP] lines (public endpoints + "148 unannotated")
+    com.example.platformadmin.rbac: OFF
+    # Hides the PostgreSQLDialect deprecation warning
+    org.hibernate.orm.deprecation: ERROR
+    # Hides the "Spring Data ... repository scanning" and similar noise
+    org.springframework.data.repository.config: WARN

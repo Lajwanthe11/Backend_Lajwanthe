@@ -1,4 +1,5 @@
 package com.example.auth.service;
+
 import com.example.auth.audit.service.AuditService;
 import com.example.auth.dto.PasswordResetConfirmDTO;
 import com.example.auth.dto.PasswordResetRequestDTO;
@@ -20,15 +21,17 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-
 /**
  * Handles the two-step password reset flow:
  * <ol>
- *   <li>{@link #generateResetToken} — validates the user exists, mints a UUID reset token
- *       with a 15-minute TTL, and returns it. In production this token should be emailed;
- *       for now it is returned directly in the API response.</li>
- *   <li>{@link #resetPassword} — validates the reset token, re-encodes the new password,
- *       and delegates the update to {@link CustomUserDetailsService}.</li>
+ * <li>{@link #generateResetToken} — validates the user exists, mints a UUID
+ * reset token
+ * with a 15-minute TTL, and returns it. In production this token should be
+ * emailed;
+ * for now it is returned directly in the API response.</li>
+ * <li>{@link #resetPassword} — validates the reset token, re-encodes the new
+ * password,
+ * and delegates the update to {@link CustomUserDetailsService}.</li>
  * </ol>
  *
  * NOTE: This is an in-memory implementation. Tokens are lost on restart.
@@ -49,9 +52,9 @@ public class PasswordResetService {
     private final Map<String, ResetEntry> tokenStore = new ConcurrentHashMap<>();
 
     public PasswordResetService(CustomUserDetailsService customUserDetailsService,
-                                PasswordEncoder passwordEncoder,
-                                PasswordValidator passwordValidator,
-                                AuditService AuditService) {
+            PasswordEncoder passwordEncoder,
+            PasswordValidator passwordValidator,
+            AuditService AuditService) {
         this.customUserDetailsService = customUserDetailsService;
         this.passwordEncoder = passwordEncoder;
         this.passwordValidator = passwordValidator;
@@ -67,7 +70,8 @@ public class PasswordResetService {
      *
      * @param request contains username (required) and optional tenantId.
      * @return PasswordResetResponseDTO with the reset token and its TTL.
-     * @throws ResourceNotFoundException if no user exists with that username/tenant combination.
+     * @throws ResourceNotFoundException if no user exists with that username/tenant
+     *                                   combination.
      */
     public PasswordResetResponseDTO generateResetToken(PasswordResetRequestDTO request) {
         String tenantId = StringUtils.hasText(request.getTenantId())
@@ -79,8 +83,7 @@ public class PasswordResetService {
         }
 
         // Evict any existing reset token for this user before issuing a new one
-        tokenStore.values().removeIf(e ->
-                e.username.equals(request.getUsername()) && e.tenantId.equals(tenantId));
+        tokenStore.values().removeIf(e -> e.username.equals(request.getUsername()) && e.tenantId.equals(tenantId));
 
         String resetToken = UUID.randomUUID().toString();
         Instant expiry = Instant.now().plus(RESET_TOKEN_TTL_MINUTES, ChronoUnit.MINUTES);
@@ -94,8 +97,7 @@ public class PasswordResetService {
                 resetToken,
                 "Password reset token generated. Use it at POST /auth/password-reset/confirm within "
                         + RESET_TOKEN_TTL_MINUTES + " minutes.",
-                RESET_TOKEN_TTL_MINUTES
-        );
+                RESET_TOKEN_TTL_MINUTES);
     }
 
     // ---------------------------------------------------------------
@@ -107,7 +109,8 @@ public class PasswordResetService {
      *
      * @param request contains resetToken and newPassword.
      * @throws BadRequestException if the token is missing, expired, or not found,
-         *                             or if the new password violates the password policy.
+     *                             or if the new password violates the password
+     *                             policy.
      */
     public void resetPassword(PasswordResetConfirmDTO request) {
         ResetEntry entry = tokenStore.get(request.getResetToken());
@@ -128,7 +131,7 @@ public class PasswordResetService {
         TenantContext.setTenantId(entry.tenantId);
         String encodedPassword = passwordEncoder.encode(request.getNewPassword());
         customUserDetailsService.updatePassword(entry.username, entry.tenantId, encodedPassword);
-        AuditService.passwordReset(entry.username,entry.tenantId);
+        AuditService.passwordReset(entry.username, entry.tenantId);
 
         // Invalidate the reset token immediately after use
         tokenStore.remove(request.getResetToken());
