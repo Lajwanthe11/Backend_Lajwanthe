@@ -103,12 +103,6 @@
                 <optional>true</optional>
             </dependency>
 
-            <!-- Spring Messaging dependency -->
-            <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-messaging</artifactId>
-            </dependency>
-
         </dependencies>
     </dependencyManagement>
 

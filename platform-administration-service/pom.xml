@@ -168,6 +168,19 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Spring Messaging dependency -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-messaging</artifactId>
+            <version>6.1.14</version>
+        </dependency>
+
+        <!-- Spring boot websocket dependency -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>
